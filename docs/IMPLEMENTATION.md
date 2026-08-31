@@ -45,14 +45,16 @@ peut renvoyer au moteur.
 - TypeScript `strict`, ESLint (`no-explicit-any` en erreur), Prettier
 - Vitest configuré sur chaque paquet
 - CI : format, lint, types, tests, build — voir [ENGINEERING.md](ENGINEERING.md) §9
+- `locales/fr.json` et `en.json`, et le contrôle qui échoue sur une clé manquante, une
+  dérive de parité ou un `t()` avec valeur par défaut
 - Test d'architecture vérifiant les frontières du §3
 - Un déploiement réel, même d'une page vide
 - `docker compose` : PostgreSQL
 
 **Critère de sortie**
 
-> Un commit qui introduit un `any`, casse une frontière ou échoue à compiler est **refusé
-> par la CI**, et l'application vide est en ligne.
+> Un commit qui introduit un `any`, casse une frontière, ajoute un texte en dur ou échoue à
+> compiler est **refusé par la CI**, et l'application vide est en ligne.
 
 **Risque.** Faible. Le piège est d'y passer deux semaines à peaufiner l'outillage.
 
@@ -109,6 +111,7 @@ coup signifie réécrire chaque requête.
 - `products` contient `neftya`, sinon 403
 - Correspondance rôles Sekuu → droits Neftya
 - Quota `neftya_projects_max`, avec les **trois états**
+- Réglages Neftya de pays et de devise, nuls par défaut — voir [I18N.md](I18N.md) §3
 - Recalcul serveur : ce qui est persisté ne vient jamais du client
 
 **Critère de sortie**
@@ -122,7 +125,7 @@ d'organisation tant que `switch-organization` n'a pas été appelé. Le connaît
 
 ---
 
-## Phase 3 — Interface et 3D · ~3 semaines
+## Phase 3 — Interface, 3D, unités et langues · ~4 semaines
 
 **Objectif.** Configurer un meuble et le voir changer en temps réel.
 
@@ -136,6 +139,8 @@ d'organisation tant que `switch-organization` n'a pas été appelé. Le connaît
 - Vue éclatée, sélection d'une pièce, affichage de ses cotes
 - **Le moteur tourne dans le navigateur** : le glissement d'un curseur met à jour la 3D sans
   aller-retour réseau
+- Couche d'unités : saisie et affichage métrique **et** impérial, fractions au 1/16"
+- Interface française et anglaise, à parité
 
 **Critère de sortie**
 
@@ -145,9 +150,15 @@ d'organisation tant que `switch-organization` n'a pas été appelé. Le connaît
 
 Ce dernier point est la vérification que le même code tourne des deux côtés.
 
-**Risque.** Moyen. La fluidité mobile est une réserve explicitement assumée au moment du
-choix de Three.js ; c'est ici qu'elle se mesure. Si elle ne passe pas, la réponse est de
-réduire le nombre d'objets rendus, pas de renoncer à l'interaction.
+**Risque.** Moyen, et alourdi par l'impérial. La fluidité mobile est une réserve
+explicitement assumée au moment du choix de Three.js ; c'est ici qu'elle se mesure. Si elle
+ne passe pas, la réponse est de réduire le nombre d'objets rendus, pas de renoncer à
+l'interaction.
+
+> **Le piège de l'impérial.** L'aller-retour est lossy : 873 mm s'affiche `34 3/8"`, qui
+> revaut 873,125 mm. La conversion d'affichage ne doit donc **jamais** réécrire dans le
+> modèle, sinon ouvrir puis sauvegarder un projet le déforme un peu à chaque fois. Un test
+> le vérifie : afficher puis relire ne change aucune cote.
 
 ---
 
@@ -163,6 +174,7 @@ réduire le nombre d'objets rendus, pas de renoncer à l'interaction.
 - Instructions d'assemblage portées par le modèle
 - Export PDF (depuis le SVG) et CSV
 - Storage Sekuu pour les exports, instantané figé à chaque export
+- Taille de papier dérivée du pays (A4 / Letter), montants formatés par locale
 
 **Critère de sortie**
 
@@ -235,12 +247,18 @@ découvert ici vaut mieux que le même écart découvert par un client.
 | 0 | Socle et CI | ~3 j | Faible |
 | 1 | Le moteur, seul | 2-3 sem. | Moyen |
 | 2 | API, persistance, cloisonnement | 2 sem. | Moyen |
-| 3 | Interface et 3D | 3 sem. | Moyen |
+| 3 | Interface, 3D, unités et langues | 4 sem. | Moyen |
 | 4 | Fabrication et nesting | 2-3 sem. | **Élevé** |
 | 5 | Cotation 2D | 2-3 sem. | **Le plus élevé** |
 | 6 | Validation terrain | 2 sem. | Révélateur |
 
-**Environ 14 à 17 semaines**, hors imprévus — et il y en aura.
+**Environ 15 à 18 semaines**, hors imprévus — et il y en aura.
+
+> L'internationalisation ajoute environ une semaine, concentrée en phase 3 : la saisie
+> fractionnaire et l'affichage impérial sont un vrai travail, l'anglais beaucoup moins. Le
+> reste — millimètres entiers dans le moteur, montants en unité mineure, locales
+> externalisées — ne coûte rien **parce qu'il est fait dès le départ**. C'est précisément ce
+> qui a coûté une journée de reprise sur DealerOS pour avoir été remis à plus tard.
 
 ---
 

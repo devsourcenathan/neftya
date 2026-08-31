@@ -119,15 +119,33 @@ convention d'assemblage. C'est ce qui garantit qu'aucune vue ne peut diverger du
 Tous sont modifiables par projet. Les défauts visent une scie à panneaux courante et du
 mélaminé 18 mm.
 
+### Unités : millimètres entiers, et rien d'autre
+
+**Le moteur ne connaît que le millimètre entier.** L'impérial est une affaire d'affichage et
+de saisie, traitée dans une couche dédiée ([I18N.md](I18N.md) §4) : un moteur manipulant des
+pouces fractionnaires perdrait l'invariant de recomposition.
+
+Ce qui **dépend** du système d'unités, ce sont les catalogues — et ils ne se convertissent
+pas :
+
+```text
+épaisseur courante  :   18 mm         contre  3/4" = 19,05 mm   (écart 1,05 mm)
+panneau standard    : 2440 × 1220     contre  4' × 8' = 2438,4 × 1219,2
+```
+
+Un côté de 3/4" traité comme 18 mm décale **chaque** cote intérieure du caisson. Les
+catalogues sont donc distincts par système, jamais dérivés l'un de l'autre.
+
 ### Formats de panneaux
 
-Le moteur fournit une liste par défaut, que chaque organisation complète avec les formats
-de son fournisseur. L'optimiseur retient le format le plus économique parmi ceux déclarés.
+Le moteur fournit une liste par défaut selon le système d'unités, que chaque organisation
+complète avec les formats de son fournisseur. L'optimiseur retient le format le plus
+économique parmi ceux déclarés.
 
-| Format | Note |
+| Métrique | Impérial |
 |---|---|
-| 2440 × 1220 | Le plus répandu |
-| 2800 × 2070 | Grand format |
+| 2440 × 1220 — le plus répandu | 2438,4 × 1219,2 (4' × 8') |
+| 2800 × 2070 — grand format | 3048 × 1524 (5' × 10') |
 | 3050 × 1220 | |
 
 ### Tolérance : zéro

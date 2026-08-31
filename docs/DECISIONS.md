@@ -526,3 +526,82 @@ pas.
 
 **Contrainte souvent oubliée.** Le menuisier de la phase 6 doit être trouvé dès la phase 1.
 Sans lui, le critère de sortie de la V1 est invérifiable.
+
+---
+
+## 2026-07-31 — L'internationalisation est prise en compte dès la base
+
+**Décision.** Langue, pays, devise et unités sont traités dès la V1, et documentés dans
+[I18N.md](I18N.md).
+
+**Motif.** Aucun de ces sujets ne se rattrape. DealerOS a livré 428 clés appelées pour 96
+définies, 513 textes français en dur, et un formateur monétaire imposant la virgule décimale
+et l'espace comme séparateur — correct en français, faux partout ailleurs. La reprise a coûté
+une journée pour un produit encore jeune.
+
+**Distinction structurante.** L'internationalisation a deux moitiés de nature différente :
+l'**interface**, où une erreur produit un texte moche, et le **domaine** — unités,
+épaisseurs, formats de panneaux, taille de papier — où une erreur produit une cote fausse et
+un panneau perdu. C'est la seconde qu'on oublie.
+
+---
+
+## 2026-07-31 — Pays et devise portés par Neftya
+
+**Décision.** Neftya porte ses propres réglages de pays et de devise, saisis par
+l'utilisateur.
+
+**Motif.** La plateforme détient `organizations.country` et `organizations.currency` mais ne
+les publie ni dans le jeton ni dans le payload `/organizations`, qui ne rend que `id`,
+`name`, `slug` et `roles`. Attendre une évolution de la plateforme bloquerait Neftya.
+
+**Duplication assumée**, contre la recommandation initiale et contre le guide d'intégration.
+Trois garde-fous : le réglage est présenté comme un réglage Neftya et non comme le pays de
+l'organisation Sekuu — les deux peuvent légitimement différer, un atelier enregistré en
+France pouvant travailler au Cameroun ; il n'est jamais renvoyé à la plateforme ; et le jour
+où Sekuu les expose, ils deviennent la valeur par défaut, le réglage Neftya restant un
+remplacement explicite. Un champ nul signifie « suivre la plateforme », donc aucune migration.
+
+---
+
+## 2026-07-31 — Métrique et impérial dès la V1
+
+**Décision.** Les deux systèmes d'unités sont proposés dans la V1, avec saisie fractionnaire
+et affichage au 1/16".
+
+**Motif.** Décision du propriétaire, contre la recommandation de n'ouvrir que l'architecture
+et de reporter l'affichage impérial.
+
+**Ce qui ne change pas.** Le moteur calcule en **millimètres entiers, toujours**. Les unités
+sont exclusivement une affaire d'affichage et de saisie, isolées dans une couche dédiée.
+
+**Trois conséquences chiffrées, à ne pas perdre de vue.**
+
+L'impérial n'est pas le métrique arrondi : 3/4" vaut 19,05 mm et non 18, et un panneau
+4' × 8' mesure 2438,4 × 1219,2 et non 2440 × 1220. Les catalogues d'épaisseurs et de formats
+sont donc **distincts par système**, jamais convertis à la volée — un côté de 3/4" traité
+comme 18 mm décale chaque cote intérieure du caisson.
+
+L'aller-retour d'affichage est **lossy** : 873 mm s'affiche `34 3/8"`, qui revaut 873,125 mm.
+La conversion d'affichage ne doit donc jamais réécrire dans le modèle, sous peine de déformer
+un projet à chaque ouverture-sauvegarde.
+
+**Conséquence sur le planning.** Environ une semaine, concentrée en phase 3. C'est le
+troisième élargissement du MVP après les tiroirs et la cotation complète ; l'ordre de report
+est documenté dans [ROADMAP.md](ROADMAP.md).
+
+---
+
+## 2026-07-31 — Français et anglais dès la V1, données traduites en base
+
+**Décision.** Interface en français et anglais, à parité vérifiée en CI. Les noms de modèles,
+matériaux et catégories sont traduits en base, en `jsonb` par locale, avec repli sur le
+français.
+
+**Motif du `jsonb`.** Ces noms sont de la donnée, pas des chaînes d'interface : une
+organisation créera un jour ses propres modèles, qu'aucun fichier de locale ne connaîtra. Des
+clés de locale bloqueraient cette évolution dès la V3.
+
+**Règle non négociable.** Aucun `t()` avec valeur par défaut. Le second argument est ce qui a
+masqué 76 % de clés manquantes chez DealerOS pendant des mois : une clé absente doit se voir.
+Le contrôle est en CI dès la phase 0.

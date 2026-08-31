@@ -154,6 +154,26 @@ elle existe déjà.
 
 ---
 
+## 6 bis. Internationalisation
+
+Les règles complètes sont dans [I18N.md](I18N.md). Trois sont assez structurantes pour
+figurer parmi les standards :
+
+1. **Le moteur ne connaît que le millimètre entier.** Toute conversion d'unité vit dans une
+   couche d'affichage et **n'écrit jamais dans le modèle** : l'aller-retour impérial perd
+   0,125 mm au 1/16", et une sauvegarde après affichage déformerait le projet.
+2. **Aucun texte en dur, aucun `t()` avec valeur par défaut.** Le second argument est
+   interdit : c'est ce qui a masqué 76 % de clés manquantes chez DealerOS. Une clé absente
+   doit se voir.
+3. **Aucun montant sans devise, aucune division par 100 supposée.** L'exposant vient de la
+   table ISO 4217 — XOF et XAF en ont zéro. Le formatage passe par `Intl`, jamais par des
+   séparateurs codés en dur.
+
+Vérifié en CI dès la phase 0 : parité des locales, aucune clé inconnue appelée, aucun repli
+textuel.
+
+---
+
 ## 7. API
 
 1. Contrôleur mince : il valide, il délègue, il sérialise. Aucune règle métier.

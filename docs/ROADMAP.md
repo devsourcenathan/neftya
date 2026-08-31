@@ -35,6 +35,15 @@ manuel. Son objectif unique est de prouver que le moteur produit des cotes juste
 - Instructions d'assemblage portées par le modèle
 - Export PDF et CSV
 
+### Internationalisation
+
+- Interface **française et anglaise**, à parité vérifiée en CI
+- **Métrique et impérial** : saisie fractionnaire, affichage au 1/16"
+- Catalogues d'épaisseurs et de formats distincts par système d'unités
+- Réglages Neftya de pays et de devise
+- Montants en unité mineure, formatage par locale
+- Noms de catalogue traduits en base
+
 ### Projets
 
 - Instantané figé à chaque export
@@ -59,11 +68,22 @@ Voir [SEKUU.md](SEKUU.md) §10 pour la liste de contrôle complète.
 Tant que ce critère n'est pas atteint sur plusieurs meubles réels, aucune fonctionnalité de
 V2 ne doit être engagée.
 
-> **Attention au périmètre.** Deux décisions du 31/07/2026 ont élargi ce MVP : les tiroirs
-> et la cotation complète des plans 2D. Ce sont les deux postes les plus susceptibles de
-> repousser le critère de sortie — le second plus que le premier, le placement automatique
-> de cotes étant un problème d'optimisation à part entière. Si le planning dérape, ce sont
-> les premiers candidats au report, pas le moteur.
+> **Attention au périmètre.** Trois décisions du 31/07/2026 ont élargi ce MVP, dans cet
+> ordre : les tiroirs, la cotation complète des plans 2D, puis l'impérial et l'anglais.
+>
+> Le MVP livré ne sera donc pas celui qui avait été qualifié de « volontairement limité ».
+> Chacun des trois postes est défendable ; leur cumul déplace le critère de sortie de
+> plusieurs semaines.
+>
+> Ordre de report si le planning dérape, du plus au moins coûteux à conserver :
+>
+> 1. **La cotation complète** — repli documenté sur une cotation simple, qui ne bloque pas
+>    le critère de sortie.
+> 2. **L'impérial** — l'architecture reste ouverte, seul l'affichage est reporté, et le
+>    marché impérial n'est pas la cible primaire.
+> 3. **L'anglais** — la mécanique reste en place, seul le fichier de traduction attend.
+>
+> Les tiroirs et le moteur ne sont pas reportables : ce sont eux que la V1 doit prouver.
 
 ---
 

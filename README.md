@@ -39,6 +39,7 @@ la 3D est une vue dérivée.
 | [ROADMAP.md](docs/ROADMAP.md) | MVP, V2, V3, et pistes long terme |
 | [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | **Comment construire la V1** : sept phases, chacune avec son critère de sortie |
 | [ENGINEERING.md](docs/ENGINEERING.md) | Standards d'ingénierie — règles obligatoires, écrites à partir de ce qui a mal tourné sur DealerOS |
+| [I18N.md](docs/I18N.md) | Langue, pays, devise, unités — l'interface **et** le domaine |
 | [DECISIONS.md](docs/DECISIONS.md) | Journal des décisions structurantes, datées et motivées |
 
 **Commencez par [NEFTYA_ENGINE.md](docs/NEFTYA_ENGINE.md)** si vous venez pour la technique :
@@ -48,9 +49,13 @@ d'un artisan. Puis [ENGINEERING.md](docs/ENGINEERING.md) avant d'écrire une lig
 
 ## Conventions
 
-Toutes les dimensions sont en **millimètres**, sauf mention contraire dans l'interface
-utilisateur, où les centimètres peuvent être proposés pour les dimensions hors-tout.
-Le système est métrique uniquement.
+**Le moteur calcule en millimètres entiers, toujours.** Les unités sont exclusivement une
+affaire d'affichage et de saisie : métrique et impérial sont proposés dès la V1, convertis
+dans une couche dédiée qui n'écrit jamais dans le modèle.
+
+Interface en **français et anglais**, à parité stricte, vérifiée en intégration continue.
+
+Voir [I18N.md](docs/I18N.md).
 
 ## Statut du projet
 
