@@ -6,3 +6,29 @@
  */
 export { cutPlanPdf, cutPlanSvg, type PlanLabels } from './cut-plan.js';
 export { renderPdf, type Page, type PdfDocument, type Shape } from './pdf.js';
+export {
+  project,
+  VIEWS,
+  type ProjectedRect,
+  type Projection,
+  type ViewName,
+} from './projection.js';
+export {
+  dimensionsOf,
+  DEFAULT_CHARACTER_WIDTH_MM,
+  DEFAULT_GAP_MM,
+  type Dimension,
+  type DimensionAxis,
+  type DimensionKind,
+  type DimensionOptions,
+  type DimensionSide,
+  type DimensionedView,
+  type PartDimension,
+} from './dimensions.js';
+export {
+  technicalDrawing,
+  technicalViewSvg,
+  type DrawingOptions,
+  type TechnicalDrawing,
+} from './technical-drawing.js';
+export { technicalDrawingPdf, type SheetLabels } from './plan-sheet.js';

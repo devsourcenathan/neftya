@@ -898,3 +898,78 @@ nommée pour cela.
 **Détail.** L'instantané est enregistré même quand le dépôt chez Storage échoue : perdre
 un plan produit parce qu'on n'a pas su le ranger serait absurde. `storage_object_id` reste
 `null`, et cela se voit.
+
+---
+
+## 2026-08-31 — Les cotes se placent par niveaux, comme les pièces par bandes
+
+**Décision.** Chaque cote est posée sur le premier niveau — ligne de cote parallèle, à
+distance croissante du dessin — où son emprise ne rencontre celle d'aucune autre. Les
+chaînes intermédiaires occupent les niveaux proches, les hors-tout les niveaux extérieurs.
+
+**Motif.** C'est le même problème que le placement des pièces sur un panneau, et la même
+solution. Elle donne l'absence de chevauchement **par construction** : le test n'a plus
+qu'à confirmer que la construction tient, au lieu de chercher des collisions au hasard.
+
+**Ce qui rendait le problème difficile n'était pas le placement mais l'emprise.** Une cote
+de 18 mm porte une étiquette de soixante millimètres de large. Raisonner sur l'intervalle
+seul pose deux cotes voisines au même niveau et superpose leurs textes.
+
+---
+
+## 2026-08-31 — Un test qui appelle la fonction qu'il vérifie ne vérifie rien
+
+**Décision.** Le test de non-chevauchement recalcule l'emprise des cotes à la main, avec
+ses propres constantes, au lieu d'appeler la fonction de la production. La fonction
+exportée `footprint` a été retirée de l'API du paquet.
+
+**Motif.** La première version l'appelait. Remplacer l'emprise par le seul intervalle —
+en oubliant l'étiquette, précisément le défaut que ce code existe pour éviter — laissait
+les soixante-douze tests au vert. Le test mesurait l'algorithme contre lui-même.
+
+**Après correction**, la même mutation fait échouer les vingt formes.
+
+---
+
+## 2026-08-31 — La vue arrière est retournée
+
+**Décision.** La projection arrière inverse l'axe des abscisses ; la vue de dessous aussi.
+
+**Motif.** Vu de derrière, le côté gauche du meuble est à droite du dessin. Ne pas
+retourner donnerait un plan où un perçage part du mauvais côté — l'erreur ne se voit pas à
+l'écran, elle se voit sur la pièce percée.
+
+---
+
+## 2026-08-31 — Le PDF est coté en millimètres, l'écran dans les unités du lecteur
+
+**Décision.** Les plans exportés portent des cotes métriques quelle que soit la préférence
+de l'organisation. L'affichage à l'écran, lui, suit le système d'unités choisi.
+
+**Motif.** Le PDF part à l'atelier, où la préférence de celui qui a dessiné n'a pas cours.
+Et une cote arrondie au seizième de pouce perd jusqu'à un huitième de millimètre : c'est
+supportable à l'écran, où le modèle reste juste, pas sur le papier d'après lequel on scie.
+
+**Conséquence assumée.** Un menuisier impérial lira des millimètres sur son plan. Coter en
+fractions demanderait de décider quelle valeur fait foi, et la réponse serait le
+millimètre de toute façon.
+
+---
+
+## 2026-08-31 — Une propriété s'affirme une fois, pas à chaque paire
+
+**Décision.** Les tests de propriété accumulent leurs manquements dans une liste et
+l'affirment une seule fois, au lieu d'appeler `expect` à chaque élément.
+
+**Motif.** Le test de non-chevauchement du placement appelait `expect` sur chaque paire de
+pièces : deux millions d'appels sur quatre cents configurations, six secondes, et un échec
+intermittent dès que la machine était chargée — le délai de cinq secondes de vitest, pas un
+vrai défaut. Après réécriture : deux secondes, et la même mutation du trait de scie fait
+toujours échouer trois tests.
+
+**Ce que cela vaut aussi.** Le message d'échec liste **tous** les manquements au lieu de
+s'arrêter au premier : on voit d'un coup si c'est un cas isolé ou une classe entière.
+
+> **Un test instable finit ignoré**, puis désactivé, puis supprimé. Le rendre rapide était
+> moins cher que d'allonger le délai, et allonger le délai n'aurait fait que reculer
+> l'échéance.

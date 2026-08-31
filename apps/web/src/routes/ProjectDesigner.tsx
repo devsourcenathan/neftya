@@ -60,6 +60,13 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
         >
           {t('manufacturing.open')}
         </Link>
+        <Link
+          to="/projects/$projectId/plans"
+          params={{ projectId }}
+          className="text-sm text-emerald-700 underline"
+        >
+          {t('plans.open')}
+        </Link>
         {save.isSuccess && !save.isPending && (
           <span className="text-sm text-emerald-700">{t('state.saved')}</span>
         )}

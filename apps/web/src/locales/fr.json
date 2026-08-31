@@ -145,5 +145,19 @@
     "back": "Glissez le fond dans sa rainure, puis vérifiez l'équerrage du caisson.",
     "drawers": "Montez les caissons de tiroir : côtés, devant, arrière, puis fond.",
     "drawer_faces": "Fixez les façades sur les caissons, jeu régulier entre elles."
+  },
+  "plans": {
+    "open": "Plans techniques",
+    "parts": "Table des pièces",
+    "download": "Télécharger les plans (PDF)",
+    "pdfInMillimetres": "Le PDF est coté en millimètres : il part à l'atelier, où la préférence d'affichage n'a pas cours.",
+    "views": {
+      "front": "Face",
+      "back": "Arrière",
+      "top": "Dessus",
+      "bottom": "Dessous",
+      "left": "Gauche",
+      "right": "Droite"
+    }
   }
 }

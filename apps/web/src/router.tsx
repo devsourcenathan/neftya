@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Manufacturing } from './manufacturing/Manufacturing.js';
+import { Plans } from './plans/Plans.js';
 import { ProjectDesigner } from './routes/ProjectDesigner.js';
 import { Projects } from './routes/Projects.js';
 
@@ -64,8 +65,22 @@ const manufacturingRoute = createRoute({
   },
 });
 
+const plansRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/projects/$projectId/plans',
+  component: function PlansRoute() {
+    const { projectId } = plansRoute.useParams();
+    return <Plans projectId={projectId} />;
+  },
+});
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([projectsRoute, designerRoute, manufacturingRoute]),
+  routeTree: rootRoute.addChildren([
+    projectsRoute,
+    designerRoute,
+    manufacturingRoute,
+    plansRoute,
+  ]),
   defaultPreload: 'intent',
 });
 

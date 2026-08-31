@@ -259,6 +259,25 @@ problème d'optimisation à part entière.
 > reporter les chaînes de cotes. C'est la position de repli identifiée dès le départ, et
 > elle ne bloque pas le critère de sortie de la V1 : on peut couper avec un tableau de cotes.
 
+**État : livrée le 31 août 2026.** 283 tests verts. **La position de repli n'a pas servi** :
+les chaînes de cotes sont là.
+
+Le placement sans chevauchement s'est avéré moins difficile que craint, parce qu'il est le
+même problème que le placement des pièces sur un panneau : des **niveaux**, et une cote
+posée sur le premier où son emprise ne rencontre celle d'aucune autre. L'absence de
+chevauchement est obtenue par construction, et le test ne fait que confirmer que la
+construction tient — sur vingt formes écrites à la main pour ce qu'elles ont de gênant.
+
+L'emprise d'une cote n'est pas son intervalle mais le plus large de son intervalle et de
+son étiquette : une cote de 18 mm porte un texte de soixante millimètres, et c'est le texte
+qui déborde sur la cote voisine.
+
+**Une erreur de méthode, corrigée.** La première version du test appelait la fonction
+d'emprise de la production : elle mesurait l'algorithme contre lui-même. Remplacer
+l'emprise par le seul intervalle — exactement le piège que ce code doit éviter — laissait
+les soixante-douze tests au vert. La géométrie est maintenant recalculée dans le test, et
+la même mutation fait tomber les vingt formes.
+
 ---
 
 ## Phase 6 — Validation terrain et mise en service · ~2 semaines

@@ -145,5 +145,19 @@
     "back": "Slide the back into its groove, then check the carcass is square.",
     "drawers": "Build the drawer boxes: sides, front, back, then bottom.",
     "drawer_faces": "Fit the faces onto the boxes, with an even gap between them."
+  },
+  "plans": {
+    "open": "Technical drawings",
+    "parts": "Parts table",
+    "download": "Download drawings (PDF)",
+    "pdfInMillimetres": "The PDF is dimensioned in millimetres: it goes to the workshop, where a display preference has no bearing.",
+    "views": {
+      "front": "Front",
+      "back": "Back",
+      "top": "Top",
+      "bottom": "Bottom",
+      "left": "Left",
+      "right": "Right"
+    }
   }
 }

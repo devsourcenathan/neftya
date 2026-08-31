@@ -84,6 +84,8 @@ describe('propriétés du placement', () => {
   });
 
   it('toute pièce du meuble est placée, en la bonne quantité', () => {
+    const missing: string[] = [];
+
     for (const configuration of configurations) {
       const furniture = build(configuration);
       const result = nest(furniture);
@@ -99,12 +101,18 @@ describe('propriétés du placement', () => {
         // Placée, ou explicitement signalée comme impossible à placer : jamais perdue en
         // silence. Une pièce oubliée produirait un plan qui a l'air complet.
         const signalled = result.unplaced.filter((id) => id === part.id).length;
-        expect((placed.get(part.id) ?? 0) + signalled).toBe(part.quantity);
+        if ((placed.get(part.id) ?? 0) + signalled !== part.quantity) {
+          missing.push(`${part.id} : ${placed.get(part.id) ?? 0} + ${signalled}`);
+        }
       }
     }
+
+    expect(missing).toEqual([]);
   });
 
   it('ne mélange jamais deux épaisseurs sur un panneau', () => {
+    const mixed: string[] = [];
+
     for (const configuration of configurations) {
       const furniture = build(configuration);
       const result = nest(furniture);
@@ -114,10 +122,15 @@ describe('propriétés du placement', () => {
 
       for (const panel of result.panels) {
         for (const placement of panel.placements) {
-          expect(thicknessOf.get(placement.partId)).toBe(panel.thicknessMm);
+          if (thicknessOf.get(placement.partId) !== panel.thicknessMm) {
+            mixed.push(`${placement.partId} sur un panneau de ${panel.thicknessMm} mm`);
+          }
         }
       }
     }
+
+    // On ne scie pas du 8 mm et du 18 mm dans la même planche.
+    expect(mixed).toEqual([]);
   });
 
   it('la surface posée ne dépasse jamais celle du panneau', () => {

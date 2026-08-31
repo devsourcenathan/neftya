@@ -1,7 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { success } from '@neftya/contracts';
-import { cutPlanPdf } from '@neftya/drawing';
+import {
+  cutPlanPdf,
+  technicalDrawing,
+  technicalDrawingPdf,
+  type ViewName,
+} from '@neftya/drawing';
+import { build } from '@neftya/engine';
 import { paperSizeFor, type Money } from '@neftya/units';
 import { forbidden, notFound, validationFailed } from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
@@ -37,6 +43,22 @@ export interface ManufacturingDependencies {
   /** Absent quand aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
   storage?: SekuuStorage;
 }
+
+/**
+ * Les noms de vues du PDF.
+ *
+ * Sans accent : l'écrivain PDF encode en WinAnsi, et le français accentué y passe — mais
+ * ces libellés partent à l'atelier tels quels, et un plan lisible partout vaut mieux
+ * qu'un plan joli ici.
+ */
+const VIEW_LABELS: Record<ViewName, string> = {
+  front: 'Vue de face',
+  back: 'Vue arriere',
+  top: 'Vue de dessus',
+  bottom: 'Vue de dessous',
+  left: 'Vue de gauche',
+  right: 'Vue de droite',
+};
 
 /** La devise par défaut quand l'organisation n'en a pas choisi. */
 const FALLBACK_CURRENCY = 'XAF';
@@ -105,6 +127,44 @@ export function registerManufacturingRoutes(
       .header(
         'content-disposition',
         `attachment; filename="${fileNameOf(project.name)}.pdf"`,
+      )
+      .send(Buffer.from(pdf));
+  });
+
+  /**
+   * Les plans techniques cotés.
+   *
+   * Une page par vue, puis la table des pièces — parce qu'une élévation dit où va une
+   * étagère, elle ne dit pas à quelle cote la scier.
+   *
+   * Les cotes sont en millimètres, sans exception : le PDF part à l'atelier, où la
+   * préférence d'affichage de celui qui a dessiné n'a pas cours. L'écran, lui, suit le
+   * système d'unités de son lecteur.
+   */
+  app.get('/v1/projects/:id/plans.pdf', async (request, reply) => {
+    requirePermission(request, 'project.read');
+    const { project, settings: organizationSettings } = await planFor(request);
+
+    const drawing = technicalDrawing(build(project.model), {
+      label: (valueMm) => `${valueMm} mm`,
+    });
+
+    const pdf = technicalDrawingPdf(
+      drawing,
+      {
+        title: project.name,
+        view: (view: ViewName) => VIEW_LABELS[view],
+        partsTitle: 'Pieces',
+        columns: ['Repere', 'Role', 'Cotes (mm)', 'Ep.', 'Qte'],
+      },
+      paperSizeFor(organizationSettings.country),
+    );
+
+    return reply
+      .header('content-type', 'application/pdf')
+      .header(
+        'content-disposition',
+        `attachment; filename="${fileNameOf(project.name)}-plans.pdf"`,
       )
       .send(Buffer.from(pdf));
   });

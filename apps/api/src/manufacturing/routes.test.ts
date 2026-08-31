@@ -102,6 +102,7 @@ describe('plan de fabrication', () => {
       `/v1/projects/${id}/manufacturing`,
       `/v1/projects/${id}/cut-list.csv`,
       `/v1/projects/${id}/cut-plan.pdf`,
+      `/v1/projects/${id}/plans.pdf`,
       `/v1/projects/${id}/exports`,
     ]) {
       const response = await harness.app.inject({
@@ -336,6 +337,46 @@ describe('exports', () => {
     });
 
     expect(listed.json().data).toHaveLength(1);
+  });
+
+  it('rend les plans cotés, une page par vue plus la table des pièces', async () => {
+    const id = await createProject();
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}/plans.pdf`,
+      headers: await harness.authorization(),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('application/pdf');
+
+    const pdf = response.rawPayload.toString('latin1');
+    // Six vues, plus la table.
+    expect([...pdf.matchAll(/\/Type \/Page[^s]/gu)]).toHaveLength(7);
+    // La table porte les cotes de découpe : ce qu'aucune élévation ne dit.
+    expect(pdf).toContain('(P05)');
+    expect(pdf).toContain('(873 x 382)');
+  });
+
+  it('cote les plans en millimètres, même pour une organisation impériale', async () => {
+    const id = await createProject();
+    await harness.app.inject({
+      method: 'PUT',
+      url: '/v1/settings',
+      headers: await harness.authorization(),
+      payload: { unit_system: 'imperial' },
+    });
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}/plans.pdf`,
+      headers: await harness.authorization(),
+    });
+
+    // Le PDF part à l'atelier : la préférence d'affichage de celui qui a dessiné n'y a
+    // pas cours, et une cote au seizième de pouce y perdrait un huitième de millimètre.
+    expect(response.rawPayload.toString('latin1')).toContain('(1800 mm)');
   });
 
   it('interdit l’export à qui ne peut pas écrire', async () => {
