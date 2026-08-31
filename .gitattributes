@@ -1,0 +1,10 @@
+# `core.autocrlf` est à `true` sur les postes Windows, et la CI tourne sous Linux : sans
+# normalisation, Prettier attendrait des fins de ligne LF sur des fichiers rendus en CRLF,
+# et le contrôle de format échouerait chez tout le monde sauf celui qui vient d'écrire.
+* text=auto eol=lf
+
+# Binaires : ne jamais convertir.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.woff2 binary

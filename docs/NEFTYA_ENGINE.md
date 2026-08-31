@@ -214,27 +214,38 @@ devant et dos    : 550 − 2×18 = 514
 profondeur       : 400 − 18 (fond) − 10 (jeu arrière) = 372
 ```
 
-**Façades.** Elles pavent toute la façade du meuble, séparées par `front_gap_mm` :
+**Façades.** Elles pavent toute la façade du meuble, et **chaque jeu est centré sur son
+séparateur** :
 
 ```text
-largeur_façade = (L − (n − 1) × front_gap) / n
+départ_du_jeu(i) = centre_du_séparateur(i) − ⌊front_gap / 2⌋
+```
 
-1800 mm, 3 façades, jeu 3 mm :  (1800 − 6) / 3 = 598
-recomposition : 598 × 3 + 3 × 2 = 1800  ✓
+La façade d'extrémité va du bord du meuble au premier jeu ; les intérieures vont d'un jeu
+au suivant.
+
+```text
+1800 mm, 3 compartiments de 576, panneaux 18, jeu 3
+
+séparateurs   : 594–612          1188–1206
+centres       :      603              1197
+jeux          :    602–605         1196–1199
+façades       : 0–602      605–1196      1199–1800
+                 602          591           601
+recomposition : 602 + 3 + 591 + 3 + 601 = 1800  ✓
 ```
 
 Une façade est donc **plus large que son compartiment** : elle couvre aussi la moitié des
-séparateurs voisins, ou le côté du meuble. C'est ce que signifie le recouvrement total.
+séparateurs voisins, ou le côté du meuble. C'est ce que signifie le recouvrement total, et
+c'est pourquoi les façades d'extrémité sont plus larges que les intérieures — de
+l'épaisseur d'un côté.
 
-**Contrainte à vérifier par test :** chaque jeu doit tomber sur un séparateur, sinon on voit
-à l'intérieur du meuble.
-
-```text
-compartiments : 18–594     612–1188    1206–1782
-séparateurs   :     594–612     1188–1206
-façades       : 0–598      601–1199    1202–1800
-jeux          :     598–601     1199–1202     ✓ tous deux sur un séparateur
-```
+> **Pourquoi pas une division uniforme.** Poser `(L − (n−1) × jeu) / n` donne des façades
+> égales, ce qui est plus joli, mais ignore la position réelle des séparateurs. Sur des
+> panneaux fins ou des compartiments inégaux, un jeu finit à côté de son séparateur et
+> l'on voit à l'intérieur du meuble — vérifié sur 400 mm, 4 compartiments, panneaux de
+> 8 mm : le jeu commence 1 mm avant le séparateur. Centrer le jeu rend la faute impossible
+> par construction plutôt que détectable après coup.
 
 > **Limite assumée de la V1.** Le moteur donne la profondeur utile du tiroir mais **ne
 > choisit pas la coulisse** : les longueurs standard (250, 300, 350, 400, 450, 500) et

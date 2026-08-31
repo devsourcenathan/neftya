@@ -644,3 +644,57 @@ institutionnalisait la porte dérobée `id === 1` au lieu de la détecter.
 **Vérifié.** Le contrôle i18n détecte les quatre cas — dérive de parité, clé inconnue,
 `t()` avec valeur par défaut, texte en dur dans du JSX. Le test d'architecture détecte
 l'import interdit, la dépendance non autorisée et la lecture d'horloge dans le moteur.
+
+---
+
+## 2026-07-31 — Le jeu entre façades est centré sur son séparateur
+
+**Décision.** La position des façades se déduit du centre des séparateurs, et non d'une
+division uniforme de la largeur.
+
+**Motif.** La règle documentée jusqu'ici — `(L − (n−1) × jeu) / n` — donne des façades
+égales, ce qui est plus joli, mais ignore la position réelle des séparateurs. Les
+configurations générées de la phase 1 l'ont mise en défaut sur 478 cas sur 3 000 : sur
+400 mm, 4 compartiments et des panneaux de 8 mm, le jeu commence 1 mm avant le séparateur,
+et l'on voit à l'intérieur du meuble.
+
+**Conséquence assumée.** Les façades d'extrémité sont plus larges que les intérieures, de
+l'épaisseur d'un côté — 602 / 591 / 601 au lieu de 598 / 598 / 598 sur le meuble de
+référence. C'est ce que fait un recouvrement total sur un vrai meuble : la façade
+d'extrémité couvre le côté du caisson.
+
+**Ce que ça change de principe.** La contrainte passe de « vérifiée après coup » à
+« impossible par construction ». Le contrôle reste en place, mais ne devrait plus jamais
+se déclencher.
+
+---
+
+## 2026-07-31 — Un tiroir qui ne rentre pas n'est pas produit
+
+**Décision.** Quand un compartiment est trop étroit, trop peu profond ou trop bas pour le
+tiroir demandé, le moteur n'émet aucune pièce et signale `DRAWER_DOES_NOT_FIT`.
+
+**Motif.** Trouvé par les configurations générées : un compartiment de 45 mm avec 13 mm de
+jeu par côté et des panneaux de 22 mm produisait un devant de tiroir de −23 mm. Une cote
+négative dans une liste de découpe est un plan faux, et rien ne l'aurait signalé au
+menuisier.
+
+**Alternative écartée.** Réduire silencieusement les jeux pour faire tenir le tiroir : le
+tiroir ne coulisserait pas, et le produit aurait menti.
+
+---
+
+## 2026-07-31 — Les pièces identiques sont groupées, les positions sont des instances
+
+**Décision.** Une `Part` porte des cotes et une quantité ; ses `instances` portent les
+positions. Deux côtés identiques sont **une** pièce `P03` en quantité 2, à deux endroits.
+
+**Motif.** Le §3 du document moteur demandait à la fois une position et une quantité sur
+le même objet, ce qui ne peut pas tenir : deux côtés identiques n'ont pas la même position.
+Le regroupement résout les deux besoins — la liste de découpe lit les cotes et la quantité,
+la 3D lit les instances, et chaque objet 3D porte l'identifiant que le menuisier lira sur
+son plan.
+
+**Corollaire.** Les cotes de découpe sont normalisées, plus grande dimension d'abord. Une
+façade de 598 × 600 se découpe en 600 × 598 ; son orientation réelle reste dans son
+instance.
