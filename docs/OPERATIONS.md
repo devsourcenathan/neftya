@@ -35,7 +35,13 @@ manque : échouer à la première requête coûte plus cher que refuser de déma
 | `SEKUU_AUDIENCE` | `sekuu-platform` | refus de démarrer |
 | `SEKUU_STORAGE_URL` | dépôt des exports | dépôt désactivé |
 | `SEKUU_STORAGE_API_KEY` | clé `storage.write.delegated` | dépôt désactivé |
+| `NEFTYA_ALLOWED_ORIGINS` | origines navigateur admises | **aucune** — l'interface ne peut pas appeler l'API |
 | `PORT`, `HOST` | écoute | 3000, `0.0.0.0` |
+
+`NEFTYA_ALLOWED_ORIGINS` est une **liste**, jamais `*`. L'API porte un jeton dans un
+en-tête : une origine quelconque autorisée à l'envoyer est une page quelconque qui agit au
+nom de l'utilisateur. Vide par défaut, parce qu'une liste oubliée doit empêcher l'interface
+de fonctionner, pas ouvrir l'API à tout le monde.
 
 Sans clé Storage, **les exports sont produits et enregistrés quand même** ; ils ne sont
 simplement pas déposés, et leur `storage_object_id` reste nul. C'est visible, et c'est

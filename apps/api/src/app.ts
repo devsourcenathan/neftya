@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import { success, type ApiError } from '@neftya/contracts';
 import { sql, type Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
@@ -34,6 +35,14 @@ export interface AppDependencies {
   storage?: SekuuStorage;
   /** Injectable : les tests lisent ce qui a été journalisé au lieu de le voir passer. */
   logSink?: LogSink;
+  /**
+   * Origines autorisées à appeler l'API depuis un navigateur.
+   *
+   * Une **liste**, jamais `*` : l'API porte un jeton dans un en-tête, et une origine
+   * quelconque autorisée à l'envoyer est une page quelconque qui agit au nom de
+   * l'utilisateur. C'est la même liste que celle de la plateforme, et pour la même raison.
+   */
+  allowedOrigins?: readonly string[];
 }
 
 export function buildApp(dependencies: AppDependencies): FastifyInstance {
@@ -43,6 +52,26 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
   const app = Fastify({ logger: false, genReqId: () => crypto.randomUUID() });
 
   registerLogging(app, { sink });
+
+  // L'interface vit sur une autre origine que l'API — en développement comme en production.
+  // Sans cet en-tête, le navigateur refuse la réponse avant même que le code la voie, et le
+  // symptôme ne ressemble en rien à sa cause.
+  const allowedOrigins = dependencies.allowedOrigins ?? [];
+
+  void app.register(cors, {
+    origin: (origin, callback) => {
+      // Pas d'origine : un appel serveur à serveur, curl, une sonde. Rien à refuser.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Une origine inconnue reçoit une réponse sans en-tête, pas une erreur : c'est au
+      // navigateur de refuser, et c'est ce qu'il fait.
+      callback(null, allowedOrigins.includes(origin));
+    },
+    credentials: true,
+  });
 
   // Vivant : le processus répond. N'interroge rien — une sonde de vie qui dépend de la
   // base fait redémarrer une application qui va bien parce que la base tousse.

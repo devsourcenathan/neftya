@@ -21,7 +21,9 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:i18n && npm run test && npm run build",
     "backup": "node scripts/backup.mjs",
-    "restore": "node scripts/restore.mjs"
+    "restore": "node scripts/restore.mjs",
+    "dev:identity": "node scripts/dev-identity.mjs",
+    "dev:api": "node --watch apps/api/src/server.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

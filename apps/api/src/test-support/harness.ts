@@ -59,6 +59,8 @@ export interface TokenOptions {
 export interface HarnessOptions {
   /** Recueille les journaux au lieu de les laisser passer sur la sortie standard. */
   logSink?: LogSink;
+  /** Origines navigateur admises. Vide par défaut, comme en production. */
+  allowedOrigins?: readonly string[];
 }
 
 export async function createHarness(
@@ -98,6 +100,7 @@ export async function createHarness(
     // Sans puits injecté, les tests écriraient des milliers de lignes JSON dans la sortie
     // de la suite, où personne ne les lirait.
     logSink: options.logSink ?? (() => {}),
+    ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}),
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
       issuer: ISSUER,

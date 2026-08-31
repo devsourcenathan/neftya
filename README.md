@@ -59,17 +59,44 @@ Voir [I18N.md](docs/I18N.md).
 
 ## Démarrer
 
+Neftya s'appuie sur **Sekuu Platform** pour l'identité. En local, un Identity de poche la
+remplace : il fabrique une paire de clés, publie le JWKS et rend des jetons — les trois
+choses dont l'API a besoin.
+
+Trois terminaux :
+
 ```bash
-docker compose up -d          # PostgreSQL
+docker compose up -d          # PostgreSQL sur le port 5442
 npm install
-cp .env.example .env
+npm run dev:identity          # Identity de démonstration, port 4000
+```
+
+```bash
+DATABASE_URL=postgres://neftya:neftya@localhost:5442/neftya SEKUU_JWKS_URL=http://localhost:4000/.well-known/jwks.json SEKUU_ISSUER=http://localhost:4000 SEKUU_AUDIENCE=sekuu-platform NEFTYA_ALLOWED_ORIGINS=http://localhost:5173 npm run dev:api               # API sur http://localhost:3000
+```
+
+```bash
 npm run dev                   # interface sur http://localhost:5173
 ```
 
-L'API se lance séparément :
+L'interface a besoin de `apps/web/.env.local` :
+
+```
+VITE_API_URL=http://localhost:3000
+VITE_SEKUU_IDENTITY_URL=http://localhost:4000
+VITE_SEKUU_PORTAL_URL=http://localhost:4000
+```
+
+> **L'Identity de poche n'est pas une porte dérobée.** Aucun code de production ne le
+> connaît : l'API lit trois variables d'environnement, et il suffit de les pointer ailleurs.
+> Le jour où l'on branche la vraie plateforme, ce script ne sert plus.
+
+Pour essayer les refus sans toucher au code :
 
 ```bash
-npm run dev --workspace @neftya/api
+curl -s "http://localhost:4000/token?roles=member"       # ne peut pas supprimer
+curl -s "http://localhost:4000/token?products=autre"     # 403, pas abonné
+curl -s "http://localhost:4000/token?projects_max=1"     # 409 au deuxième projet
 ```
 
 ### Exploiter

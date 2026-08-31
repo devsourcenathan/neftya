@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && node scripts/copy-migrations.mjs",
     "dev": "node --watch src/server.ts",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@neftya/contracts": "*",
     "@neftya/drawing": "^0.0.0",
     "@neftya/engine": "*",

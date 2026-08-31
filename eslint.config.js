@@ -29,7 +29,9 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.mjs'],
+    // Les scripts d'outillage tournent sous Node et parlent à la console : c'est leur
+    // interface. Ceux d'un espace de travail comptent autant que ceux de la racine.
+    files: ['scripts/**/*.mjs', '*/*/scripts/**/*.mjs'],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off' },
   },

@@ -25,6 +25,13 @@ const storageKey = process.env['SEKUU_STORAGE_API_KEY'];
 
 const app = buildApp({
   db,
+  // Séparées par des virgules. Vide : aucune origine navigateur n'est admise, ce qui est
+  // le bon défaut — une liste oubliée doit empêcher l'interface de fonctionner, pas
+  // ouvrir l'API à tout le monde.
+  allowedOrigins: (process.env['NEFTYA_ALLOWED_ORIGINS'] ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   ...(storageKey
     ? {
         storage: new SekuuStorage({
