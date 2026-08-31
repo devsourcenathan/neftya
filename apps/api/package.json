@@ -1,0 +1,17 @@
+{
+  "name": "@neftya/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "node --watch src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@neftya/contracts": "*",
+    "@neftya/engine": "*",
+    "fastify": "^5.2.0",
+    "zod": "^4.4.3"
+  }
+}

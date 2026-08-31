@@ -1,0 +1,76 @@
+name: CI
+
+# La CI existe avant la première fonctionnalité, délibérément. DealerOS a accumulé
+# 3 463 problèmes de lint et 620 erreurs d'analyse statique en vingt commits, parce que
+# rien ne les bloquait : le coût de remise à zéro croît chaque semaine, et la volonté de
+# le payer décroît.
+#
+# @see docs/ENGINEERING.md §9
+# @see docs/IMPLEMENTATION.md — phase 0
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Une nouvelle poussée annule la précédente sur la même branche.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Vérifications
+    runs-on: ubuntu-latest
+
+    services:
+      # PostgreSQL, jamais un substitut. La suite de DealerOS était verte sur SQLite en
+      # mémoire alors que la production tourne sur PostgreSQL : 88 tests qui ne
+      # prouvaient rien de la base cible.
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: neftya
+          POSTGRES_PASSWORD: neftya
+          POSTGRES_DB: neftya
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U neftya"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgres://neftya:neftya@localhost:5432/neftya
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer
+        run: npm ci
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      # Le test d'architecture et les tests unitaires ont besoin des types construits.
+      - name: Types
+        run: npm run typecheck
+
+      # Parité des locales, clés inconnues, t() avec valeur par défaut, texte en dur.
+      - name: Traductions
+        run: npm run check:i18n
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build

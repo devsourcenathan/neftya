@@ -1,0 +1,9 @@
+dist
+build
+coverage
+node_modules
+*.tsbuildinfo
+
+# La documentation est de la prose : l'alignement des tableaux par Prettier crée du bruit
+# dans chaque diff pour aucun gain de lisibilité, et rend l'édition à la main pénible.
+*.md

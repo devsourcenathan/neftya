@@ -1,0 +1,58 @@
+# Déploiement Render — blueprint versionné.
+#
+# Render est ce qu'utilise déjà Sekuu Platform ; Neftya étant en Node, aucune image
+# Docker n'est nécessaire, contrairement à la plateforme qui n'a pas de runtime PHP.
+#
+# Le premier déploiement se fait depuis le tableau de bord Render, en pointant ce
+# dépôt : « New > Blueprint ». Il n'est pas automatisable depuis ici, et ne doit pas
+# l'être — c'est un acte qui engage un compte et une facturation.
+#
+# @see Sekuu-Platform/docs/06-operations/04-render.md
+
+services:
+  - type: web
+    name: neftya-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start --workspace @neftya/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: PORT
+        value: '3000'
+      - key: SEKUU_PLATFORM_URL
+        value: https://platform.sekuu.com
+      - key: SEKUU_ISSUER
+        value: https://identity.sekuu.com
+      - key: SEKUU_AUDIENCE
+        value: sekuu-platform
+      - key: SEKUU_PRODUCT_SLUG
+        value: neftya
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neftya-postgres
+          property: connectionString
+
+  - type: web
+    name: neftya-web
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace @neftya/web
+    staticPublishPath: apps/web/dist
+    # Une application à page unique : toute route inconnue rend l'index, et c'est le
+    # routeur du navigateur qui décide.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+
+databases:
+  - name: neftya-postgres
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: '18'

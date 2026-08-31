@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "Neftya",
+    "tagline": "Plateforme de conception et de fabrication de meubles"
+  },
+  "phase": {
+    "title": "Socle en place",
+    "description": "Le dépôt se déploie, et les portes de qualité sont actives."
+  }
+}

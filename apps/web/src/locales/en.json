@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "Neftya",
+    "tagline": "Furniture design and manufacturing platform"
+  },
+  "phase": {
+    "title": "Foundations in place",
+    "description": "The repository deploys, and the quality gates are active."
+  }
+}

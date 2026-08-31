@@ -18,12 +18,12 @@ Chacune des sections ci-dessous existe pour empêcher l'un de ces cas précis.
 **Ne pas redéfinir ce que Sekuu Platform définit déjà.** En cas d'écart, c'est la plateforme
 qui fait autorité.
 
-| Sujet | Référence |
-|---|---|
+| Sujet                                      | Référence                                            |
+| ------------------------------------------ | ---------------------------------------------------- |
 | Conventions d'API, URLs, pagination, dates | `Sekuu-Platform/docs/02-standards/api-guidelines.md` |
-| Codes et enveloppe d'erreur | `Sekuu-Platform/docs/02-standards/error-codes.md` |
-| Jetons, isolation, rotation de clés | `Sekuu-Platform/docs/02-standards/security.md` |
-| Intégration produit | `.../identity/04-integrer-un-produit.md` |
+| Codes et enveloppe d'erreur                | `Sekuu-Platform/docs/02-standards/error-codes.md`    |
+| Jetons, isolation, rotation de clés        | `Sekuu-Platform/docs/02-standards/security.md`       |
+| Intégration produit                        | `.../identity/04-integrer-un-produit.md`             |
 
 Deux conséquences immédiates, que les documents Neftya ne portaient pas :
 
@@ -37,7 +37,11 @@ pas un précédent.
 ```json
 {
   "success": false,
-  "error": { "code": "VALIDATION_ERROR", "message": "…", "details": { "width_mm": ["…"] } },
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "…",
+    "details": { "width_mm": ["…"] }
+  },
   "meta": { "request_id": "req_8b94d7d0" }
 }
 ```
@@ -50,7 +54,7 @@ pas un précédent.
 
 ```ts
 // packages/engine
-export function build(input: FurnitureInput): Furniture
+export function build(input: FurnitureInput): Furniture;
 ```
 
 Une fonction, des données en entrée, des données en sortie. Le moteur ne fait **aucune**
@@ -88,14 +92,22 @@ pas un détail d'implémentation.
 ## 3. Frontières
 
 ```text
-apps/web      →  packages/contracts, packages/engine
-apps/api      →  packages/contracts, packages/engine
-packages/engine   →  rien
-packages/contracts →  rien
+apps/web            →  packages/contracts, packages/engine
+apps/api            →  packages/contracts, packages/engine
+packages/contracts  →  packages/engine
+packages/engine     →  zod, et rien d'autre
 ```
 
-Les flèches ne vont que dans un sens. `packages/engine` ignore jusqu'à l'existence d'une
-organisation, d'un utilisateur ou d'une requête HTTP.
+Les flèches ne vont que dans un sens, vers le moteur. `packages/engine` ignore jusqu'à
+l'existence d'une organisation, d'un utilisateur ou d'une requête HTTP.
+
+**Le moteur est la source des types du domaine**, et `contracts` s'appuie dessus pour y
+ajouter ce qui n'appartient qu'à l'API : l'enveloppe de réponse, les formes de requête.
+L'inverse — des types du domaine dans `contracts` et un moteur qui les importe — ferait
+vivre la connaissance métier hors du composant qui la met en œuvre.
+
+`zod` est la seule dépendance du moteur. C'est de la validation, pas une entrée-sortie, et
+la garder auprès du calcul empêche le schéma et la règle de dériver.
 
 **Vérifié par un test d'architecture**, pas par la discipline. La discipline a tenu
 trente-neuf fois sur quarante chez DealerOS, et la quarantième était une écriture
@@ -191,11 +203,11 @@ textuel.
 
 La forme de la pyramide est dictée par la nature du code, pas par une doctrine.
 
-| Niveau | Cible | Pourquoi |
-|---|---|---|
-| **Unitaire, massif** | `packages/engine` | Fonctions pures : rapides, exhaustives, sans infrastructure |
-| Intégration | `apps/api` | Persistance et cloisonnement, sur PostgreSQL réel |
-| Bout en bout | Parcours critiques | Peu nombreux, coûteux, réservés à ce qui casse silencieusement |
+| Niveau               | Cible              | Pourquoi                                                       |
+| -------------------- | ------------------ | -------------------------------------------------------------- |
+| **Unitaire, massif** | `packages/engine`  | Fonctions pures : rapides, exhaustives, sans infrastructure    |
+| Intégration          | `apps/api`         | Persistance et cloisonnement, sur PostgreSQL réel              |
+| Bout en bout         | Parcours critiques | Peu nombreux, coûteux, réservés à ce qui casse silencieusement |
 
 ### Les trois tests qui ne se négocient pas
 
@@ -231,14 +243,14 @@ linéairement, la volonté de la payer décroît.
 
 Portes obligatoires sur chaque pull request :
 
-| Contrôle | Outil |
-|---|---|
-| Format | Prettier |
-| Lint | ESLint, `no-explicit-any` en erreur |
-| Types | `tsc --noEmit` sur tout le monorepo |
-| Tests | Vitest, avec un service PostgreSQL réel |
-| Build | `vite build` |
-| Architecture | Test de frontières |
+| Contrôle     | Outil                                   |
+| ------------ | --------------------------------------- |
+| Format       | Prettier                                |
+| Lint         | ESLint, `no-explicit-any` en erreur     |
+| Types        | `tsc --noEmit` sur tout le monorepo     |
+| Tests        | Vitest, avec un service PostgreSQL réel |
+| Build        | `vite build`                            |
+| Architecture | Test de frontières                      |
 
 Un pipeline rouge ne se fusionne pas et ne se contourne pas.
 
@@ -274,8 +286,8 @@ métier déclaré une fois. C'est la règle qui évite les 94 doublons de Dealer
 
 **KISS — rester simple.** Trois décisions déjà prises en découlent : pas de bibliothèque de
 nesting, pas de bibliothèque de CAO, pas de microservice. Et la question à se poser devant
-toute abstraction : *est-ce que je résous un problème que j'ai, ou un problème que
-j'imagine ?* Le système « Extension » de DealerOS — un interrupteur qui n'éteignait rien,
+toute abstraction : _est-ce que je résous un problème que j'ai, ou un problème que
+j'imagine ?_ Le système « Extension » de DealerOS — un interrupteur qui n'éteignait rien,
 contrôlant deux fonctionnalités inexistantes — répond à la seconde.
 
 **SOLID.** Deux lettres comptent vraiment ici :

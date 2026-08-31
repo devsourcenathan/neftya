@@ -605,3 +605,42 @@ clés de locale bloqueraient cette évolution dès la V3.
 **Règle non négociable.** Aucun `t()` avec valeur par défaut. Le second argument est ce qui a
 masqué 76 % de clés manquantes chez DealerOS pendant des mois : une clé absente doit se voir.
 Le contrôle est en CI dès la phase 0.
+
+---
+
+## 2026-07-31 — Phase 0 : le moteur dépend de zod, `contracts` dépend du moteur
+
+**Décision.** Les frontières effectives sont :
+
+```text
+apps/*              →  packages/contracts, packages/engine
+packages/contracts  →  packages/engine
+packages/engine     →  zod, et rien d'autre
+```
+
+**Motif.** L'implémentation a révélé une incohérence des documents, qui affirmaient à la
+fois que `contracts` ne dépend de rien et que le schéma d'entrée du moteur y est défini.
+Les deux ne peuvent pas être vrais.
+
+Le moteur est la source des types du domaine ; `contracts` s'appuie dessus pour ajouter ce
+qui n'appartient qu'à l'API. L'inverse ferait vivre la connaissance métier hors du
+composant qui la met en œuvre.
+
+`zod` reste la seule dépendance du moteur : c'est de la validation, pas une entrée-sortie,
+et la garder auprès du calcul empêche le schéma et la règle de dériver. Un test
+d'architecture vérifie qu'aucune autre dépendance n'apparaît.
+
+---
+
+## 2026-07-31 — Les contrôles de la phase 0 sont vérifiés par l'échec
+
+**Décision.** Le test d'architecture et le contrôle i18n ont été validés en y introduisant
+volontairement des violations, avant d'être considérés comme faits.
+
+**Motif.** Un contrôle qui ne se trompe jamais peut simplement ne rien tester. Sur DealerOS,
+un test « couvrait » le passage brut de `model_type` sans rien contrôler, et un autre
+institutionnalisait la porte dérobée `id === 1` au lieu de la détecter.
+
+**Vérifié.** Le contrôle i18n détecte les quatre cas — dérive de parité, clé inconnue,
+`t()` avec valeur par défaut, texte en dur dans du JSX. Le test d'architecture détecte
+l'import interdit, la dépendance non autorisée et la lecture d'horloge dans le moteur.
