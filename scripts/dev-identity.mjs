@@ -20,7 +20,7 @@
  * @see docs/OPERATIONS.md §2
  */
 import { createServer } from 'node:http';
-import { SignJWT, exportJWK, generateKeyPair } from 'jose';
+import { SignJWT, calculateJwkThumbprint, exportJWK, generateKeyPair } from 'jose';
 
 const PORT = Number(process.env.DEV_IDENTITY_PORT ?? 4000);
 const ISSUER = `http://localhost:${PORT}`;
@@ -43,7 +43,18 @@ const USER = {
 };
 
 const { privateKey, publicKey } = await generateKeyPair('RS256', { extractable: true });
-const jwk = { ...(await exportJWK(publicKey)), kid: 'dev', alg: 'RS256', use: 'sig' };
+const publicJwk = await exportJWK(publicKey);
+
+/**
+ * L'identifiant de clé est l'empreinte de la clé, pas une constante.
+ *
+ * Chaque démarrage fabrique une nouvelle paire. Avec un `kid` fixe, l'API garderait en
+ * cache l'ancienne clé publique sous le même nom, ne verrait aucune raison de la relire, et
+ * refuserait tous les jetons jusqu'à ce qu'on la redémarre — en `401`, sans indice.
+ * Avec l'empreinte, le `kid` change, l'API relit le JWKS, et tout continue.
+ */
+const kid = await calculateJwkThumbprint(publicJwk);
+const jwk = { ...publicJwk, kid, alg: 'RS256', use: 'sig' };
 
 /**
  * `roles`, `products` et `limits` sont réglables par la ligne de commande : c'est ce qui
@@ -76,7 +87,7 @@ async function token({ withOrganization, roles, products, limits }) {
   if (withOrganization) payload.org = ORGANIZATION.id;
 
   return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'RS256', kid: 'dev' })
+    .setProtectedHeader({ alg: 'RS256', kid })
     .setSubject(USER.id)
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
@@ -147,6 +158,19 @@ const server = createServer(async (request, response) => {
   }
 
   send(404, { error: 'inconnu' });
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(
+      `Le port ${PORT} est occupé — l'Identity de démonstration tourne probablement déjà.`,
+    );
+    console.error(`Vérifier :  curl -s ${ISSUER}/token`);
+    console.error(`Ou changer de port :  DEV_IDENTITY_PORT=4001 npm run dev:identity`);
+    process.exit(1);
+  }
+
+  throw error;
 });
 
 server.listen(PORT, () => {
