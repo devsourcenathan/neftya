@@ -81,3 +81,19 @@ export {
   toImperial,
   type ImperialLength,
 } from './imperial.js';
+
+export {
+  exponentOf,
+  formatMoney,
+  multiply,
+  parseMoney,
+  sum,
+  type Money,
+} from './money.js';
+
+export {
+  PAPER_FORMATS,
+  paperSizeFor,
+  type PaperFormat,
+  type PaperSize,
+} from './paper.js';

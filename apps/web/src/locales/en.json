@@ -105,5 +105,45 @@
     "FRONT_GAP_OFF_DIVIDER": "A front gap does not sit on its divider.",
     "COMPARTMENT_TOO_NARROW": "A bay is too narrow for what it must hold.",
     "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it."
+  },
+  "manufacturing": {
+    "open": "Manufacturing pack",
+    "cutPlan": "Cut plan",
+    "panel": "{{material}} {{thickness}} mm — {{length}} × {{width}} — {{utilisation}} % used",
+    "panelLine": "{{count}} sheet of {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "unplaced": "No sheet can hold: {{parts}}. Make the unit smaller or pick another sheet size.",
+    "materials": "Materials list",
+    "edgeBanding": "Edge banding: {{metres}} m",
+    "assembly": "Assembly guide",
+    "step": "Step {{index}} of {{total}}",
+    "quotation": "Estimate",
+    "item": "Item",
+    "quantity": "Quantity",
+    "unitPrice": "Unit price",
+    "lineTotal": "Total",
+    "total": "Total: {{amount}}",
+    "incomplete": "{{count}} prices still to enter: no total is shown while any is missing.",
+    "downloadCsv": "Download CSV",
+    "freeze": "Freeze an export",
+    "freezing": "Exporting…",
+    "frozen": "Export frozen",
+    "dimensionsIn": "Dimensions shown in your unit system, for example {{example}}."
+  },
+  "accessory": {
+    "screw_4x50": "Screws 4 × 50",
+    "dowel_8": "Dowels 8 mm",
+    "shelf_support": "Shelf supports",
+    "drawer_slide_pair": "Drawer slide pairs",
+    "hinge": "Hinges",
+    "glue": "Wood glue"
+  },
+  "assembly": {
+    "carcass": "Join the bottom to the sides, sides inside, flush with the edges.",
+    "top": "Fit the top onto the sides, flush with the edges.",
+    "dividers": "Set the dividers plumb between bottom and top.",
+    "shelves": "Rest the shelves on their supports.",
+    "back": "Slide the back into its groove, then check the carcass is square.",
+    "drawers": "Build the drawer boxes: sides, front, back, then bottom.",
+    "drawer_faces": "Fit the faces onto the boxes, with an even gap between them."
   }
 }

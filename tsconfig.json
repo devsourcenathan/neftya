@@ -8,6 +8,9 @@
       "path": "./packages/units"
     },
     {
+      "path": "./packages/drawing"
+    },
+    {
       "path": "./packages/contracts"
     },
     {

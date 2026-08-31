@@ -20,14 +20,28 @@ const ALLOWED: Record<string, readonly string[]> = {
   // Les unités sont de l'affichage et de la saisie : elles connaissent le moteur, jamais
   // l'inverse. Un moteur qui manipulerait des pouces perdrait l'invariant de recomposition.
   '@neftya/units': ['@neftya/engine'],
-  '@neftya/api': ['@neftya/engine', '@neftya/contracts', '@neftya/units'],
-  '@neftya/web': ['@neftya/engine', '@neftya/contracts', '@neftya/units'],
+  // Les dessins connaissent le placement et les formats de papier, rien d'autre : ni
+  // requête, ni base, ni composant.
+  '@neftya/drawing': ['@neftya/engine', '@neftya/units'],
+  '@neftya/api': [
+    '@neftya/engine',
+    '@neftya/contracts',
+    '@neftya/units',
+    '@neftya/drawing',
+  ],
+  '@neftya/web': [
+    '@neftya/engine',
+    '@neftya/contracts',
+    '@neftya/units',
+    '@neftya/drawing',
+  ],
 };
 
 const WORKSPACES: Record<string, string> = {
   '@neftya/engine': 'packages/engine',
   '@neftya/contracts': 'packages/contracts',
   '@neftya/units': 'packages/units',
+  '@neftya/drawing': 'packages/drawing',
   '@neftya/api': 'apps/api',
   '@neftya/web': 'apps/web',
 };

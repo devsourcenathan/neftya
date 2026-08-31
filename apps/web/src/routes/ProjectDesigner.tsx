@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { ParsedFurnitureInput } from '@neftya/engine';
 import { ApiRequestError } from '../api/client.js';
@@ -52,6 +53,13 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
     <div className="flex h-full flex-col gap-3 p-4">
       <header className="flex items-baseline justify-between gap-4">
         <h1 className="text-lg font-semibold">{project.data.name}</h1>
+        <Link
+          to="/projects/$projectId/manufacturing"
+          params={{ projectId }}
+          className="text-sm text-emerald-700 underline"
+        >
+          {t('manufacturing.open')}
+        </Link>
         {save.isSuccess && !save.isPending && (
           <span className="text-sm text-emerald-700">{t('state.saved')}</span>
         )}

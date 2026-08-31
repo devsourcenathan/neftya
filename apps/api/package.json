@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@neftya/contracts": "*",
+    "@neftya/drawing": "^0.0.0",
     "@neftya/engine": "*",
+    "@neftya/units": "^0.0.0",
     "fastify": "^5.2.0",
     "jose": "^6.2.10",
     "kysely": "^0.29.5",

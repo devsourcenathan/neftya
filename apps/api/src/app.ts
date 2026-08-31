@@ -3,11 +3,14 @@ import { success, type ApiError } from '@neftya/contracts';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import { HttpError, sendError } from './http/errors.js';
+import { ManufacturingRepository } from './manufacturing/repository.js';
+import { registerManufacturingRoutes } from './manufacturing/routes.js';
 import { ProjectRepository } from './projects/repository.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { SettingsRepository } from './settings/repository.js';
 import { registerSettingsRoutes } from './settings/routes.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
+import type { SekuuStorage } from './sekuu/storage.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
 
 /**
@@ -20,6 +23,8 @@ import type { TokenVerifier } from './sekuu/token-verifier.js';
 export interface AppDependencies {
   db: Kysely<Database>;
   verifier: TokenVerifier;
+  /** Absent tant qu'aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
+  storage?: SekuuStorage;
 }
 
 export function buildApp(dependencies: AppDependencies): FastifyInstance {
@@ -33,8 +38,18 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
   app.register(async (authenticated) => {
     authenticated.addHook('preHandler', makeAuthenticator(dependencies.verifier));
 
-    registerProjectRoutes(authenticated, new ProjectRepository(dependencies.db));
-    registerSettingsRoutes(authenticated, new SettingsRepository(dependencies.db));
+    const projects = new ProjectRepository(dependencies.db);
+    const settings = new SettingsRepository(dependencies.db);
+    const manufacturing = new ManufacturingRepository(dependencies.db);
+
+    registerProjectRoutes(authenticated, projects);
+    registerSettingsRoutes(authenticated, settings);
+    registerManufacturingRoutes(authenticated, {
+      projects,
+      settings,
+      manufacturing,
+      ...(dependencies.storage ? { storage: dependencies.storage } : {}),
+    });
   });
 
   // Une erreur inattendue est capturée au bord de l'application, jamais laissée

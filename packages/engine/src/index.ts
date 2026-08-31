@@ -61,3 +61,30 @@ export {
 export { build, type Furniture, type Warning } from './build.js';
 
 export { cutList, totalEdgeBandingMm, type CutListRow } from './cut-list.js';
+
+export {
+  nest,
+  totalUsedAreaMm2,
+  type NestedPanel,
+  type NestingOptions,
+  type NestingResult,
+  type PanelFormat,
+  type Placement2D,
+} from './nesting.js';
+
+export {
+  billOfMaterials,
+  type AccessoryKey,
+  type AccessoryLine,
+  type BillOfMaterials,
+  type PanelLine,
+} from './bill-of-materials.js';
+
+export { costLines, type CostLine, type CostUnit } from './costing.js';
+
+export {
+  assemblySteps,
+  DEFAULT_ASSEMBLY,
+  type AssemblyStep,
+  type AssemblyStepTemplate,
+} from './assembly.js';

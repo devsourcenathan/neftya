@@ -125,7 +125,9 @@ export async function createHarness(schema: string): Promise<Harness> {
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings`.execute(db);
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports`.execute(
+        db,
+      );
     },
     close: async () => {
       await app.close();

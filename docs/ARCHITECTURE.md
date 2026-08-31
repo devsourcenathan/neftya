@@ -92,7 +92,8 @@ apps/
 packages/
   engine/             Neftya Engine — aucune dépendance framework
   contracts/          types partagés, dérivés du moteur
-  units/              affichage et saisie, métrique et impérial
+  units/              affichage et saisie, métrique et impérial, montants, papier
+  drawing/            plan de découpe en SVG et en PDF
 ```
 
 `units` est **hors du moteur**, et c'est structurel : le moteur calcule en millimètres

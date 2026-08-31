@@ -105,5 +105,45 @@
     "FRONT_GAP_OFF_DIVIDER": "Un jeu de façade ne tombe pas sur sa séparation.",
     "COMPARTMENT_TOO_NARROW": "Un compartiment est trop étroit pour ce qu'il doit recevoir.",
     "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui."
+  },
+  "manufacturing": {
+    "open": "Dossier de fabrication",
+    "cutPlan": "Plan de découpe",
+    "panel": "{{material}} {{thickness}} mm — {{length}} × {{width}} — {{utilisation}} % utilisés",
+    "panelLine": "{{count}} panneau de {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "unplaced": "Aucun panneau ne peut recevoir : {{parts}}. Réduisez le meuble ou changez de format.",
+    "materials": "Liste des matériaux",
+    "edgeBanding": "Chant : {{metres}} m",
+    "assembly": "Guide d'assemblage",
+    "step": "Étape {{index}} / {{total}}",
+    "quotation": "Estimation",
+    "item": "Article",
+    "quantity": "Quantité",
+    "unitPrice": "Prix unitaire",
+    "lineTotal": "Total",
+    "total": "Total : {{amount}}",
+    "incomplete": "{{count}} prix restent à saisir : aucun total n'est affiché tant qu'il en manque un.",
+    "downloadCsv": "Télécharger le CSV",
+    "freeze": "Figer un export",
+    "freezing": "Export en cours…",
+    "frozen": "Export figé",
+    "dimensionsIn": "Cotes affichées dans votre système d'unités, par exemple {{example}}."
+  },
+  "accessory": {
+    "screw_4x50": "Vis 4 × 50",
+    "dowel_8": "Tourillons 8 mm",
+    "shelf_support": "Taquets d'étagère",
+    "drawer_slide_pair": "Paires de coulisses",
+    "hinge": "Charnières",
+    "glue": "Colle à bois"
+  },
+  "assembly": {
+    "carcass": "Assemblez le dessous et les côtés, côtés à l'intérieur, alignés sur les bords.",
+    "top": "Posez le dessus sur les côtés, à fleur des bords.",
+    "dividers": "Mettez les séparations en place, d'aplomb, entre le dessous et le dessus.",
+    "shelves": "Posez les étagères sur leurs taquets.",
+    "back": "Glissez le fond dans sa rainure, puis vérifiez l'équerrage du caisson.",
+    "drawers": "Montez les caissons de tiroir : côtés, devant, arrière, puis fond.",
+    "drawer_faces": "Fixez les façades sur les caissons, jeu régulier entre elles."
   }
 }

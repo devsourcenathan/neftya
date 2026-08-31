@@ -52,7 +52,44 @@ export interface OrganizationSettingsTable {
   updated_at: UpdatedAt;
 }
 
+/**
+ * Les prix saisis, par organisation.
+ *
+ * `reference` est la clé stable du moteur (`panel:mdf:18`), jamais un libellé traduit.
+ *
+ * @see docs/MANUFACTURING.md §5
+ */
+export interface MaterialPricesTable {
+  organization_id: string;
+  reference: string;
+  /** Unités mineures. `bigint` côté base, lu en `string` par le pilote. */
+  amount_minor: string;
+  currency: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+/**
+ * Les exports — **la seule donnée dérivée stockée**, et par nature.
+ *
+ * Un plan parti à l'atelier ne doit pas changer parce que le projet a été modifié depuis.
+ * Tout le reste est recalculé ; celui-ci est figé.
+ */
+export interface ProjectExportsTable {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  created_by: string;
+  kind: 'pdf' | 'csv';
+  snapshot: unknown;
+  /** `null` quand Storage était indisponible : l'export reste consultable. */
+  storage_object_id: string | null;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
+  material_prices: MaterialPricesTable;
+  project_exports: ProjectExportsTable;
 }

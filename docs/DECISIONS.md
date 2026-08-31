@@ -824,3 +824,77 @@ identifiant ne donne aucun accès à lui seul.
 **Détail qui coûte cher.** Le rafraîchissement est sérialisé par une promesse unique : un
 jeton de rafraîchissement rejoué révoque la session entière — c'est la détection de vol de
 la plateforme, et deux requêtes au chargement suffiraient à la déclencher.
+
+---
+
+## 2026-08-31 — Le placement est par bandes, donc guillotine par construction
+
+**Décision.** L'optimiseur pose les pièces en bandes horizontales (*first-fit decreasing
+height*), trait de scie réservé, rotation autorisée.
+
+**Motif.** Les bandes **sont** les premières coupes traversantes, et les coupes verticales
+à l'intérieur d'une bande sont traversantes de la bande. Le résultat est donc réalisable
+sur une scie à panneaux par construction, et non parce qu'on l'a vérifié après coup. Un
+placement libre serait plus dense et infaisable à l'atelier.
+
+**Ce que cela coûte.** Ce n'est pas l'optimum — le *bin packing* 2D est NP-difficile, et
+Neftya cherche une bonne solution rapide. Sur le meuble de référence, cette heuristique
+donne exactement le plan documenté : 93,2 %.
+
+---
+
+## 2026-08-31 — Une pièce trop grande est signalée, jamais perdue
+
+**Décision.** `nest()` rend une liste `unplaced`. Une pièce qu'aucun format ne peut
+recevoir n'empêche pas les autres d'être placées.
+
+**Motif.** Un plan de découpe amputé d'une pièce a l'air complet. Le silence en ferait un
+plan faux que personne ne relit — et la pièce manquerait à l'atelier, pas à l'écran.
+
+**Trouvé par les configurations générées.** La première version rejetait le groupe entier
+dès qu'une pièce dépassait ; un meuble de 3000 mm de large perdait tout son 18 mm d'un coup.
+
+---
+
+## 2026-08-31 — Le PDF est écrit à la main
+
+**Décision.** `packages/drawing` porte un écrivain PDF de deux cents lignes : rectangles,
+traits, texte, quatorze polices standard, aucune dépendance.
+
+**Motif.** Un plan de découpe n'a besoin de rien d'autre, et l'export doit être
+**déterministe** — deux exports du même projet, le même fichier octet pour octet — sans
+quoi l'instantané figé ne prouve rien. Les bibliothèques du domaine embarquent la police,
+le SVG, les images et le chiffrement.
+
+**Limite assumée.** Le texte est encodé en WinAnsi : les accents français passent, un
+alphabet non latin non. Il faudrait alors embarquer une police — inutile pour les deux
+langues de la V1.
+
+---
+
+## 2026-08-31 — Un devis auquel il manque un prix n'a pas de total
+
+**Décision.** Une ligne sans prix saisi reste sans total, et le devis entier reste sans
+total général, avec la liste des références manquantes.
+
+**Motif.** Traiter un prix absent comme zéro produit un devis chiffré et faux. Personne ne
+relit un nombre qui s'affiche — c'est précisément ce qui rend le total partiel plus
+dangereux que l'absence de total.
+
+**Corollaire.** Neftya n'invente aucun tarif : le prix d'un panneau varie fortement selon
+la région et le fournisseur, et le moteur ne connaît que des quantités.
+
+---
+
+## 2026-08-31 — L'export est la seule donnée dérivée stockée
+
+**Décision.** `project_exports` conserve un instantané figé — modèle, pièces, placement,
+nomenclature, devis. Tout le reste est recalculé à chaque appel.
+
+**Motif.** Un plan parti à l'atelier ne doit pas changer parce que le projet a été modifié
+depuis. C'est l'exception qui confirme la règle du §6 d'ENGINEERING.md, et elle est
+nommée pour cela.
+
+**Détail.** L'instantané est enregistré même quand le dépôt chez Storage échoue : perdre
+un plan produit parce qu'on n'a pas su le ranger serait absurde. `storage_object_id` reste
+`null`, et cela se voit.

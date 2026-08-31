@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { createDatabase, migrate } from './db/index.js';
+import { SekuuStorage } from './sekuu/storage.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
 
 function required(name: string): string {
@@ -17,8 +18,21 @@ const host = process.env['HOST'] ?? '0.0.0.0';
 
 const db = createDatabase(required('DATABASE_URL'));
 
+// Sans clé d'API, les exports restent produits et enregistrés ; ils ne sont simplement
+// pas déposés chez Storage. Refuser de démarrer pour cela empêcherait de travailler en
+// local, où personne n'a de clé.
+const storageKey = process.env['SEKUU_STORAGE_API_KEY'];
+
 const app = buildApp({
   db,
+  ...(storageKey
+    ? {
+        storage: new SekuuStorage({
+          baseUrl: process.env['SEKUU_STORAGE_URL'] ?? 'https://storage.sekuu.com',
+          apiKey: storageKey,
+        }),
+      }
+    : {}),
   verifier: new TokenVerifier({
     jwksUrl: required('SEKUU_JWKS_URL'),
     issuer: required('SEKUU_ISSUER'),

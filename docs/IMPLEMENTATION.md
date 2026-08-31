@@ -210,6 +210,29 @@ sortie reste ouverte.
 c'est là que vivent les plans faux. Poser tôt un test qui vérifie l'absence de chevauchement
 et le respect du trait de scie sur des configurations générées.
 
+**État : livrée le 31 août 2026.** 203 tests verts.
+
+Le meuble de référence produit **exactement** le plan du §2 de
+[MANUFACTURING.md](MANUFACTURING.md) : un panneau de 18 mm, un de 8 mm, 2 773 620 mm² de
+pièces sur 2 976 800 mm², **93,2 %**, et les pièces aux positions dessinées — P01 en
+(0, 0), P03 en (1803, 0), la bande des étagères à y = 806. Le placement est vérifié sur
+400 configurations générées : rien ne sort du panneau, rien ne se chevauche, et deux
+pièces voisines sont toujours séparées d'au moins un trait de scie.
+
+Le risque annoncé s'est vérifié dans l'autre sens : le placement a marché du premier coup,
+mais **retirer le trait de scie d'une seule des deux directions** fait tomber trois tests —
+c'est ce qui prouve qu'ils mesurent quelque chose.
+
+Le PDF est écrit sans bibliothèque : un plan de découpe n'a besoin que de rectangles, de
+traits et de texte, et il doit rester **déterministe** pour que l'instantané figé ait un
+sens. Deux exports du même projet donnent le même fichier, octet pour octet.
+
+**Ce qui n'est pas vérifié : le dépôt réel chez Storage.** Il demande une clé d'API
+`storage.write.delegated` émise par la plateforme, que personne n'a ici. Le client est
+écrit contre le contrat documenté et testé avec un `fetch` injecté — les trois appels dans
+l'ordre, la confirmation qui n'a pas lieu quand le dépôt échoue. Sans clé, l'export est
+produit et enregistré quand même, `storage_object_id` à `null`.
+
 ---
 
 ## Phase 5 — Cotation 2D · ~2 à 3 semaines

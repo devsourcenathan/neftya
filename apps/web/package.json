@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@neftya/contracts": "*",
+    "@neftya/drawing": "^0.0.0",
     "@neftya/engine": "*",
     "@neftya/units": "^0.0.0",
     "@radix-ui/react-label": "^2.1.15",
