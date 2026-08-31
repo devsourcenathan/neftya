@@ -1,28 +1,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import type { FastifyInstance } from 'fastify';
-import { buildApp } from './app.js';
+import { createHarness, type Harness } from './test-support/harness.js';
 
-let app: FastifyInstance;
+let harness: Harness;
 
 beforeAll(async () => {
-  app = buildApp();
-  await app.ready();
+  harness = await createHarness('test_app');
 });
 
 afterAll(async () => {
-  await app.close();
+  await harness.close();
 });
 
 describe('API', () => {
-  it('répond sur /health', async () => {
-    const response = await app.inject({ method: 'GET', url: '/health' });
+  it('répond sur /health sans authentification', async () => {
+    // La sonde de vie précède l'authentification : un orchestrateur n'a pas de jeton.
+    const response = await harness.app.inject({ method: 'GET', url: '/health' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ success: true, data: { status: 'ok' } });
   });
 
   it('rend l’enveloppe de la plateforme sur une route inconnue', async () => {
-    const response = await app.inject({ method: 'GET', url: '/nexiste-pas' });
+    const response = await harness.app.inject({ method: 'GET', url: '/nexiste-pas' });
 
     expect(response.statusCode).toBe(404);
 

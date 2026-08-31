@@ -123,6 +123,15 @@ coup signifie réécrire chaque requête.
 d'organisation tant que `switch-organization` n'a pas été appelé. Le connaître d'avance
 économise une heure de débogage.
 
+**État : livrée le 31 août 2026.** 78 tests verts, dont 34 sur l'API contre un PostgreSQL
+réel. Le test d'isolation A/B couvre `GET`, `POST`, `PATCH`, `DELETE` et la sous-ressource
+`/build`, et a été vérifié en retirant les gardes : six échecs, aucun silencieux.
+
+Trois cases de [SEKUU.md](SEKUU.md) §10 restent ouvertes — enchaînement de
+`switch-organization`, rafraîchissement sérialisé, clés d'API — parce qu'elles portent sur
+le **client** de la plateforme, qui n'existe pas avant la phase 3. Rien ne pouvait les
+fermer ici.
+
 ---
 
 ## Phase 3 — Interface, 3D, unités et langues · ~4 semaines

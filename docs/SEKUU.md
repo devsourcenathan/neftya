@@ -267,18 +267,28 @@ d'un abonnement lui est fermé dans les deux sens.
 
 Reprise du guide de la plateforme, adaptée à Neftya.
 
-- [ ] JWKS récupéré et mis en cache, relecture immédiate sur `kid` inconnu
-- [ ] `iss`, `aud`, `exp` vérifiés — pas seulement la signature
-- [ ] Absence de `org` → refus
-- [ ] `products` contient `neftya` → sinon `403`
-- [ ] Toutes les tables portent `organization_id`, lu du jeton
-- [ ] Test d'isolation A/B écrit, sur les quatre verbes
-- [ ] Correspondance rôles → droits, explicite et propre à Neftya
-- [ ] `switch-organization` enchaîné après `login`
-- [ ] Rafraîchissement sérialisé, un seul à la fois
-- [ ] Clés d'API à scopes minimaux, avec `subject_types` et `ai_tasks`
-- [ ] Quotas : les trois états distingués
-- [ ] **Aucune table `users`**
+Chaque case cochée renvoie à un test qui échoue si on retire la garde — une case cochée sans
+cela ne prouve rien.
+
+- [x] JWKS récupéré et mis en cache, relecture immédiate sur `kid` inconnu — `token-verifier.ts`
+- [x] `iss`, `aud`, `exp` vérifiés — pas seulement la signature — `access.test.ts`, un test par contrôle
+- [x] Absence de `org` → refus — `access.test.ts`
+- [x] `products` contient `neftya` → sinon `403` — `authenticate.ts`
+- [x] Toutes les tables portent `organization_id`, lu du jeton — `0001_initial.sql`
+- [x] Test d'isolation A/B écrit, sur les quatre verbes — `isolation.test.ts`
+- [x] Correspondance rôles → droits, explicite et propre à Neftya — `permission-resolver.ts`
+- [x] Quotas : les trois états distingués — `quota.ts`, un test par état
+- [x] **Aucune table `users`** — `db/schema.ts` n'en déclare pas
+
+Trois points portent sur le **client** de la plateforme, pas sur l'API, et se traitent là où
+la session vit — en phase 3 pour les deux premiers, en phase 5 pour le troisième :
+
+- [ ] `switch-organization` enchaîné après `login` — phase 3
+- [ ] Rafraîchissement sérialisé, un seul à la fois — phase 3
+- [ ] Clés d'API à scopes minimaux, avec `subject_types` et `ai_tasks` — phase 5, avec AI
+
+Côté API, l'absence d'organisation dans le jeton est déjà un refus explicite dont le message
+nomme `switch-organization` : le client ne peut pas se tromper longtemps.
 
 ---
 

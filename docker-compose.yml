@@ -6,9 +6,14 @@ services:
       POSTGRES_PASSWORD: neftya
       POSTGRES_DB: neftya
     ports:
-      - '5432:5432'
+      # 5442 côté hôte : le port 5432 est souvent déjà pris par un PostgreSQL installé
+      # sur la machine, et l'erreur qui en résulte — un échec d'authentification —
+      # désigne la mauvaise cause. La CI, elle, n'a rien qui écoute et garde 5432.
+      - '5442:5432'
     volumes:
-      - neftya-postgres:/var/lib/postgresql/data
+      # PostgreSQL 18 attend le montage sur /var/lib/postgresql et non sur son
+      # sous-répertoire data, pour rendre `pg_upgrade --link` possible plus tard.
+      - neftya-postgres:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U neftya']
       interval: 10s

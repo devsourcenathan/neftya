@@ -698,3 +698,59 @@ son plan.
 **Corollaire.** Les cotes de découpe sont normalisées, plus grande dimension d'abord. Une
 façade de 598 × 600 se découpe en 600 × 598 ; son orientation réelle reste dans son
 instance.
+
+---
+
+## 2026-08-31 — Le cloisonnement vit dans le dépôt, pas dans les routes
+
+**Décision.** Chaque méthode de `ProjectRepository` prend `organizationId` en premier
+paramètre et l'applique elle-même. Une route ne peut pas lire un projet sans dire pour
+quelle organisation, et `organizationId` ne s'obtient que par `sekuuOf(request)`, donc du
+jeton.
+
+**Motif.** DealerOS répétait la garde de cloisonnement dans ses contrôleurs, une quarantaine
+de fois. Il en manquait une, et c'était la faille. Une garde qu'il faut penser à écrire est
+une garde qu'on finit par oublier une fois.
+
+**Vérifié en le cassant.** Retirer le filtre de `find`, `update` et `softDelete` fait échouer
+cinq tests d'isolation ; le retirer de `list` en fait échouer un autre. Une garde dont la
+suppression ne casse rien ne prouve rien.
+
+---
+
+## 2026-08-31 — Un identifiant mal formé répond 404, comme un identifiant inconnu
+
+**Décision.** `/v1/projects/pas-un-uuid` et `/v1/projects/<uuid inexistant>` rendent tous
+deux `404`. Un projet d'une autre organisation aussi.
+
+**Motif.** Le `404` sur ressource d'autrui existe pour qu'on ne puisse pas savoir ce qui
+existe. Répondre `422` sur un identifiant mal formé rouvre le même oracle par la porte
+d'à côté : qui essaie des identifiants apprend au moins lesquels sont bien formés, puis
+lesquels existent.
+
+---
+
+## 2026-08-31 — Les migrations sont du SQL, appliquées par nom de fichier
+
+**Décision.** `apps/api/src/db/migrations/*.sql`, jouées dans l'ordre alphabétique, chacune
+dans une transaction, enregistrées dans `schema_migrations`.
+
+**Motif.** Lire le dépôt doit suffire à savoir ce que contient la base. Une migration
+générée par différence entre un schéma déclaré et l'état courant fait dépendre le DDL d'un
+outil, et rend illisible ce qui a réellement été appliqué.
+
+**Corollaire.** Le schéma Kysely (`db/schema.ts`) est un miroir typé du DDL, pas sa source.
+Les deux divergeant, c'est le SQL qui a raison — et la CI, qui tourne sur une base vierge,
+le remarque.
+
+---
+
+## 2026-08-31 — PostgreSQL de développement sur le port 5442
+
+**Décision.** `docker-compose.yml` expose la base sur `5442` côté hôte ; la CI, qui n'a rien
+qui écoute, garde `5432`.
+
+**Motif.** Un PostgreSQL installé sur la machine occupait déjà `5432`, et `5433` était pris
+par un autre projet. L'erreur qui en résulte — « échec d'authentification pour l'utilisateur
+neftya » — désigne la mauvaise cause : on cherche un mot de passe alors qu'on parle au
+mauvais serveur. Le port par défaut du banc d'essai suit `docker compose`, pas la CI.

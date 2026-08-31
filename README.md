@@ -78,6 +78,10 @@ npm run dev --workspace @neftya/api
 npm run verify
 ```
 
+Les tests d'API tournent contre un **PostgreSQL réel**, chacun dans son propre schéma, et
+signent leurs propres jetons Sekuu : `docker compose up -d` suffit, aucun compte de
+plateforme n'est requis.
+
 Enchaîne format, lint, types, traductions, tests et build — exactement ce que la CI
 exécute. Un `any`, une frontière franchie, un texte en dur ou une clé de traduction
 manquante font échouer la commande.
