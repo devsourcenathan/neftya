@@ -306,3 +306,116 @@ clairement séparée.
 **Motif.** Ce n'est pas une évolution du produit mais un autre métier : autre modèle
 économique, et un amorçage qui exige l'offre et la demande simultanément. La numéroter
 « V4 » laissait croire à une suite naturelle et aplatissait ce risque.
+
+---
+
+## 2026-07-31 — Neftya est un produit, pas un module de la plateforme
+
+**Décision.** Neftya vit dans son propre dépôt, avec sa propre base, et consomme Sekuu
+Platform par ses API. Il n'est pas un module de `Sekuu-Platform/Modules/`.
+
+**Motif.** L'architecture de la plateforme le dit déjà : « la plateforme est mono-base,
+l'écosystème est multi-base ; un produit n'accède jamais à la base de la plateforme —
+uniquement à leurs API » (`architecture.md` §10.1). `Modules/` ne contient que des services
+génériques ; un module « meubles » y serait le premier à porter des données métier.
+
+Trois raisons propres à Neftya s'y ajoutent. Le **profil de charge** — nesting, cotation,
+rendu 3D — n'a rien de commun avec de l'authentification, et ADR-0001 acte qu'un monolithe
+modulaire monte en charge globalement. Le **rythme de livraison** : « un déploiement affecte
+tous les modules ». Et l'**isolation du moteur**, qui doit rester testable seul dans
+`packages/engine` ; enfoui dans un module Laravel, il ne l'est plus.
+
+**Conséquence.** Neftya suit le modèle « produit maison » documenté par
+`identity/04-integrer-un-produit.md`, dont DealerOS est l'implémentation de référence.
+
+---
+
+## 2026-07-31 — Aucune table `users` dans Neftya
+
+**Décision.** L'identité, les organisations, les membres et les rôles vivent sur la
+plateforme. Neftya lit le jeton et ne stocke aucun utilisateur.
+
+**Motif.** C'est la première règle du guide d'intégration. Une copie diverge : un email
+changé chez Sekuu ne l'est plus chez Neftya, et le jour d'une demande d'effacement personne
+ne sait que la donnée existe.
+
+**Conséquence.** `organization_id` vient du jeton, jamais de la requête. Si des préférences
+propres au produit deviennent nécessaires, une table porte le `sub` comme clé étrangère
+logique et rien d'autre de l'utilisateur.
+
+---
+
+## 2026-07-31 — Correction : les rôles inventés dans SEKUU.md
+
+**Décision.** Les rôles `designer`, `carpenter` et `viewer` sont retirés. Sekuu n'en connaît
+que quatre : `owner`, `admin`, `billing_manager`, `member`. Neftya établit sa propre
+correspondance rôle → droit.
+
+**Motif.** La première version de `SEKUU.md` a été écrite avant lecture de la plateforme et
+inventait des rôles qui n'existent pas. Le besoin métier reste valable — un menuisier
+salarié doit voir le plan de découpe sans voir les marges — mais il se traduit par une
+constante chez Neftya, pas par un rôle de plateforme.
+
+**Corollaire.** Les `scopes` de Sekuu (`organization.manage`, `users.invite`…) ne sont
+jamais réutilisés pour les droits de Neftya : le jour où la plateforme en ajoute un,
+l'autorisation de Neftya changerait sans que personne ne l'ait décidé.
+
+---
+
+## 2026-07-31 — Les plans appartiennent à Billing
+
+**Décision.** Free, Pro et Professional sont un catalogue de plans côté plateforme. Neftya
+ne lit que `products` (a-t-il droit à Neftya ?) et `limits` (quels plafonds ?).
+
+**Motif.** Neftya ne facture pas et ne doit connaître ni plan, ni facture, ni échéance. La
+première version du brief décrivait les paliers comme s'il les portait.
+
+**Conséquence.** Le multi-utilisateur de Professional n'est pas une fonctionnalité de
+Neftya : c'est la clé `members` qui passe de 1 à illimité côté plateforme.
+
+---
+
+## 2026-07-31 — Quotas exprimés en clés `limits` préfixées
+
+**Décision.** `neftya_projects_max` et `neftya_ai_analyses_max`. Jamais `projects_max`.
+`members` n'est pas redéclaré.
+
+**Motif.** « Projet » ne veut pas dire la même chose d'un produit à l'autre, et une clé
+partagée plafonnerait deux ressources différentes avec le même nombre. La plateforme nomme
+déjà les utilisateurs d'une organisation.
+
+**Règle des trois états.** Clé absente signifie « ce plan ne couvre pas cette ressource »,
+et non « zéro autorisé » ; `null` signifie illimité. Confondre les deux premiers bloquerait,
+le jour de l'ajout d'une clé au catalogue, tous les clients existants.
+
+**Latence.** Les limites sont figées sur l'abonnement à l'ouverture de chaque période
+(ADR-0019) : une hausse s'applique tout de suite, une baisse au renouvellement.
+
+---
+
+## 2026-07-31 — Connexion par le portail de la plateforme
+
+**Décision.** Neftya redirige vers `/login`, `/register`, `/organizations/new` et
+`/subscribe?product=neftya` de la plateforme. Il n'héberge pas d'écran de connexion.
+
+**Motif.** Un produit qui affiche un champ de mot de passe voit passer un mot de passe.
+C'est techniquement acceptable entre produits du même éditeur, mais inutile : le portail
+rend la main avec la session déjà posée.
+
+**Conséquence.** L'origine de Neftya doit figurer dans `SEKUU_ALLOWED_ORIGINS`. Et comme il
+n'existe pas encore de flux délégué « Se connecter avec Sekuu », l'appel de connexion reste
+isolé dans un seul module du code, pour basculer sans douleur le jour où il existera.
+
+---
+
+## 2026-07-31 — L'intégration tient dans un seul répertoire
+
+**Décision.** Tout ce qui parle à la plateforme vit dans `Sekuu/` : `TokenVerifier`,
+`SekuuContext`, `CurrentTenant`, `PermissionResolver`, `FileStore`, `Notifier`, `Composer`.
+
+**Motif.** Le jour où la plateforme renomme un claim, ajoute un scope ou ouvre un flux
+délégué, un seul dossier change. C'est la structure de DealerOS, à copier plutôt qu'à
+réinventer.
+
+**Corollaire.** Le moteur ne connaît pas Sekuu du tout — il ignore jusqu'à la notion
+d'organisation. Il reçoit des paramètres et rend des cotes.

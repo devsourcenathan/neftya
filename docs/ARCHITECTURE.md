@@ -53,7 +53,31 @@ Règles :
    n'a aucun privilège particulier.
 4. **Visualization est en lecture seule** sur le modèle.
 5. Les capacités transverses — authentification, organisations, facturation, stockage,
-   IA, notifications — viennent de [SEKUU Core](SEKUU.md) et ne sont pas reconstruites.
+   IA, notifications — viennent de [Sekuu Platform](SEKUU.md) et ne sont pas reconstruites.
+6. **Neftya est un produit, pas un module de la plateforme.** Il a sa propre base et
+   n'accède à Sekuu que par ses API. Un seul répertoire porte cette frontière — voir
+   ci-dessous.
+
+## Frontière avec Sekuu
+
+```text
+apps/web/
+  Sekuu/              tout ce qui parle à la plateforme, et rien d'autre
+    TokenVerifier     vérification JWKS hors ligne
+    SekuuContext      les claims décodés
+    CurrentTenant     remplace auth()->user() comme source de tenancy
+    PermissionResolver  rôles Sekuu -> droits Neftya
+    FileStore         Storage
+    Notifier          Notify
+    Composer          AI
+```
+
+Concentrer l'intégration dans un seul répertoire a une raison précise : le jour où la
+plateforme renomme un claim, ajoute un scope ou ouvre un flux délégué « Se connecter avec
+Sekuu », **un seul dossier change**. C'est la structure retenue par DealerOS, à copier.
+
+Le moteur, lui, ne connaît pas Sekuu du tout : il ne sait même pas ce qu'est une
+organisation. Il reçoit des paramètres et rend des cotes.
 
 ## Découpage technique
 

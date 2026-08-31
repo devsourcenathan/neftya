@@ -14,7 +14,8 @@ de découpe, matériaux, instructions d'assemblage et estimation de coût.
 |---|---|
 | **Cible primaire (V1)** | Menuisiers et artisans |
 | **Cœur technique** | Neftya Engine — moteur paramétrique |
-| **Socle transverse** | SEKUU Core (auth, organisations, facturation, stockage, IA) |
+| **Socle transverse** | Sekuu Platform (identité, organisations, facturation, stockage, IA, notifications) |
+| **Intégration** | Produit à part entière, consommant les API de la plateforme — comme DealerOS |
 | **État** | Spécification. Aucun code à ce jour. |
 
 La valeur du produit ne repose ni sur l'IA ni sur la 3D, mais sur un moteur paramétrique
@@ -33,8 +34,8 @@ la 3D est une vue dérivée.
 | [MANUFACTURING.md](docs/MANUFACTURING.md) | Liste de pièces, plan de découpe, matériaux, assemblage, coûts |
 | [AI.md](docs/AI.md) | Rôle et cas d'usage de l'intelligence artificielle |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Découpage en domaines |
-| [SEKUU.md](docs/SEKUU.md) | Intégration avec SEKUU Core |
-| [ROADMAP.md](docs/ROADMAP.md) | MVP, V2 à V4, vision long terme |
+| [SEKUU.md](docs/SEKUU.md) | Intégration avec Sekuu Platform |
+| [ROADMAP.md](docs/ROADMAP.md) | MVP, V2, V3, et pistes long terme |
 | [DECISIONS.md](docs/DECISIONS.md) | Journal des décisions structurantes, datées et motivées |
 
 **Commencez par [NEFTYA_ENGINE.md](docs/NEFTYA_ENGINE.md)** si vous venez pour la technique :

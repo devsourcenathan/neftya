@@ -104,11 +104,17 @@ Petites et moyennes entreprises de fabrication de meubles.
 plans, préparer les découpes, suivre la fabrication, partager les documents techniques.
 
 Ces besoins reposent largement sur les organisations et les rôles fournis par
-[SEKUU Core](SEKUU.md).
+[Sekuu Platform](SEKUU.md).
 
 ---
 
 ## 5. Modèle économique
+
+> **Les plans appartiennent à Sekuu Billing, pas à Neftya.** Ce qui suit décrit
+> l'intention commerciale ; sa mise en œuvre est un catalogue de plans côté plateforme.
+> Neftya n'en lit que deux choses : le claim `products` (a-t-il droit à Neftya ?) et le
+> claim `limits` (quels plafonds ?). Il ne connaît ni plan, ni facture, ni échéance.
+> Voir [SEKUU.md](SEKUU.md) §5.
 
 Modèle **freemium** à trois paliers.
 
@@ -144,3 +150,20 @@ Modèle **freemium** à trois paliers.
 Le devis et l'export technique sont dans Pro, et non réservés à Professional : la cible
 primaire est l'artisan seul, et lui refuser le devis reviendrait à lui refuser la raison
 même d'utiliser Neftya. Professional ne vend que ce qui n'a de sens qu'à plusieurs.
+
+### Traduction en quotas de plateforme
+
+Ce que chaque palier accorde devient des clés `limits`, **préfixées par le produit** :
+
+| Clé | Free | Pro | Professional |
+|---|---|---|---|
+| `neftya_projects_max` | 3 | `null` | `null` |
+| `neftya_ai_analyses_max` | 5 | 50 | 200 |
+| `members` | 1 | 1 | `null` |
+
+`null` vaut illimité. `members` est une clé de la plateforme, pas de Neftya : les
+utilisateurs d'une organisation sont déjà nommés par Sekuu, et en redéclarer une seconde
+finirait par en dire une autre.
+
+Le multi-utilisateur de Professional n'est donc pas une fonctionnalité de Neftya : c'est
+`members` qui passe de 1 à illimité côté plateforme.

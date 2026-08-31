@@ -39,9 +39,17 @@ manuel. Son objectif unique est de prouver que le moteur produit des cotes juste
 
 - Instantané figé à chaque export
 
-### SEKUU
+### Intégration Sekuu
 
-- Authentication, Users, Storage, Billing
+- Vérification hors ligne du jeton (JWKS), `products` contient `neftya`
+- `organization_id` lu du jeton, test d'isolation A/B sur les quatre verbes
+- Correspondance rôles Sekuu → droits Neftya
+- Redirection vers le portail pour la connexion et l'abonnement
+- Quota `neftya_projects_max` appliqué
+- Storage pour les exports et les images
+- **Aucune table `users`**
+
+Voir [SEKUU.md](SEKUU.md) §10 pour la liste de contrôle complète.
 
 ### Critère de sortie
 
@@ -64,7 +72,9 @@ V2 ne doit être engagée.
 - Image → analyse et structure
 - Texte → configuration
 - Assistant conversationnel
-- Quotas IA par palier
+- Quotas IA par palier, via le claim `limits`
+- Notify : envoi du devis au client
+- AI : clé d'API à tâches en liste blanche
 - **Positions de perçage** et catalogue de quincaillerie (coulisses, charnières, tourillons)
 - **Portes**, recouvrement total
 - Optimisation avancée des panneaux, avec contrainte de sens du fil

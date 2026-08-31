@@ -7,8 +7,10 @@ Elle propose, elle ne décide pas. Toute sortie de l'IA passe par le modèle par
 proposition de l'IA qui violerait les règles du moteur est corrigée par le moteur, pas
 l'inverse.
 
-L'accès aux modèles est fourni par [SEKUU Core](SEKUU.md) ; Neftya consomme le service et
-ne gère ni clés, ni quotas, ni facturation.
+L'accès aux modèles est fourni par le module AI de [Sekuu Platform](SEKUU.md) : Neftya
+appelle une **tâche**, jamais un modèle, avec une clé d'API portant les scopes `ai.run` et
+`ai.read` et une liste blanche de tâches (`ai_tasks`). Il ne gère ni fournisseur, ni clé de
+modèle, ni facturation.
 
 ---
 
@@ -66,20 +68,28 @@ validation technique qui alerte — pas l'IA qui décide seule d'ajouter un sép
 
 ## 4. Crédits et quotas
 
-Chaque action IA consomme des crédits, comptabilisés par [SEKUU Core](SEKUU.md) : analyse
+Chaque action IA consomme des crédits, comptabilisés par [Sekuu Platform](SEKUU.md) : analyse
 d'image, génération de concept, assistant conversationnel, génération de variantes.
 
-**Quota mensuel par palier**, porté et appliqué par SEKUU Core :
+**Le quota voyage dans le jeton**, sous la clé `neftya_ai_analyses_max` du claim `limits`.
+Billing publie la limite ; **Neftya compte ses analyses** — la plateforme ne saura jamais
+mieux que lui ce qu'est une analyse d'image de meuble.
 
-| Palier | Analyses d'image / mois |
+| Palier | `neftya_ai_analyses_max` |
 |---|---|
 | Free | 5 |
 | Pro | 50 |
 | Professional | 200 |
 
-Valeurs à confirmer une fois le coût réel d'une analyse mesuré. Le principe, lui, est acté :
-sans plafond, une analyse d'image plus quelques échanges d'assistant peuvent dépasser la
-marge d'un abonnement.
+Valeurs à confirmer une fois le coût réel mesuré. Le principe est acté : sans plafond, une
+analyse d'image et quelques échanges d'assistant peuvent dépasser la marge d'un abonnement.
+
+**Les trois états valent ici aussi** (voir [SEKUU.md](SEKUU.md) §5) : clé absente signifie
+« ce plan ne vend pas d'analyse d'image », pas « zéro autorisée ». Refuser dans ce cas
+bloquerait tout client dont l'abonnement précède l'ajout de la clé au catalogue.
+
+Les crédits consommés côté fournisseur restent comptabilisés par le module AI de la
+plateforme ; ce quota-ci est celui que Neftya applique lui-même, avant d'appeler.
 
 ### Dégradation propre
 

@@ -106,9 +106,16 @@ Un projet reste modifiable indéfiniment. L'utilisateur peut revenir sur les dim
 matériaux, les composants ou le style : **toutes les données dérivées sont recalculées**,
 puisqu'aucune vue n'est modifiable directement.
 
-Les projets appartiennent à une organisation, et les droits d'accès sont ceux fournis par
-[SEKUU Core](SEKUU.md). Un particulier travaille dans une organisation personnelle ; un
-atelier partage la sienne entre plusieurs collaborateurs.
+Les projets appartiennent à une **organisation**, jamais à un utilisateur : un particulier
+travaille dans une organisation personnelle, un atelier partage la sienne.
+
+`organization_id` vient du jeton Sekuu, jamais de la requête ([SEKUU.md](SEKUU.md) §4).
+**Neftya n'a pas de table `users`** — l'identité, les membres et les rôles vivent sur la
+plateforme, et un jeton de l'organisation A obtient `404` sur un projet de B.
+
+L'inscription, la création d'organisation et le choix du plan se font sur le portail de la
+plateforme, pas dans Neftya : ces écrans sont identiques pour tous les produits, et un
+produit qui affiche un champ de mot de passe voit passer un mot de passe.
 
 ### Instantanés d'export
 
