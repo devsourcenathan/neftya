@@ -973,3 +973,82 @@ s'arrêter au premier : on voit d'un coup si c'est un cas isolé ou une classe e
 > **Un test instable finit ignoré**, puis désactivé, puis supprimé. Le rendre rapide était
 > moins cher que d'allonger le délai, et allonger le délai n'aurait fait que reculer
 > l'échéance.
+
+---
+
+## 2026-08-31 — Les journaux ont une liste de champs fermée
+
+**Décision.** Le journal de requête écrit onze champs, et un test vérifie cette liste
+**par égalité**, pas par inclusion.
+
+**Motif.** Les journaux sont exactement l'endroit où une donnée personnelle réapparaît sans
+que personne ne l'ait décidé — et où elle reste des années. Un test par inclusion laisse
+passer l'ajout ; un test par égalité oblige à décider.
+
+**Ce qui n'y entre jamais** : le jeton, l'en-tête d'autorisation, le corps des requêtes.
+Le `sub` de la plateforme y est, sous `user_id` : c'est un pseudonyme, et sans lui aucune
+enquête n'aboutit.
+
+---
+
+## 2026-08-31 — Deux sondes, parce que deux décisions
+
+**Décision.** `/health` ne consulte rien ; `/ready` interroge la base et rend `503` quand
+elle ne répond plus.
+
+**Motif.** Une sonde de vie qui dépend de la base fait redémarrer en boucle une application
+qui va parfaitement bien, et un redémarrage n'a jamais réparé une base. Les deux questions
+servent deux décisions opposées : redémarrer le processus, ou cesser de lui envoyer du
+trafic.
+
+---
+
+## 2026-08-31 — Le test de sauvegarde échoue quand pg_dump manque
+
+**Décision.** `apps/api/src/db/backup.test.ts` ne s'ignore pas quand les outils PostgreSQL
+sont absents : il échoue. La CI installe le client 18.
+
+**Motif.** Un test de sauvegarde qui se saute tout seul est un test qui n'a jamais tourné,
+et personne ne s'en aperçoit avant l'incident. C'est le même défaut que les 88 tests de
+DealerOS qui passaient sur SQLite alors que la production tourne sur PostgreSQL.
+
+**Vérifié en le cassant.** Une restauration qui ne fait rien casse trois tests ; une
+sauvegarde `--schema-only` — qui « réussit » et produit un fichier — en casse deux.
+
+---
+
+## 2026-08-31 — La validation terrain est préparée, pas simulée
+
+**Décision.** [FIELD_VALIDATION.md](FIELD_VALIDATION.md) porte le protocole, les trois
+meubles, la feuille de mesures et la règle de décision devant les écarts. Aucun panneau
+n'a été coupé, et le document le dit en tête.
+
+**Motif.** Le critère de sortie de la V1 exige un menuisier, une scie et du temps
+d'atelier. Écrire un test qui « simule » la découpe donnerait un vert qui ne prouve rien —
+exactement le genre de vert que ce projet passe son temps à refuser.
+
+**Ce que la préparation apporte quand même.** La règle qui dit ce qu'on fait d'un écart est
+décidée **avant** de mesurer. Décider après, c'est décider en fonction du résultat.
+
+---
+
+## 2026-08-31 — Un test lent se rend rapide ; on ne relève son délai qu'en dernier recours
+
+**Décision.** Les propriétés du placement partagent un unique calcul, et le contrôle de
+chevauchement balaie les pièces triées par ordonnée au lieu de comparer toutes les paires.
+Le test tombe de 2 100 ms à 5 ms. **Un seul** test dans le dépôt a un délai relevé : le
+va-et-vient de sauvegarde, qui lance deux processus externes et dont la lenteur *est* ce
+qu'il mesure.
+
+**Motif.** Deux tests sont tombés par dépassement du délai de cinq secondes de vitest, sans
+qu'aucun défaut n'existe. Relever le délai partout aurait fait disparaître le symptôme et
+laissé la suite lente — donc de plus en plus souvent instable, jusqu'à ce qu'on cesse de la
+lire.
+
+**Ce que cela a donné en plus.** Les contrôles de placement ont quitté le fichier de test
+pour `nesting-properties.ts`, à côté du moteur : ils servent désormais aussi à vérifier un
+plan avant de l'envoyer à l'atelier. Un plan qui viole un invariant est un panneau perdu,
+et le découvrir à la scie coûte plus cher que le découvrir dans une réponse d'API.
+
+**Vérifié en le cassant.** Trois mutations — trait de scie horizontal, trait de scie
+vertical, une pièce perdue en silence — font échouer quatre tests chacune.

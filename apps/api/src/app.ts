@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { success, type ApiError } from '@neftya/contracts';
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import { HttpError, sendError } from './http/errors.js';
 import { ManufacturingRepository } from './manufacturing/repository.js';
@@ -9,6 +9,13 @@ import { ProjectRepository } from './projects/repository.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { SettingsRepository } from './settings/repository.js';
 import { registerSettingsRoutes } from './settings/routes.js';
+import {
+  jsonSink,
+  logFailure,
+  readiness,
+  registerLogging,
+  type LogSink,
+} from './observability/logging.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
 import type { SekuuStorage } from './sekuu/storage.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
@@ -25,12 +32,30 @@ export interface AppDependencies {
   verifier: TokenVerifier;
   /** Absent tant qu'aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
   storage?: SekuuStorage;
+  /** Injectable : les tests lisent ce qui a été journalisé au lieu de le voir passer. */
+  logSink?: LogSink;
 }
 
 export function buildApp(dependencies: AppDependencies): FastifyInstance {
+  const sink = dependencies.logSink ?? jsonSink;
+  // Le journal de Fastify est désactivé au profit du nôtre : deux formats de journal dans
+  // le même flux obligent à écrire deux requêtes pour chercher une seule chose.
   const app = Fastify({ logger: false, genReqId: () => crypto.randomUUID() });
 
+  registerLogging(app, { sink });
+
+  // Vivant : le processus répond. N'interroge rien — une sonde de vie qui dépend de la
+  // base fait redémarrer une application qui va bien parce que la base tousse.
   app.get('/health', async () => success({ status: 'ok' }));
+
+  // Prêt : la base répond. C'est la sonde qui décide d'envoyer du trafic, ou non.
+  app.get('/ready', async (_request, reply) => {
+    const report = await readiness(async () => {
+      await sql`SELECT 1`.execute(dependencies.db);
+    });
+
+    return reply.status(report.status === 'ok' ? 200 : 503).send(success(report));
+  });
 
   // Toutes les routes métier passent par l'authentification. Elle est posée une fois, sur
   // un contexte encapsulé, plutôt que répétée route par route : une garde qu'on doit
@@ -60,7 +85,8 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       return sendError(request, reply, error.toApiError());
     }
 
-    request.log.error(error);
+    logFailure(sink, request, error);
+
     const internal: ApiError = {
       code: 'INTERNAL_ERROR',
       message: 'Une erreur interne est survenue.',

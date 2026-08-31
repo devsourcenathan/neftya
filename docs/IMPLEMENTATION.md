@@ -304,6 +304,34 @@ découvert ici vaut mieux que le même écart découvert par un client.
 > panneaux pour valider un logiciel prend plus de temps qu'on ne croit, et cette phase est
 > inutile sans lui.
 
+**État au 31 août 2026 : partiellement livrée, et le critère de sortie n'est pas atteint.**
+
+Ce qui est fait — 296 tests verts, sept exécutions complètes consécutives sans un seul
+échec :
+
+- **Observabilité.** Une ligne JSON par requête, avec `request_id`, organisation,
+  utilisateur, route déclarée, statut et durée. Un test vérifie **par égalité** la liste
+  des champs écrits : ni jeton, ni en-tête d'autorisation, ni corps de requête, et un champ
+  ajouté sans y penser fait échouer la suite.
+- **Sondes séparées.** `/health` dit que le processus répond, `/ready` interroge la base.
+  Deux décisions opposées : redémarrer, ou cesser d'envoyer du trafic.
+- **Sauvegarde et restauration testées.** Le test écrit des données, sauvegarde, **détruit
+  le schéma**, restaure, compare ligne à ligne, puis vérifie que l'application fonctionne
+  sur la base restaurée. Vérifié en le cassant : une restauration qui ne fait rien casse
+  trois tests, une sauvegarde `--schema-only` en casse deux.
+- **Documentation d'exploitation** : [OPERATIONS.md](OPERATIONS.md).
+
+Ce qui **n'est pas fait**, et ne peut pas l'être par du logiciel :
+
+> **Trois meubles réels, coupés et montés par un menuisier.** Aucun panneau n'a été coupé.
+
+Le protocole, les trois meubles, la feuille de mesures et la règle de décision devant les
+écarts sont prêts : [FIELD_VALIDATION.md](FIELD_VALIDATION.md). Il manque le menuisier,
+l'atelier et six panneaux.
+
+**La V1 n'est donc pas validée**, et le dire autrement serait mentir sur ce que le logiciel
+prouve.
+
 ---
 
 ## Récapitulatif

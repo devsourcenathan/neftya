@@ -72,6 +72,19 @@ L'API se lance séparément :
 npm run dev --workspace @neftya/api
 ```
 
+### Exploiter
+
+[OPERATIONS.md](docs/OPERATIONS.md) : configuration, sondes, journaux, sauvegarde,
+migrations, et quoi regarder en premier quand quelque chose ne va pas.
+
+```bash
+DATABASE_URL=... npm run backup -- sauvegardes
+```
+
+Le va-et-vient complet — sauvegarder, **détruire le schéma**, restaurer, comparer — est
+joué par la suite de tests à chaque exécution. Une sauvegarde qu'on n'a jamais restaurée
+n'est pas une sauvegarde.
+
 ### Vérifier avant de pousser
 
 ```bash

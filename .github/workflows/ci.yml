@@ -69,6 +69,19 @@ jobs:
       - name: Traductions
         run: npm run check:i18n
 
+      # Le test de sauvegarde joue le va-et-vient complet avec pg_dump et pg_restore. Il
+      # échoue si les outils manquent, au lieu de s'ignorer : un test de sauvegarde qui se
+      # saute tout seul est un test qui n'a jamais tourné. La version doit correspondre au
+      # serveur — un pg_dump 16 refuse de parler à un PostgreSQL 18.
+      - name: Client PostgreSQL 18
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc             --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]             https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"             | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
+          pg_dump --version
+
       - name: Tests
         run: npm run test
 

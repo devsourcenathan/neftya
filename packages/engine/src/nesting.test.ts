@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { build } from './build.js';
 import { nest, type NestedPanel, type NestingResult } from './nesting.js';
+import { nestingViolations, panelViolations } from './nesting-properties.js';
 import type { FurnitureInput } from './input.js';
 import { PANEL_FORMATS_MM } from './materials.js';
 
@@ -74,80 +75,49 @@ describe('le meuble de référence produit le plan documenté', () => {
 describe('propriétés du placement', () => {
   // Des configurations variées, mais reproductibles : le moteur est déterministe, ses
   // tests doivent l'être aussi.
-  const configurations = generate(400);
+  //
+  // Le placement est calculé **une fois** et partagé par les propriétés. Le refaire dans
+  // chaque test multipliait le travail par cinq, pour un test qui dépassait le délai de
+  // vitest dès que la machine était chargée — un test instable finit ignoré.
+  const cases = generate(400).map((input) => {
+    const furniture = build(input);
+    return { furniture, result: nest(furniture) };
+  });
 
   it('aucune pièce ne sort du panneau et aucune ne se chevauche', () => {
-    for (const configuration of configurations) {
-      const result = nest(build(configuration));
-      for (const panel of result.panels) expectInsideAndDisjoint(panel, result.kerfMm);
-    }
+    const violations = cases.flatMap(({ result }) =>
+      result.panels.flatMap((panel) => panelViolations(panel, result.kerfMm)),
+    );
+
+    expect(violations).toEqual([]);
   });
 
-  it('toute pièce du meuble est placée, en la bonne quantité', () => {
-    const missing: string[] = [];
+  it('toute pièce est placée ou signalée, et jamais sur la mauvaise épaisseur', () => {
+    // Placée, ou explicitement signalée comme impossible à placer : jamais perdue en
+    // silence. Une pièce oubliée produirait un plan qui a l'air complet.
+    const violations = cases.flatMap(({ furniture, result }) =>
+      nestingViolations(furniture, result),
+    );
 
-    for (const configuration of configurations) {
-      const furniture = build(configuration);
-      const result = nest(furniture);
-
-      const placed = new Map<string, number>();
-      for (const panel of result.panels) {
-        for (const placement of panel.placements) {
-          placed.set(placement.partId, (placed.get(placement.partId) ?? 0) + 1);
-        }
-      }
-
-      for (const part of furniture.parts) {
-        // Placée, ou explicitement signalée comme impossible à placer : jamais perdue en
-        // silence. Une pièce oubliée produirait un plan qui a l'air complet.
-        const signalled = result.unplaced.filter((id) => id === part.id).length;
-        if ((placed.get(part.id) ?? 0) + signalled !== part.quantity) {
-          missing.push(`${part.id} : ${placed.get(part.id) ?? 0} + ${signalled}`);
-        }
-      }
-    }
-
-    expect(missing).toEqual([]);
-  });
-
-  it('ne mélange jamais deux épaisseurs sur un panneau', () => {
-    const mixed: string[] = [];
-
-    for (const configuration of configurations) {
-      const furniture = build(configuration);
-      const result = nest(furniture);
-      const thicknessOf = new Map(
-        furniture.parts.map((part) => [part.id, part.thicknessMm]),
-      );
-
-      for (const panel of result.panels) {
-        for (const placement of panel.placements) {
-          if (thicknessOf.get(placement.partId) !== panel.thicknessMm) {
-            mixed.push(`${placement.partId} sur un panneau de ${panel.thicknessMm} mm`);
-          }
-        }
-      }
-    }
-
-    // On ne scie pas du 8 mm et du 18 mm dans la même planche.
-    expect(mixed).toEqual([]);
+    expect(violations).toEqual([]);
   });
 
   it('la surface posée ne dépasse jamais celle du panneau', () => {
-    for (const configuration of configurations) {
-      const result = nest(build(configuration));
-      for (const panel of result.panels) {
-        expect(panel.usedAreaMm2).toBeLessThanOrEqual(panel.areaMm2);
-        expect(panel.utilisation).toBeGreaterThan(0);
-        expect(panel.utilisation).toBeLessThanOrEqual(1);
-      }
-    }
+    const outOfRange = cases
+      .flatMap(({ result }) => result.panels)
+      .filter(
+        (panel) =>
+          panel.usedAreaMm2 > panel.areaMm2 ||
+          panel.utilisation <= 0 ||
+          panel.utilisation > 1,
+      );
+
+    expect(outOfRange).toEqual([]);
   });
 
   it('est déterministe', () => {
-    for (const configuration of configurations.slice(0, 40)) {
-      const furniture = build(configuration);
-      expect(nest(furniture)).toEqual(nest(furniture));
+    for (const { furniture, result } of cases.slice(0, 40)) {
+      expect(nest(furniture)).toEqual(result);
     }
   });
 });
@@ -198,36 +168,13 @@ function round(utilisation: number): number {
 }
 
 /**
- * Les deux invariants, vérifiés ensemble : dans le panneau, et sans chevauchement.
+ * Les deux invariants du meuble de référence : dans le panneau, et sans chevauchement.
  *
- * Le trait de scie sépare deux pièces voisines ; deux pièces qui se toucheraient
- * exactement seraient impossibles à couper.
+ * Le contrôle lui-même vit dans `nesting-properties.ts`, à côté du placement : il sert
+ * aussi à vérifier un plan avant de l'envoyer à l'atelier.
  */
 function expectInsideAndDisjoint(panel: NestedPanel, kerfMm: number): void {
-  for (const placement of panel.placements) {
-    expect(placement.xMm).toBeGreaterThanOrEqual(0);
-    expect(placement.yMm).toBeGreaterThanOrEqual(0);
-    expect(placement.xMm + placement.sizeXMm).toBeLessThanOrEqual(
-      panel.format.lengthMm,
-    );
-    expect(placement.yMm + placement.sizeYMm).toBeLessThanOrEqual(panel.format.widthMm);
-  }
-
-  for (let i = 0; i < panel.placements.length; i += 1) {
-    for (let j = i + 1; j < panel.placements.length; j += 1) {
-      const a = panel.placements[i];
-      const b = panel.placements[j];
-      if (!a || !b) continue;
-
-      // Séparées d'au moins un trait de scie sur l'un des deux axes.
-      const separatedX =
-        a.xMm + a.sizeXMm + kerfMm <= b.xMm || b.xMm + b.sizeXMm + kerfMm <= a.xMm;
-      const separatedY =
-        a.yMm + a.sizeYMm + kerfMm <= b.yMm || b.yMm + b.sizeYMm + kerfMm <= a.yMm;
-
-      expect(separatedX || separatedY).toBe(true);
-    }
-  }
+  expect(panelViolations(panel, kerfMm)).toEqual([]);
 }
 
 /** Générateur reproductible — même graine, mêmes configurations. */

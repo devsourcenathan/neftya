@@ -19,7 +19,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:i18n": "node scripts/check-i18n.mjs",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:i18n && npm run test && npm run build"
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:i18n && npm run test && npm run build",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -7,6 +7,7 @@ import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet, type JWK } from
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import type { Database } from '../db/schema.js';
+import type { LogSink } from '../observability/logging.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
 import type { SekuuLimits, SekuuRole } from '../sekuu/sekuu-context.js';
 
@@ -55,7 +56,15 @@ export interface TokenOptions {
   omitOrganization?: boolean;
 }
 
-export async function createHarness(schema: string): Promise<Harness> {
+export interface HarnessOptions {
+  /** Recueille les journaux au lieu de les laisser passer sur la sortie standard. */
+  logSink?: LogSink;
+}
+
+export async function createHarness(
+  schema: string,
+  options: HarnessOptions = {},
+): Promise<Harness> {
   // Par défaut, ce que `docker compose up` expose. La CI fournit `DATABASE_URL`.
   const connectionString =
     process.env['DATABASE_URL'] ?? 'postgres://neftya:neftya@localhost:5442/neftya';
@@ -86,6 +95,9 @@ export async function createHarness(schema: string): Promise<Harness> {
 
   const app = buildApp({
     db,
+    // Sans puits injecté, les tests écriraient des milliers de lignes JSON dans la sortie
+    // de la suite, où personne ne les lirait.
+    logSink: options.logSink ?? (() => {}),
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
       issuer: ISSUER,

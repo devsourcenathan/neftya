@@ -62,6 +62,8 @@ export { build, type Furniture, type Warning } from './build.js';
 
 export { cutList, totalEdgeBandingMm, type CutListRow } from './cut-list.js';
 
+export { nestingViolations, panelViolations } from './nesting-properties.js';
+
 export {
   nest,
   totalUsedAreaMm2,
