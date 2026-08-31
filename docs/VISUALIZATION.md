@@ -89,8 +89,8 @@ Couleurs, finitions, poignées, pieds.
 
 ### Moteur 3D
 
-**Rendu WebGL dans le navigateur, via une bibliothèque généraliste légère** — Three.js est
-la référence de fait, avec react-three-fiber si l'interface est en React.
+**Three.js via react-three-fiber.** L'interface étant en React
+([ARCHITECTURE.md](ARCHITECTURE.md)), la 3D se déclare comme le reste de l'arbre.
 
 Le besoin est modeste : géométrie orthogonale, quelques dizaines de boîtes, pas de
 matériaux physiques ni d'éclairage complexe. Un moteur CAO complet serait

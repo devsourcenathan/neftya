@@ -83,8 +83,8 @@ destinataire — signé par la même clé, donc valide en apparence.
 
 Le contrôle d'abonnement tient en une ligne :
 
-```php
-abort_unless(in_array('neftya', (array) ($claims['products'] ?? []), true), 403);
+```ts
+if (!claims.products?.includes('neftya')) throw new Forbidden();
 ```
 
 Neftya ne parle jamais à Billing et ne connaît ni plan, ni facture, ni échéance.
@@ -109,8 +109,8 @@ moment-là.
 `organization_id` vient **du jeton**, jamais du corps de la requête, jamais d'un paramètre
 d'URL, jamais d'un en-tête.
 
-```php
-Project::where('organization_id', $claims['org'])->get();
+```ts
+db.project.findMany({ where: { organizationId: claims.org } });
 ```
 
 Le test à écrire avant la première fonctionnalité : **un jeton de l'organisation A obtient
@@ -178,10 +178,12 @@ Sekuu dit qu'un utilisateur est `admin` de son organisation. **Il ne dit pas ce 
 
 Neftya établit sa **propre** correspondance, explicite :
 
-```php
-private const PEUT_SUPPRIMER_UN_PROJET   = ['owner', 'admin'];
-private const PEUT_MODIFIER_UN_PROJET    = ['owner', 'admin', 'member'];
-private const PEUT_VOIR_LES_PRIX_D_ACHAT = ['owner', 'admin'];
+```ts
+const DROITS = {
+  supprimerUnProjet:   ['owner', 'admin'],
+  modifierUnProjet:    ['owner', 'admin', 'member'],
+  voirLesPrixDAchat:   ['owner', 'admin'],
+} as const satisfies Record<string, readonly RoleSekuu[]>;
 ```
 
 Cette dernière ligne est le besoin métier réel évoqué au [BRIEF.md](BRIEF.md) : un
@@ -295,4 +297,10 @@ Notifier.php               Notify
 Composer.php               AI
 ```
 
-C'est la référence à copier et à adapter, pas un modèle à réécrire.
+Neftya étant en TypeScript ([ARCHITECTURE.md](ARCHITECTURE.md)), **c'est le découpage qui se
+copie, pas le code**. La transposition est directe : `firebase/php-jwt` devient une
+bibliothèque JOSE côté Node, et le reste est de l'appel HTTP.
+
+Le contrat étant entièrement documenté par la plateforme, cette réécriture est courte — mais
+elle doit rester dans ce seul répertoire, pour que le jour où un claim change, un seul
+dossier bouge.

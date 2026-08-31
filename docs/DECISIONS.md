@@ -419,3 +419,62 @@ réinventer.
 
 **Corollaire.** Le moteur ne connaît pas Sekuu du tout — il ignore jusqu'à la notion
 d'organisation. Il reçoit des paramètres et rend des cotes.
+
+---
+
+## 2026-07-31 — Le moteur est en TypeScript
+
+**Décision.** Neftya Engine est écrit en TypeScript et s'exécute dans le navigateur pour
+l'interaction, sur le serveur pour ce qui fait foi.
+
+**Motif.** C'est une conséquence du Single Source of Truth, pas une préférence de langage.
+Le moteur est appelé à chaque changement de paramètre : faire glisser la largeur doit mettre
+à jour la 3D, les cotes et la liste de pièces en continu. Un moteur qui ne tourne pas dans
+le navigateur ne laisse que deux issues, mauvaises toutes les deux — un aller-retour réseau
+par mouvement de curseur, inutilisable sur le mobile d'un artisan en atelier ; ou une
+approximation JavaScript pour l'aperçu, c'est-à-dire deux implémentations des mêmes règles.
+Le jour où elles divergent d'un millimètre, personne ne le voit avant la scie.
+
+**Corollaire.** La liste de découpe persistée ou exportée est toujours celle calculée par le
+serveur, jamais celle envoyée par le client. C'est la règle que DealerOS applique déjà aux
+prix.
+
+---
+
+## 2026-07-31 — TypeScript de bout en bout, plutôt que Laravel
+
+**Décision.** L'API est également en TypeScript. Monorepo `apps/web`, `apps/api`,
+`packages/engine`, `packages/contracts`. PostgreSQL, React 19, Vite, TanStack, Tailwind,
+Radix, zod, Three.js via react-three-fiber, Vitest.
+
+**Motif.** Le moteur étant en TypeScript, une API en PHP imposerait un pont — un processus
+Node appelé par Laravel — et deux exécutions à déployer. Surtout, le type du moteur devient
+celui de l'API et celui de l'interface : l'audit de DealerOS a trouvé 94 types réécrits à la
+main entre backend et frontend, sans contrat généré, et des énumérations à trois sources de
+vérité qui ne se vérifiaient pas. Cette classe de bug disparaît.
+
+**Coût assumé.** Un second écosystème à côté du PHP de Sekuu Platform et de DealerOS, pour
+un développeur seul. La couche d'intégration Sekuu doit être réécrite en TypeScript — courte,
+le contrat étant documenté, mais réelle. De DealerOS se copie le **découpage**, pas le code.
+
+**Alternative écartée.** Laravel pour l'API avec le moteur en paquet TypeScript, invoqué par
+un processus Node pour les sorties qui font foi. Défendable si l'aisance en PHP avait été la
+contrainte dominante ; elle ne l'est pas. Le moteur serait resté en TypeScript dans les deux
+cas.
+
+---
+
+## 2026-07-31 — Ce qu'on n'ajoute pas comme dépendance
+
+**Décision.** Pas de bibliothèque de nesting, pas de bibliothèque de CAO, et le PDF est
+généré depuis le SVG et non depuis du HTML.
+
+**Motif.** Le nesting de Neftya a des contraintes que les bibliothèques généralistes ne
+modélisent pas : coupes guillotine, trait de scie réservé, sens du fil en V2. Elles font du
+placement irrégulier, dont Neftya n'a pas besoin. C'est quelques centaines de lignes, et
+elles doivent être maîtrisées — c'est là que vivent les plans faux.
+
+Les plans 2D sont des projections orthogonales de boîtes alignées sur les axes : générer le
+SVG directement est plus simple qu'une bibliothèque de CAO, et donne l'export SVG sans
+travail supplémentaire. Un plan technique coté étant un dessin vectoriel, le faire transiter
+par une mise en page HTML/CSS reviendrait à lutter contre le moteur de rendu à chaque cote.

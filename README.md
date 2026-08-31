@@ -13,7 +13,8 @@ de découpe, matériaux, instructions d'assemblage et estimation de coût.
 | | |
 |---|---|
 | **Cible primaire (V1)** | Menuisiers et artisans |
-| **Cœur technique** | Neftya Engine — moteur paramétrique |
+| **Cœur technique** | Neftya Engine — moteur paramétrique, en TypeScript, exécuté navigateur *et* serveur |
+| **Stack** | TypeScript de bout en bout · React 19 · PostgreSQL · Three.js |
 | **Socle transverse** | Sekuu Platform (identité, organisations, facturation, stockage, IA, notifications) |
 | **Intégration** | Produit à part entière, consommant les API de la plateforme — comme DealerOS |
 | **État** | Spécification. Aucun code à ce jour. |
