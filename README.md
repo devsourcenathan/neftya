@@ -72,8 +72,13 @@ npm run dev:identity          # Identity de démonstration, port 4000
 ```
 
 ```bash
-DATABASE_URL=postgres://neftya:neftya@localhost:5442/neftya SEKUU_JWKS_URL=http://localhost:4000/.well-known/jwks.json SEKUU_ISSUER=http://localhost:4000 SEKUU_AUDIENCE=sekuu-platform NEFTYA_ALLOWED_ORIGINS=http://localhost:5173 npm run dev:api               # API sur http://localhost:3000
+cp .env.example .env          # une fois, puis pointer SEKUU_* sur localhost:4000
+npm run dev:api               # API sur http://localhost:3000
 ```
+
+`dev:api` construit puis lance : Node ne sait pas résoudre les imports `.js` d'un fichier
+`.ts` en mode dépouillement de types. Après une modification du code de l'API, relancer la
+commande.
 
 ```bash
 npm run dev                   # interface sur http://localhost:5173
@@ -86,6 +91,18 @@ VITE_API_URL=http://localhost:3000
 VITE_SEKUU_IDENTITY_URL=http://localhost:4000
 VITE_SEKUU_PORTAL_URL=http://localhost:4000
 ```
+
+Pour le développement local, `.env` doit pointer sur l'Identity de poche :
+
+```
+SEKUU_JWKS_URL=http://localhost:4000/.well-known/jwks.json
+SEKUU_ISSUER=http://localhost:4000
+NEFTYA_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+> **Lancer l'Identity en premier, et ne plus y toucher.** Chaque démarrage fabrique une
+> nouvelle paire de clés : les jetons déjà émis — celui que garde l'onglet ouvert, par
+> exemple — restent signés par l'ancienne. Recharger la page suffit à en obtenir un neuf.
 
 > **L'Identity de poche n'est pas une porte dérobée.** Aucun code de production ne le
 > connaît : l'API lit trois variables d'environnement, et il suffit de les pointer ailleurs.
