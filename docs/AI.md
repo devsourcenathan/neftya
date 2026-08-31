@@ -64,19 +64,45 @@ validation technique qui alerte — pas l'IA qui décide seule d'ajouter un sép
 
 ---
 
-## 4. Crédits et consommation
+## 4. Crédits et quotas
 
-Chaque action IA consomme des crédits, comptabilisés par SEKUU Core : analyse d'image,
-génération de concept, assistant conversationnel, génération de variantes.
+Chaque action IA consomme des crédits, comptabilisés par [SEKUU Core](SEKUU.md) : analyse
+d'image, génération de concept, assistant conversationnel, génération de variantes.
+
+**Quota mensuel par palier**, porté et appliqué par SEKUU Core :
+
+| Palier | Analyses d'image / mois |
+|---|---|
+| Free | 5 |
+| Pro | 50 |
+| Professional | 200 |
+
+Valeurs à confirmer une fois le coût réel d'une analyse mesuré. Le principe, lui, est acté :
+sans plafond, une analyse d'image plus quelques échanges d'assistant peuvent dépasser la
+marge d'un abonnement.
+
+### Dégradation propre
+
+**Quota atteint n'est pas un échec.** L'interface bascule vers les points d'entrée qui ne
+consomment rien :
+
+```text
+Vous avez utilisé vos 5 analyses d'image de ce mois.
+
+  → Partir d'un modèle          (toujours disponible)
+  → Décrire le meuble           (toujours disponible)
+  → Passer à Pro                (50 analyses / mois)
+```
+
+Le même repli s'applique quand **l'IA ne reconnaît pas le meuble** : le produit propose un
+modèle proche plutôt que de renvoyer une erreur. Le moteur, lui, fonctionne sans IA — c'est
+tout l'intérêt de n'en avoir fait qu'une couche d'assistance.
 
 ---
 
-## 5. Points ouverts
+## 5. Point ouvert
 
-- **Fiabilité de l'analyse d'image.** Aucun taux de réussite cible n'est défini. Il faudrait
-  un jeu d'évaluation d'images réelles avant de s'engager sur cette fonctionnalité.
-- **Coût par projet.** Une analyse d'image plus quelques échanges d'assistant peuvent
-  dépasser la marge d'un abonnement Free. Le plafond doit être défini avec le modèle
-  économique.
-- **Traitement des échecs.** Que se passe-t-il quand l'IA ne reconnaît pas le meuble ?
-  Le repli vers le point d'entrée « modèle » doit être explicite dans l'interface.
+- **Fiabilité de l'analyse d'image.** Aucun taux de réussite cible n'est défini, et il ne
+  peut pas l'être sans données. Constituer un jeu d'évaluation d'images réelles — photos de
+  magasin, captures Pinterest, photos d'atelier — est le préalable à tout engagement sur
+  cette fonctionnalité. C'est aussi ce qui dira si elle mérite d'exister.

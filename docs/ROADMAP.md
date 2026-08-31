@@ -2,9 +2,8 @@
 
 ## V1 — MVP
 
-Le MVP est **volontairement limité**. Il ne comporte ni analyse d'image, ni assistant IA,
-ni éditeur manuel. Son objectif unique est de prouver que le moteur produit des cotes
-justes.
+Le MVP reste volontairement limité : ni analyse d'image, ni assistant IA, ni éditeur
+manuel. Son objectif unique est de prouver que le moteur produit des cotes justes.
 
 ### Création
 
@@ -15,27 +14,34 @@ justes.
 
 ### Neftya Engine
 
-- Panneaux, étagères, compartiments simples
-- Convention d'assemblage par défaut
+- Panneaux, étagères, compartiments
+- **Tiroirs** — caisson simple et façade rapportée
+- Convention d'assemblage par défaut (côtés entre dessus et dessous)
 - Propagation par étirement
 - Validation de la flèche des étagères
+- Invariant de recomposition exacte, vérifié par test
 
 ### Visualisation
 
-- 3D interactive
+- 3D interactive (WebGL)
 - Vue éclatée
-- Plans 2D simples
+- **Plans 2D entièrement cotés**, chaînes de cotes et placement automatique
 
 ### Fabrication
 
 - Liste des pièces
-- Liste des matériaux
-- Plan de découpe avec trait de scie
-- Instructions d'assemblage simples
+- Liste des matériaux, chants compris
+- Plan de découpe avec trait de scie, formats de panneaux configurables
+- Instructions d'assemblage portées par le modèle
+- Export PDF et CSV
+
+### Projets
+
+- Instantané figé à chaque export
 
 ### SEKUU
 
-- Authentication, Users, Storage, Billing, AI Usage
+- Authentication, Users, Storage, Billing
 
 ### Critère de sortie
 
@@ -43,46 +49,61 @@ justes.
 > se monte sans reprise.
 
 Tant que ce critère n'est pas atteint sur plusieurs meubles réels, aucune fonctionnalité de
-V2 ne doit être engagée. C'est la seule chose qui compte pour la cible primaire.
+V2 ne doit être engagée.
+
+> **Attention au périmètre.** Deux décisions du 31/07/2026 ont élargi ce MVP : les tiroirs
+> et la cotation complète des plans 2D. Ce sont les deux postes les plus susceptibles de
+> repousser le critère de sortie — le second plus que le premier, le placement automatique
+> de cotes étant un problème d'optimisation à part entière. Si le planning dérape, ce sont
+> les premiers candidats au report, pas le moteur.
 
 ---
 
-## V2 — Intelligence
+## V2 — Intelligence et usinage
 
 - Image → analyse et structure
 - Texte → configuration
 - Assistant conversationnel
+- Quotas IA par palier
+- **Positions de perçage** et catalogue de quincaillerie (coulisses, charnières, tourillons)
+- **Portes**, recouvrement total
 - Optimisation avancée des panneaux, avec contrainte de sens du fil
+- Export DXF
 - Estimation automatique des coûts
+
+Perçages et catalogue vont ensemble : les positions dépendent de la quincaillerie choisie.
+C'est ce qui fait passer Neftya d'un outil de préparation à une vraie sortie d'usinage.
 
 ---
 
 ## V3 — Conception avancée
 
 - Éditeur manuel composant par composant
+- Déduction automatique de la séquence d'assemblage — nécessaire dès que les meubles ne
+  viennent plus de modèles
 - Assemblages complexes
 - Bibliothèque communautaire
-- Marketplace de modèles
 - Collaboration
 
 ---
 
-## V4 — Écosystème
+## Pistes long terme
 
-- Mise en relation avec des artisans
-- Demande de devis
-- Commande de fabrication
-- Fournisseurs de matériaux, achat de panneaux
-- Marketplace de meubles
+Ce qui suit n'est **pas** une suite de la roadmap. Ce sont des directions à réévaluer
+séparément, le moment venu.
 
-> **Avertissement.** La V4 n'est pas une évolution du produit : c'est une **place de marché**,
-> c'est-à-dire un autre métier, un autre modèle économique et un autre problème d'amorçage
-> (l'offre et la demande simultanées). La lister ici comme une suite naturelle aplatit un
-> risque qui ne l'est pas. Elle doit être réévaluée comme un projet distinct le moment venu.
+### Marketplace
 
----
+Mise en relation avec des artisans, demande de devis, commande de fabrication, fournisseurs
+de matériaux, achat de panneaux, vente de modèles.
 
-## Vision long terme
+> **Pourquoi c'est à part.** Une marketplace n'est pas une évolution du produit : c'est un
+> autre métier, avec un autre modèle économique et un problème d'amorçage différent — il
+> faut l'offre et la demande simultanément. La traiter comme un « V4 » aplatirait un risque
+> qui n'a rien de commun avec celui d'ajouter une fonctionnalité. À évaluer comme un projet
+> distinct, avec sa propre étude.
+
+### Écosystème
 
 ```text
                     FURNITURE ECOSYSTEM

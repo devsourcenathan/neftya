@@ -124,9 +124,12 @@ Position    : côtés à l'intérieur, alignés sur les bords du dessous
 L'utilisateur dispose de : étape précédente / suivante, animation, vue éclatée, zoom,
 rotation. À terme, les étapes sont animées dans le moteur 3D.
 
-> **Point ouvert.** La séquence d'assemblage est-elle déduite automatiquement de la
-> structure, ou définie par modèle ? La déduction automatique est un problème d'ordonnancement
-> non trivial dès qu'il y a des tiroirs et des portes.
+**La séquence est portée par le modèle, pas déduite.** Chaque modèle prédéfini embarque son
+ordre de montage, rédigé une fois ; le moteur n'y injecte que les cotes et les identifiants.
+
+Le MVP n'ayant que les modèles comme point d'entrée, cela couvre 100 % des cas sans avoir à
+résoudre un problème d'ordonnancement — qui devient réellement difficile dès qu'il y a des
+tiroirs. La déduction automatique deviendra nécessaire avec l'éditeur manuel (V3).
 
 ---
 
@@ -151,7 +154,17 @@ connexion à des catalogues fournisseurs est envisagée plus tard.
 
 ## 6. Export
 
-- PDF : plans techniques, liste de pièces, plan de découpe, guide d'assemblage.
-- SVG : plans 2D (ultérieurement).
-- CSV pour scie à panneaux : non tranché, voir §11 de
-  [NEFTYA_ENGINE.md](NEFTYA_ENGINE.md).
+- **PDF** : plans techniques, liste de pièces, plan de découpe, guide d'assemblage.
+- **CSV** : liste de pièces, exploitable par la plupart des scies à panneaux et des
+  optimiseurs tiers.
+
+```text
+id;longueur_mm;largeur_mm;epaisseur_mm;quantite;materiau;chant
+P01;1800;400;18;1;MDF;avant
+P02;1800;400;18;1;MDF;avant
+P03;564;400;18;2;MDF;avant
+```
+
+- **SVG** : plans 2D, ultérieurement.
+- **DXF** : reporté en V2. Sans les positions de perçage, un DXF ne contient que des
+  contours et n'apporte guère plus que le CSV.

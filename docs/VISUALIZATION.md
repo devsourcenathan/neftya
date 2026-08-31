@@ -85,10 +85,37 @@ Couleurs, finitions, poignées, pieds.
 
 ---
 
-## 5. Points ouverts
+## 5. Choix techniques
 
-- **Moteur 3D.** Non choisi. Le besoin est modeste (géométrie orthogonale, quelques dizaines
-  de boîtes), ce qui ouvre la porte à une solution légère plutôt qu'à un moteur CAO complet.
-- **Génération des plans 2D.** Projection depuis le modèle, ou rendu vectoriel dédié ?
-- **Cotation automatique.** Placer les cotes sans chevauchement est un problème en soi ;
-  souvent sous-estimé.
+### Moteur 3D
+
+**Rendu WebGL dans le navigateur, via une bibliothèque généraliste légère** — Three.js est
+la référence de fait, avec react-three-fiber si l'interface est en React.
+
+Le besoin est modeste : géométrie orthogonale, quelques dizaines de boîtes, pas de
+matériaux physiques ni d'éclairage complexe. Un moteur CAO complet serait
+disproportionné, et un rendu serveur supprimerait l'interactivité qui fait tout l'intérêt
+du §1 (rotation, sélection d'une pièce, masquage).
+
+> **Réserve assumée.** Ce choix est fait avant toute mesure. Le critère à vérifier tôt est
+> la fluidité sur un mobile d'entrée de gamme : la cible artisan consulte souvent sur
+> téléphone, en atelier.
+
+### Cotation automatique des plans 2D
+
+**Cotation complète dès la V1** : chaînes de cotes sur chaque vue, cotes intermédiaires, et
+placement automatique évitant les collisions.
+
+C'est un vrai chantier — le placement de cotes sans chevauchement est un problème
+d'optimisation à part entière — mais il est cohérent avec la cible primaire : un artisan
+attend un plan coté, pas un tableau de dimensions.
+
+> **Conséquence sur le planning.** C'est l'un des deux choix qui alourdissent le MVP (avec
+> les tiroirs). À surveiller : si l'algorithme de cotation dérape, c'est lui qui repoussera
+> le critère de sortie de la V1, pas le moteur.
+
+### Génération des plans 2D
+
+Projection orthogonale depuis le modèle paramétrique, rendue en vectoriel. Le modèle étant
+composé de boîtes alignées sur les axes, la projection est directe et n'appelle pas de
+bibliothèque de CAO.

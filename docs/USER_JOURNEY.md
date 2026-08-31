@@ -110,5 +110,17 @@ Les projets appartiennent à une organisation, et les droits d'accès sont ceux 
 [SEKUU Core](SEKUU.md). Un particulier travaille dans une organisation personnelle ; un
 atelier partage la sienne entre plusieurs collaborateurs.
 
-> **Point ouvert.** Faut-il versionner les projets ? Un artisan qui envoie un devis puis
-> modifie le meuble a besoin de retrouver la version qu'il a envoyée. Non tranché.
+### Instantanés d'export
+
+Le projet reste vivant et modifiable, mais **chaque export fige une copie immuable** :
+devis, plan de découpe, plans techniques.
+
+```text
+Meuble TV Salon                    (projet vivant)
+  ├── Export du 12/08 — devis      (figé)
+  └── Export du 25/08 — découpe    (figé)
+```
+
+Un artisan qui envoie un devis puis élargit le meuble retrouve donc le devis tel qu'il l'a
+envoyé. C'est le besoin réel ; un historique complet de chaque modification serait un
+chantier à part entière pour un bénéfice bien moindre.

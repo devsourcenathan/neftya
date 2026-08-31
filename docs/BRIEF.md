@@ -119,24 +119,28 @@ Modèle **freemium** à trois paliers.
 - Visualisation limitée
 - Exports limités
 
-### Pro
+### Pro — l'artisan indépendant
+
+**L'outil métier complet, pour un utilisateur.**
 
 - Projets illimités
 - Visualisation 3D complète
-- Exports techniques
 - Optimisation de découpe
+- Exports techniques (PDF, CSV)
+- **Devis**
 - Assistant IA
 - Historique
 
-### Professional — artisans et ateliers
+### Professional — ateliers
+
+**Tout Pro, plus le collectif.**
 
 - Multi-utilisateurs et organisations
-- Gestion d'équipe
+- Gestion d'équipe et des rôles
 - Gestion des clients
-- Devis
 - Branding personnalisé
 - API
 
-> **Point ouvert.** La cible primaire étant l'artisan, il faut vérifier que le palier Pro
-> n'est pas un entre-deux sans acheteur : un artisan seul a besoin du devis et de l'export
-> technique, qui sont aujourd'hui répartis entre Pro et Professional.
+Le devis et l'export technique sont dans Pro, et non réservés à Professional : la cible
+primaire est l'artisan seul, et lui refuser le devis reviendrait à lui refuser la raison
+même d'utiliser Neftya. Professional ne vend que ce qui n'a de sens qu'à plusieurs.

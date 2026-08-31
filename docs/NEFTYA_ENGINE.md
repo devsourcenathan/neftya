@@ -112,9 +112,38 @@ convention d'assemblage. C'est ce qui garantit qu'aucune vue ne peut diverger du
 | `kerf_mm` | `3` | Trait de scie — voir §6 |
 | `edge_banding` | `listed` | Chants listés mais non déduits — voir §7.4 |
 | `assembly_convention` | `sides_between_top_bottom` | Voir §5 |
+| `drawer_side_clearance_mm` | `13` | Jeu par côté pour les coulisses — voir §5.1 |
+| `drawer_back_clearance_mm` | `10` | Jeu à l'arrière du caisson tiroir |
+| `front_gap_mm` | `3` | Jeu entre deux façades ou deux portes |
 
 Tous sont modifiables par projet. Les défauts visent une scie à panneaux courante et du
 mélaminé 18 mm.
+
+### Formats de panneaux
+
+Le moteur fournit une liste par défaut, que chaque organisation complète avec les formats
+de son fournisseur. L'optimiseur retient le format le plus économique parmi ceux déclarés.
+
+| Format | Note |
+|---|---|
+| 2440 × 1220 | Le plus répandu |
+| 2800 × 2070 | Grand format |
+| 3050 × 1220 | |
+
+### Tolérance : zéro
+
+**La somme des pièces doit égaler la cote hors-tout, au millimètre.** Le reste d'une
+division va au dernier compartiment (§7.3) ; aucune cote n'est à virgule.
+
+C'est un invariant vérifiable, et il doit l'être :
+
+```text
+pour toute configuration :  somme(pièces + épaisseurs) == cote_hors_tout
+```
+
+Ce test est la démonstration la plus directe que le moteur est juste. Il n'y a pas de
+marge « pour absorber les arrondis » : une marge rendrait le test incapable de distinguer
+un arrondi d'un vrai bug.
 
 ---
 
@@ -141,6 +170,79 @@ vont jusqu'à l'arrière et portent la rainure.
 
 > **Convention alternative** (`top_bottom_between_sides`) : les côtés font toute la
 > hauteur, le dessus et le dessous se logent entre. Prévue au modèle, non exposée en V1.
+
+### 5.1 Tiroirs
+
+Les tiroirs sont **dans le périmètre de la V1**. Un tiroir est un petit caisson —
+deux côtés, un devant, un dos, un fond rainuré — sur lequel se visse une **façade
+rapportée**. La façade étant indépendante, elle se règle après montage : c'est ce qui
+permet de rattraper un caisson légèrement hors d'équerre.
+
+Pour un compartiment de largeur intérieure `Lc` et un jeu `drawer_side_clearance_mm` :
+
+| Pièce | Cote |
+|---|---|
+| Largeur hors-tout du tiroir | `Lc − 2 × jeu` |
+| Côtés du tiroir | profondeur × hauteur, ×2 |
+| Devant et dos | `Lc − 2 × jeu − 2e`, ×2 |
+| Fond | rainuré, `back_thickness_mm` |
+| Façade | voir ci-dessous, pièce indépendante |
+
+Exemple, compartiment de 576 mm, jeu 13 mm, panneaux 18 mm :
+
+```text
+hors-tout tiroir : 576 − 2×13 = 550
+devant et dos    : 550 − 2×18 = 514
+profondeur       : 400 − 18 (fond) − 10 (jeu arrière) = 372
+```
+
+**Façades.** Elles pavent toute la façade du meuble, séparées par `front_gap_mm` :
+
+```text
+largeur_façade = (L − (n − 1) × front_gap) / n
+
+1800 mm, 3 façades, jeu 3 mm :  (1800 − 6) / 3 = 598
+recomposition : 598 × 3 + 3 × 2 = 1800  ✓
+```
+
+Une façade est donc **plus large que son compartiment** : elle couvre aussi la moitié des
+séparateurs voisins, ou le côté du meuble. C'est ce que signifie le recouvrement total.
+
+**Contrainte à vérifier par test :** chaque jeu doit tomber sur un séparateur, sinon on voit
+à l'intérieur du meuble.
+
+```text
+compartiments : 18–594     612–1188    1206–1782
+séparateurs   :     594–612     1188–1206
+façades       : 0–598      601–1199    1202–1800
+jeux          :     598–601     1199–1202     ✓ tous deux sur un séparateur
+```
+
+> **Limite assumée de la V1.** Le moteur donne la profondeur utile du tiroir mais **ne
+> choisit pas la coulisse** : les longueurs standard (250, 300, 350, 400, 450, 500) et
+> leurs perçages relèvent du catalogue de quincaillerie, reporté en V2. En V1 l'artisan
+> choisit sa coulisse et la positionne lui-même.
+
+### 5.2 Portes
+
+**Hors périmètre V1.** À leur arrivée : **recouvrement total** — la porte couvre le chant
+du caisson — avec le même pavage que les façades de tiroir et un jeu `front_gap_mm`.
+
+Le recouvrement total est retenu pour sa tolérance : un écart d'un millimètre sur le
+caisson ne se voit pas, là où une porte encastrée le révèle.
+
+### 5.3 Pieds et socle
+
+**La hauteur saisie par l'utilisateur est celle du caisson.** Les pieds s'ajoutent
+par-dessous, et le moteur affiche la hauteur au sol à titre indicatif.
+
+```text
+Hauteur saisie  : 600 mm   (caisson, sert au calcul des côtés)
+Pieds           : 100 mm
+Hauteur au sol  : 700 mm   (affichée, jamais utilisée dans une cote de découpe)
+```
+
+Ainsi, changer de pieds ne recalcule aucune cote de découpe.
 
 ---
 
@@ -337,16 +439,26 @@ Fond     : (1800 − 36) + 2×4 = 1772         ✓
 
 ## 11. Ce qui reste ouvert
 
-Ces points ne sont **pas** tranchés et doivent l'être avant l'implémentation :
+Les sept points listés ici à la rédaction ont été tranchés le 31/07/2026 et sont désormais
+intégrés au document (voir [DECISIONS.md](DECISIONS.md)) : tiroirs, portes, pieds,
+perçages, formats de panneaux, tolérances, export machine.
 
-1. **Tiroirs.** Le jeu latéral dépend du modèle de coulisses (12,5 mm par côté pour des
-   coulisses à billes standard, autre chose pour du sortie-totale). Faut-il un catalogue de
-   coulisses, ou un paramètre `drawer_side_clearance_mm` ?
-2. **Portes.** Recouvrement total, partiel ou encastré ? Jeu entre deux portes ?
-3. **Pieds et socle.** La hauteur hors-tout inclut-elle les pieds ?
-4. **Perçages.** Le moteur doit-il produire les positions de perçage (tourillons,
-   excentriques, crémaillères) ou seulement les cotes de découpe ? C'est la différence entre
-   un outil de préparation et un vrai fichier d'usinage.
-5. **Formats de panneaux.** 2440 × 1220 par défaut ; faut-il un catalogue par région ?
-6. **Tolérances.** Quelle marge admise entre la somme des pièces et la cote hors-tout ?
-7. **Export machine.** Sortie CSV pour scie à panneaux, voire DXF, dès la V1 ou plus tard ?
+**Perçages.** Le moteur produit les cotes de découpe, pas les positions de perçage.
+Neftya reste en V1 un outil de préparation : l'artisan sait où percer. Les perçages
+(tourillons, excentriques, crémaillères, coulisses) arrivent en V2 avec le catalogue de
+quincaillerie dont ils dépendent.
+
+### Points encore ouverts
+
+1. **Longueurs de coulisses.** Le moteur donne la profondeur utile ; le choix de la
+   coulisse et son perçage attendent le catalogue (V2). Conséquence directe du point
+   précédent — voir la limite assumée du §5.1.
+2. **Épaisseur des pièces de tiroir.** Les côtés d'un tiroir sont souvent plus fins
+   (12 ou 15 mm) que la structure. Faut-il un `drawer_panel_thickness_mm` distinct ?
+3. **Hauteur des tiroirs superposés.** Quand plusieurs tiroirs occupent un compartiment,
+   se répartissent-ils la hauteur également, ou selon un ratio défini par le modèle ?
+4. **Rainure du fond de tiroir.** Même convention que le caisson principal, ou paramètres
+   propres ?
+5. **Sens du fil sur les façades.** Sur un décor bois, les façades d'un même meuble
+   doivent souvent être débitées dans la continuité. Hors périmètre V1 (§8), mais c'est le
+   cas qui rendra la contrainte de fil nécessaire en V2.

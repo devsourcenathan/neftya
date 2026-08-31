@@ -55,8 +55,22 @@ Règles :
 5. Les capacités transverses — authentification, organisations, facturation, stockage,
    IA, notifications — viennent de [SEKUU Core](SEKUU.md) et ne sont pas reconstruites.
 
-## Point ouvert
+## Découpage technique
 
-Le découpage technique (monolithe modulaire, paquets séparés, services) n'est pas tranché.
-La seule contrainte ferme est l'isolation du moteur : il doit pouvoir être extrait et testé
-sans le reste de l'application.
+**Monolithe modulaire, moteur en paquet isolé.**
+
+```text
+apps/
+  web/                interface et API
+packages/
+  engine/             Neftya Engine — aucune dépendance framework
+```
+
+Le moteur vit dans son propre paquet et ne connaît ni HTTP, ni base de données, ni moteur
+3D. Il prend des paramètres, il rend des composants et des cotes. C'est ce qui permet de le
+tester seul, et c'est la condition pour que l'invariant de recomposition (§4 de
+[NEFTYA_ENGINE.md](NEFTYA_ENGINE.md)) soit vérifiable automatiquement.
+
+Un service séparé a été écarté : la frontière réseau garantirait l'isolation, mais au prix
+d'un déploiement, d'une latence et d'un débogage plus lourds, sans bénéfice à cette échelle.
+Rien n'empêche de l'extraire plus tard — c'est précisément ce que le paquet isolé préserve.
