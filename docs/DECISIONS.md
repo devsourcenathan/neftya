@@ -478,3 +478,51 @@ Les plans 2D sont des projections orthogonales de boîtes alignées sur les axes
 SVG directement est plus simple qu'une bibliothèque de CAO, et donne l'export SVG sans
 travail supplémentaire. Un plan technique coté étant un dessin vectoriel, le faire transiter
 par une mise en page HTML/CSS reviendrait à lutter contre le moteur de rendu à chaque cote.
+
+---
+
+## 2026-07-31 — Standards d'ingénierie tirés de l'audit DealerOS
+
+**Décision.** [ENGINEERING.md](ENGINEERING.md) est obligatoire, et ses règles sont écrites à
+partir de défauts réels constatés sur DealerOS plutôt que d'une liste de bonnes pratiques
+génériques.
+
+**Motif.** Un standard générique se lit une fois et ne change aucun comportement. Chaque
+section d'ENGINEERING.md existe pour empêcher un cas précis : les 94 types dupliqués
+justifient `packages/contracts` ; l'absence de CI pendant vingt commits justifie la CI en
+phase 0 ; les quarante gardes copiées-collées justifient le test d'architecture ; le calcul
+de taxe en flottant justifie la règle des entiers ; la suite verte sur SQLite alors que la
+production tourne sur PostgreSQL justifie les tests d'intégration sur la base cible.
+
+**Sur DRY, KISS et SOLID.** Ils figurent au §11, mais appliqués à des cas de Neftya et
+assortis de leurs contre-emplois — notamment le fait que DRY porte sur la connaissance et
+non sur les caractères, et que factoriser deux calculs qui se ressemblent sans être la même
+chose produit une abstraction que le premier changement de règle fait exploser. Les réciter
+sans les situer n'aurait servi à rien.
+
+**Deux règles reprises de la plateforme**, que les documents Neftya ne portaient pas :
+identifiants en UUID — ce sera UUIDv7, Neftya n'ayant aucun historique, là où le `bigint` de
+DealerOS est une dette héritée — et l'enveloppe d'erreur `{ success, error, meta }`.
+
+---
+
+## 2026-07-31 — Ordre d'implémentation de la V1
+
+**Décision.** Sept phases : socle et CI, moteur seul, API et cloisonnement, interface et 3D,
+fabrication, cotation 2D, validation terrain. Voir
+[IMPLEMENTATION.md](IMPLEMENTATION.md).
+
+**Motif.** L'ordre porte plus de valeur que le contenu. La CI précède la première
+fonctionnalité parce que la dette de qualité ne se rattrape pas. Le moteur se construit sans
+interface parce qu'il est le seul composant dont l'exactitude conditionne tout le reste et
+le seul qui se valide sans infrastructure. Le cloisonnement arrive avec la première
+ressource persistée parce que sa régression est invisible. La cotation 2D est en dernier
+parce qu'elle est le risque planning identifié, et qu'en fin de parcours elle se reporte sans
+rien bloquer.
+
+**Position de repli documentée.** Si la cotation dépasse trois semaines, la V1 sort avec une
+cotation simple. On peut couper avec un tableau de cotes ; le critère de sortie n'en dépend
+pas.
+
+**Contrainte souvent oubliée.** Le menuisier de la phase 6 doit être trouvé dès la phase 1.
+Sans lui, le critère de sortie de la V1 est invérifiable.

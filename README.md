@@ -37,11 +37,14 @@ la 3D est une vue dérivée.
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Découpage en domaines |
 | [SEKUU.md](docs/SEKUU.md) | Intégration avec Sekuu Platform |
 | [ROADMAP.md](docs/ROADMAP.md) | MVP, V2, V3, et pistes long terme |
+| [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | **Comment construire la V1** : sept phases, chacune avec son critère de sortie |
+| [ENGINEERING.md](docs/ENGINEERING.md) | Standards d'ingénierie — règles obligatoires, écrites à partir de ce qui a mal tourné sur DealerOS |
 | [DECISIONS.md](docs/DECISIONS.md) | Journal des décisions structurantes, datées et motivées |
 
 **Commencez par [NEFTYA_ENGINE.md](docs/NEFTYA_ENGINE.md)** si vous venez pour la technique :
 c'est le document qui détermine toutes les cotes, et donc la crédibilité du produit auprès
-d'un artisan.
+d'un artisan. Puis [ENGINEERING.md](docs/ENGINEERING.md) avant d'écrire une ligne, et
+[IMPLEMENTATION.md](docs/IMPLEMENTATION.md) pour savoir par où commencer.
 
 ## Conventions
 
