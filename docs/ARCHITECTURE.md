@@ -92,7 +92,14 @@ apps/
 packages/
   engine/             Neftya Engine — aucune dépendance framework
   contracts/          types partagés, dérivés du moteur
+  units/              affichage et saisie, métrique et impérial
 ```
+
+`units` est **hors du moteur**, et c'est structurel : le moteur calcule en millimètres
+entiers, toujours, et un moteur qui manipulerait des pouces fractionnaires perdrait
+l'invariant de recomposition. La conversion ne va donc que dans un sens vers lui — une
+saisie explicite — et jamais depuis lui vers le modèle. Le test d'architecture le vérifie :
+`units` dépend de `engine`, l'inverse est interdit.
 
 | Besoin | Choix |
 |---|---|

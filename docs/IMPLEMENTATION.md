@@ -169,6 +169,21 @@ l'interaction.
 > modèle, sinon ouvrir puis sauvegarder un projet le déforme un peu à chaque fois. Un test
 > le vérifie : afficher puis relire ne change aucune cote.
 
+**État : livrée le 31 août 2026.** 129 tests verts. Le moteur tourne dans le navigateur ;
+la scène Three.js est chargée à la demande, ce qui laisse 481 ko à l'entrée de
+l'application au lieu de 1,4 Mo.
+
+La **parité client/serveur** est testée pour de vrai : `tests/parity.test.ts` crée un projet
+par HTTP, demande `/build` au serveur, reconstruit le même meuble localement, et compare
+les pièces, la liste de découpe **et les chaînes affichées** dans les deux systèmes
+d'unités.
+
+**Ce qui n'est pas vérifié : la fluidité sur un mobile d'entrée de gamme.** Elle demande un
+appareil réel, et aucun n'a été utilisé ici. Les mesures prises pour l'obtenir sont en
+place — `useDeferredValue` entre le curseur et la reconstruction, mémoïsation par pièce,
+`dpr` plafonné à 2, chargement différé de la 3D — mais la moitié mesurée du critère de
+sortie reste ouverte.
+
 ---
 
 ## Phase 4 — Fabrication · ~2 à 3 semaines

@@ -71,16 +71,34 @@ const files = walk(SRC).filter(
 const literalKey = /(?<![\w$.])t\(\s*'([^']+)'/g;
 const templateKey = /(?<![\w$.])t\(\s*`([^`$]*)\$\{/g;
 const withFallback = /(?<![\w$.])t\(\s*'[^']+'\s*,\s*['"`]/g;
-// Texte JSX : ce qui sépare deux balises, sans accolade, avec au moins trois lettres.
-const jsxText = />\s*([^<>{}\n][^<>{}]*?)\s*</g;
+/**
+ * Texte JSX : ce qui sépare deux balises sur **une seule ligne**, sans accolade.
+ *
+ * Le `>` ouvrant ne doit être précédé ni de `=` ni de `-` : sinon `=>` en fait partie, et
+ * toute flèche de fonction suivie d'un type générique devient un faux positif. Les
+ * opérateurs sont exclus du texte pour la même raison : `count >= 500 && total < max`
+ * n'est pas une phrase.
+ */
+const jsxText = /(?<![=\-!<>])>\s*([^<>{}\n=;&|()]*\p{L}{3,}[^<>{}\n=;&|()]*?)\s*</gu;
 
 function lineOf(source, index) {
   return source.slice(0, index).split('\n').length;
 }
 
+/** Les commentaires ne sont pas de l'interface : les laisser produit des faux positifs. */
+function withoutComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, ' '))
+    .replace(
+      /(^|[^:])\/\/[^\n]*/gm,
+      (line, before) => before + ' '.repeat(line.length - before.length),
+    );
+}
+
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
   const lines = source.split('\n');
+  const code = withoutComments(source);
 
   for (const match of source.matchAll(withFallback)) {
     problems.push(
@@ -107,7 +125,7 @@ for (const file of files) {
 
   if (!file.endsWith('.tsx')) continue;
 
-  for (const match of source.matchAll(jsxText)) {
+  for (const match of code.matchAll(jsxText)) {
     const text = match[1];
     // Au moins trois lettres consécutives : « — », « : » ou « 42 » ne sont pas du texte.
     if (!/\p{L}{3,}/u.test(text)) continue;

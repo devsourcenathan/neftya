@@ -754,3 +754,73 @@ qui écoute, garde `5432`.
 par un autre projet. L'erreur qui en résulte — « échec d'authentification pour l'utilisateur
 neftya » — désigne la mauvaise cause : on cherche un mot de passe alors qu'on parle au
 mauvais serveur. Le port par défaut du banc d'essai suit `docker compose`, pas la CI.
+
+---
+
+## 2026-08-31 — Les unités sont un paquet, hors du moteur
+
+**Décision.** `packages/units` porte la conversion et le formatage ; il dépend du moteur,
+et le test d'architecture interdit l'inverse.
+
+**Motif.** Le moteur calcule en millimètres entiers, toujours. Laisser entrer une notion de
+pouce fractionnaire dans le même paquet suffit à ce que quelqu'un l'utilise un jour dans un
+calcul, et l'invariant de recomposition tombe. La frontière est vérifiée, pas recommandée.
+
+**Corollaire.** L'API pourra s'en servir pour les exports imprimés sans dépendre de
+l'interface.
+
+---
+
+## 2026-08-31 — Le seuil d'alerte d'arrondi impérial est le quart de pas
+
+**Décision.** `roundingIsNotable` signale un écart supérieur à un **quart** de pas —
+0,397 mm au seizième — et non au demi-pas qu'annonçait I18N.md.
+
+**Motif.** Arrondir au plus proche borne l'erreur à exactement un demi-pas : un seuil posé
+là ne se déclenche que sur une égalité parfaite. La règle documentée ne pouvait rien
+signaler. Trouvé en écrivant le test, qui n'obtenait aucune alerte sur mille cotes.
+
+**Vérifié en le cassant.** Un test compte les alertes sur mille millimètres consécutifs et
+échoue si elles sont toutes présentes ou toutes absentes.
+
+---
+
+## 2026-08-31 — Le contrôle de texte en dur ignore les commentaires et les opérateurs
+
+**Décision.** `scripts/check-i18n.mjs` retire les commentaires avant de chercher du texte
+JSX, refuse les correspondances multilignes, et exclut `=`, `;`, `&`, `|` et les
+parenthèses du texte reconnu.
+
+**Motif.** Écrit en phase 0 contre une application de trois composants, il signalait
+`Promise`, `= 500 && failureCount` et des fragments de commentaires dès que du vrai code
+est arrivé. Six faux positifs, aucun vrai. Un contrôle qui crie à tort finit désactivé.
+
+**Vérifié en le cassant.** Un titre écrit en dur, une clé inexistante et un `t()` avec
+valeur par défaut sont toujours détectés, tous les trois.
+
+---
+
+## 2026-08-31 — La scène 3D est chargée à la demande
+
+**Décision.** `Scene` est importée par `lazy()` ; Three.js ne part que quand un projet
+s'ouvre.
+
+**Motif.** L'entrée de l'application passe de 1,38 Mo à 481 ko. La liste de projets n'a
+aucun besoin d'un moteur de rendu, et le critère de sortie parle d'un mobile d'entrée de
+gamme — sur lequel un mégaoctet de JavaScript se paie en secondes.
+
+---
+
+## 2026-08-31 — Le jeton vit en mémoire, l'organisation choisie dans le navigateur
+
+**Décision.** L'`access_token` n'est jamais écrit dans `localStorage` ; seul l'identifiant
+de l'organisation choisie y est conservé. Les accès au stockage sont tolérants à l'échec.
+
+**Motif.** Le jeton vit quinze minutes et le cookie de la plateforme sait le régénérer :
+le stocker l'exposerait à n'importe quel script de la page pour un confort nul. À
+l'inverse, redemander son organisation à chaque ouverture d'onglet serait pénible, et cet
+identifiant ne donne aucun accès à lui seul.
+
+**Détail qui coûte cher.** Le rafraîchissement est sérialisé par une promesse unique : un
+jeton de rafraîchissement rejoué révoque la session entière — c'est la détection de vol de
+la plateforme, et deux requêtes au chargement suffiraient à la déclencher.

@@ -11,7 +11,14 @@
   },
   "include": ["src/**/*", "src/**/*.json"],
   "references": [
-    { "path": "../../packages/engine" },
-    { "path": "../../packages/contracts" }
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/contracts"
+    },
+    {
+      "path": "../../packages/units"
+    }
   ]
 }

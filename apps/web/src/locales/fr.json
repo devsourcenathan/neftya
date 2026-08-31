@@ -3,8 +3,107 @@
     "name": "Neftya",
     "tagline": "Plateforme de conception et de fabrication de meubles"
   },
-  "phase": {
-    "title": "Socle en place",
-    "description": "Le dépôt se déploie, et les portes de qualité sont actives."
+  "action": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…"
+  },
+  "auth": {
+    "required": "Connectez-vous à Sekuu pour accéder à Neftya.",
+    "signIn": "Se connecter",
+    "chooseOrganization": "Choisissez votre organisation.",
+    "subscribe": "Souscrire à Neftya"
+  },
+  "state": {
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue.",
+    "saved": "Enregistré"
+  },
+  "projects": {
+    "title": "Vos projets",
+    "empty": "Aucun projet pour l'instant. Partez d'un modèle ci-dessous.",
+    "name": "Nom du projet",
+    "notFound": "Ce projet est introuvable."
+  },
+  "presets": {
+    "title": "Modèles prédéfinis",
+    "help": "Chaque projet part d'un modèle, puis se règle. Rien ne se dessine à partir de rien.",
+    "bookcase": "Bibliothèque",
+    "wardrobe": "Dressing",
+    "tvUnit": "Meuble TV",
+    "sideboard": "Buffet"
+  },
+  "designer": {
+    "dimensions": "Dimensions",
+    "structure": "Structure",
+    "material": "Matériau",
+    "compartments": "Compartiments",
+    "compartment": "Compartiment {{index}}",
+    "shelves": "Étagères",
+    "drawers": "Tiroirs",
+    "hasBack": "Avec fond",
+    "explode": "Vue éclatée",
+    "selection": "Pièce sélectionnée",
+    "selectPart": "Cliquez une pièce dans la vue 3D ou dans la liste.",
+    "parts": "Pièces ({{count}})",
+    "badLength": "Cote non comprise. Exemples : 1800, 70 7/8, 873mm.",
+    "roundedDisplay": "Affichage arrondi au seizième. Valeur du modèle : {{exact}}.",
+    "axis": {
+      "widthMm": "Largeur",
+      "heightMm": "Hauteur",
+      "depthMm": "Profondeur"
+    }
+  },
+  "units": {
+    "legend": "Système d'unités",
+    "metric": "Métrique",
+    "imperial": "Impérial"
+  },
+  "material": {
+    "mdf": "MDF",
+    "melamine": "Mélaminé",
+    "plywood": "Contreplaqué",
+    "solid_wood": "Bois massif"
+  },
+  "part": {
+    "id": "Repère",
+    "role": "Rôle",
+    "length": "Longueur",
+    "width": "Largeur",
+    "thickness": "Épaisseur",
+    "quantity": "Quantité",
+    "grain": "Fil du bois",
+    "edges": "Chants",
+    "noEdges": "Aucun",
+    "roles": {
+      "top": "Dessus",
+      "bottom": "Dessous",
+      "side": "Côté",
+      "divider": "Séparation",
+      "shelf": "Étagère",
+      "back": "Fond",
+      "drawer_side": "Côté de tiroir",
+      "drawer_front_panel": "Devant de tiroir",
+      "drawer_back_panel": "Arrière de tiroir",
+      "drawer_bottom": "Fond de tiroir",
+      "drawer_face": "Façade de tiroir"
+    },
+    "grains": {
+      "length": "Dans la longueur",
+      "width": "Dans la largeur",
+      "none": "Sans importance"
+    },
+    "edgeNames": {
+      "front": "Avant",
+      "back": "Arrière",
+      "left": "Gauche",
+      "right": "Droite"
+    }
+  },
+  "warning": {
+    "SHELF_DEFLECTION": "Une étagère fléchit au-delà de la limite admise. Réduisez la portée ou augmentez l'épaisseur.",
+    "NO_BACK_PANEL": "Sans fond, le caisson se déforme dans le temps.",
+    "FRONT_GAP_OFF_DIVIDER": "Un jeu de façade ne tombe pas sur sa séparation.",
+    "COMPARTMENT_TOO_NARROW": "Un compartiment est trop étroit pour ce qu'il doit recevoir.",
+    "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui."
   }
 }

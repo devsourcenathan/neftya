@@ -3,8 +3,107 @@
     "name": "Neftya",
     "tagline": "Furniture design and manufacturing platform"
   },
-  "phase": {
-    "title": "Foundations in place",
-    "description": "The repository deploys, and the quality gates are active."
+  "action": {
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "auth": {
+    "required": "Sign in to Sekuu to use Neftya.",
+    "signIn": "Sign in",
+    "chooseOrganization": "Choose your organisation.",
+    "subscribe": "Subscribe to Neftya"
+  },
+  "state": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "saved": "Saved"
+  },
+  "projects": {
+    "title": "Your projects",
+    "empty": "No projects yet. Start from a template below.",
+    "name": "Project name",
+    "notFound": "This project cannot be found."
+  },
+  "presets": {
+    "title": "Templates",
+    "help": "Every project starts from a template, then gets adjusted. Nothing is drawn from scratch.",
+    "bookcase": "Bookcase",
+    "wardrobe": "Wardrobe",
+    "tvUnit": "TV unit",
+    "sideboard": "Sideboard"
+  },
+  "designer": {
+    "dimensions": "Dimensions",
+    "structure": "Structure",
+    "material": "Material",
+    "compartments": "Bays",
+    "compartment": "Bay {{index}}",
+    "shelves": "Shelves",
+    "drawers": "Drawers",
+    "hasBack": "With back panel",
+    "explode": "Exploded view",
+    "selection": "Selected part",
+    "selectPart": "Click a part in the 3D view or in the list.",
+    "parts": "Parts ({{count}})",
+    "badLength": "Length not understood. Examples: 1800, 70 7/8, 873mm.",
+    "roundedDisplay": "Displayed to the nearest sixteenth. Model value: {{exact}}.",
+    "axis": {
+      "widthMm": "Width",
+      "heightMm": "Height",
+      "depthMm": "Depth"
+    }
+  },
+  "units": {
+    "legend": "Unit system",
+    "metric": "Metric",
+    "imperial": "Imperial"
+  },
+  "material": {
+    "mdf": "MDF",
+    "melamine": "Melamine",
+    "plywood": "Plywood",
+    "solid_wood": "Solid wood"
+  },
+  "part": {
+    "id": "Mark",
+    "role": "Role",
+    "length": "Length",
+    "width": "Width",
+    "thickness": "Thickness",
+    "quantity": "Quantity",
+    "grain": "Grain",
+    "edges": "Edge banding",
+    "noEdges": "None",
+    "roles": {
+      "top": "Top",
+      "bottom": "Bottom",
+      "side": "Side",
+      "divider": "Divider",
+      "shelf": "Shelf",
+      "back": "Back",
+      "drawer_side": "Drawer side",
+      "drawer_front_panel": "Drawer front panel",
+      "drawer_back_panel": "Drawer back panel",
+      "drawer_bottom": "Drawer bottom",
+      "drawer_face": "Drawer face"
+    },
+    "grains": {
+      "length": "Along the length",
+      "width": "Across the width",
+      "none": "Not relevant"
+    },
+    "edgeNames": {
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right"
+    }
+  },
+  "warning": {
+    "SHELF_DEFLECTION": "A shelf sags beyond the allowed limit. Shorten the span or use a thicker panel.",
+    "NO_BACK_PANEL": "Without a back panel the carcass racks over time.",
+    "FRONT_GAP_OFF_DIVIDER": "A front gap does not sit on its divider.",
+    "COMPARTMENT_TOO_NARROW": "A bay is too narrow for what it must hold.",
+    "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it."
   }
 }
