@@ -20,6 +20,7 @@ import { usePreferences } from '../preferences/PreferencesContext.js';
 import { Badge, Button, SegmentedControl } from '../ui/index.js';
 import { Panel } from '../ui/Panel.js';
 import { useMediaQuery } from '../ui/useMediaQuery.js';
+import { usePersisted } from '../ui/usePersisted.js';
 import { CubeIcon, RulerIcon, SaveIcon, WarningIcon } from '../ui/icons.js';
 import { Controls } from './Controls.js';
 import { PartDetails } from './PartDetails.js';
@@ -56,31 +57,11 @@ const PANEL_KEYS: readonly PanelKey[] = ['settings', 'view', 'parts'];
 
 const COLLAPSED_STORAGE = 'neftya.collapsedPanels';
 
-/**
- * `localStorage` peut lever — navigation privée, stockage refusé. Une disposition de
- * panneaux ne vaut pas de faire tomber l'éditeur.
- */
-function readCollapsed(): ReadonlySet<PanelKey> {
-  try {
-    const stored = window.localStorage.getItem(COLLAPSED_STORAGE);
-    const keys = stored ? (JSON.parse(stored) as unknown) : [];
+/** Ce qui a été relu doit être une liste de clés connues, et rien d'autre. */
+function revivePanels(raw: unknown): PanelKey[] | null {
+  if (!Array.isArray(raw)) return null;
 
-    return new Set(
-      Array.isArray(keys)
-        ? keys.filter((key): key is PanelKey => PANEL_KEYS.includes(key as PanelKey))
-        : [],
-    );
-  } catch {
-    return new Set();
-  }
-}
-
-function writeCollapsed(keys: ReadonlySet<PanelKey>): void {
-  try {
-    window.localStorage.setItem(COLLAPSED_STORAGE, JSON.stringify([...keys]));
-  } catch {
-    // La disposition vaut pour cette session, et c'est déjà l'essentiel.
-  }
+  return raw.filter((key): key is PanelKey => PANEL_KEYS.includes(key as PanelKey));
 }
 
 export interface DesignerProps {
@@ -112,7 +93,12 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
 
   // Les panneaux repliés. Le réglage suit l'utilisateur d'une session à l'autre : replier
   // le panneau de réglages à chaque ouverture serait une corvée quotidienne.
-  const [collapsed, setCollapsed] = useState<ReadonlySet<PanelKey>>(readCollapsed);
+  const [collapsedKeys, setCollapsedKeys] = usePersisted<PanelKey[]>(
+    COLLAPSED_STORAGE,
+    [],
+    revivePanels,
+  );
+  const collapsed = useMemo(() => new Set(collapsedKeys), [collapsedKeys]);
 
   // Sous `lg`, les panneaux sont des onglets : un panneau replié la veille sur un
   // ordinateur ne doit pas revenir en bandeau illisible sur un téléphone.
@@ -135,13 +121,11 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
   };
 
   const toggle = (key: PanelKey) =>
-    setCollapsed((previous) => {
-      const next = new Set(previous);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      writeCollapsed(next);
-      return next;
-    });
+    setCollapsedKeys(
+      collapsedKeys.includes(key)
+        ? collapsedKeys.filter((candidate) => candidate !== key)
+        : [...collapsedKeys, key],
+    );
 
   const deferredModel = useDeferredValue(model);
   const furniture = useMemo(() => build(deferredModel), [deferredModel]);

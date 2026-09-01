@@ -279,7 +279,9 @@
   },
   "nav": {
     "projects": "Projets",
-    "tagline": "Conception technique"
+    "tagline": "Conception technique",
+    "collapse": "Replier le menu",
+    "expand": "Déployer le menu"
   },
   "pipeline": {
     "design": "Conception",

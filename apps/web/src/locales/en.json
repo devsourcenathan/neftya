@@ -279,7 +279,9 @@
   },
   "nav": {
     "projects": "Projects",
-    "tagline": "Technical design"
+    "tagline": "Technical design",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu"
   },
   "pipeline": {
     "design": "Design",

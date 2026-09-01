@@ -1348,3 +1348,27 @@ distinguer.
 précaution sans coût, qui ne peut que rendre le dimensionnement plus prompt. **Ce qui n'a
 pas été fait :** affirmer que cela corrige quoi que ce soit. À vérifier dans un vrai
 navigateur, et c'est écrit dans le code à côté du réglage.
+
+---
+
+## 2026-09-01 — La barre latérale se replie, et un seul mécanisme mémorise tout
+
+**Décision.** La barre passe de 280 px à 64 px : la marque reste, les libellés cèdent la
+place aux seules icônes, et chaque entrée porte alors son nom en infobulle et en nom
+accessible. Le bouton de repli est au bas de la barre, là où il ne se confond avec aucune
+entrée de navigation.
+
+**Une entrée réduite à son icône devient un rébus** si rien ne la nomme : c'est ce que
+`title` et `aria-label` réparent, et c'est aussi ce qui la garde utilisable au clavier et au
+lecteur d'écran.
+
+**Le stockage des préférences d'affichage est maintenant un seul crochet**, `usePersisted`.
+Le repli des panneaux du mode conception avait déjà sa mécanique tolérante ; en écrire une
+seconde pour la barre aurait fait deux endroits à corriger le jour où `localStorage` lève
+autrement. Ces réglages vivent dans le navigateur et non sur le serveur : ils appartiennent
+au poste de travail, et un menuisier qui règle son écran d'atelier n'impose rien à son
+collègue.
+
+**Sous `lg`, la barre est horizontale et le repli n'a pas cours** — même règle que pour les
+panneaux, et pour la même raison : un état hérité d'un grand écran ne doit pas mutiler la
+navigation d'un téléphone.
