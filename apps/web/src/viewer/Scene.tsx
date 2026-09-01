@@ -93,6 +93,19 @@ export function Scene({
       // `dpr` plafonné : sur un mobile à 3× le nombre de pixels à remplir triple, pour un
       // gain visuel nul sur des panneaux plats.
       dpr={[1, 2]}
+      /**
+       * Mesure immédiate, sans temporisation ni suivi du défilement.
+       *
+       * La scène est chargée à la demande : elle arrive après la mise en page, et une mesure
+       * différée laisse le canevas à sa taille par défaut de 300 × 150 jusqu'au premier
+       * redimensionnement.
+       *
+       * **Précaution non vérifiée.** Le navigateur d'essai ne compose pas d'images, donc
+       * `ResizeObserver` n'y délivre rien et le canevas y reste à 300 × 150 quoi qu'on
+       * fasse : impossible d'y distinguer le défaut de l'artefact. À confirmer dans un
+       * vrai navigateur.
+       */
+      resize={{ debounce: 0, scroll: false }}
       shadows="soft"
       camera={{ fov: 40, position: [2.4, 1.9, 3] }}
       onPointerMissed={() => onSelect(null)}

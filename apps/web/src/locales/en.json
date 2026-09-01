@@ -298,5 +298,10 @@
     "draft": "Draft",
     "needs_review": "Needs review",
     "ready": "Ready to cut"
+  },
+  "panel": {
+    "expand": "Open {{panel}}",
+    "collapse": "Collapse {{panel}}",
+    "lastOpen": "The last open panel cannot be collapsed."
   }
 }

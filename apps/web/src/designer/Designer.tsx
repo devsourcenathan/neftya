@@ -17,7 +17,9 @@ import {
 } from '@neftya/drawing';
 import { UNIT_SYSTEMS } from '@neftya/units';
 import { usePreferences } from '../preferences/PreferencesContext.js';
-import { Badge, Button, Card, SectionTitle, SegmentedControl } from '../ui/index.js';
+import { Badge, Button, SegmentedControl } from '../ui/index.js';
+import { Panel } from '../ui/Panel.js';
+import { useMediaQuery } from '../ui/useMediaQuery.js';
 import { CubeIcon, RulerIcon, SaveIcon, WarningIcon } from '../ui/icons.js';
 import { Controls } from './Controls.js';
 import { PartDetails } from './PartDetails.js';
@@ -48,6 +50,39 @@ const Scene = lazy(async () => ({
   default: (await import('../viewer/Scene.js')).Scene,
 }));
 
+type PanelKey = 'settings' | 'view' | 'parts';
+
+const PANEL_KEYS: readonly PanelKey[] = ['settings', 'view', 'parts'];
+
+const COLLAPSED_STORAGE = 'neftya.collapsedPanels';
+
+/**
+ * `localStorage` peut lever — navigation privée, stockage refusé. Une disposition de
+ * panneaux ne vaut pas de faire tomber l'éditeur.
+ */
+function readCollapsed(): ReadonlySet<PanelKey> {
+  try {
+    const stored = window.localStorage.getItem(COLLAPSED_STORAGE);
+    const keys = stored ? (JSON.parse(stored) as unknown) : [];
+
+    return new Set(
+      Array.isArray(keys)
+        ? keys.filter((key): key is PanelKey => PANEL_KEYS.includes(key as PanelKey))
+        : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCollapsed(keys: ReadonlySet<PanelKey>): void {
+  try {
+    window.localStorage.setItem(COLLAPSED_STORAGE, JSON.stringify([...keys]));
+  } catch {
+    // La disposition vaut pour cette session, et c'est déjà l'essentiel.
+  }
+}
+
 export interface DesignerProps {
   initialModel: ParsedFurnitureInput;
   onSave?: (model: ParsedFurnitureInput) => void;
@@ -75,6 +110,39 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
    */
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
 
+  // Les panneaux repliés. Le réglage suit l'utilisateur d'une session à l'autre : replier
+  // le panneau de réglages à chaque ouverture serait une corvée quotidienne.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<PanelKey>>(readCollapsed);
+
+  // Sous `lg`, les panneaux sont des onglets : un panneau replié la veille sur un
+  // ordinateur ne doit pas revenir en bandeau illisible sur un téléphone.
+  const wide = useMediaQuery('(min-width: 1024px)');
+
+  const isCollapsed = (key: PanelKey) => wide && collapsed.has(key);
+  const openCount = PANEL_KEYS.filter((key) => !isCollapsed(key)).length;
+
+  /**
+   * La largeur d'un panneau latéral.
+   *
+   * Fixe tant que la vue est ouverte — c'est elle qui doit prendre la place. Vue repliée,
+   * les panneaux restants se partagent l'espace : laisser deux colonnes étroites et un
+   * grand vide au milieu n'aurait servi personne.
+   */
+  const sideWidth = (key: PanelKey) => {
+    if (isCollapsed(key)) return 'lg:w-11 lg:shrink-0';
+    if (isCollapsed('view')) return 'flex-1';
+    return key === 'settings' ? 'lg:w-[340px] lg:shrink-0' : 'lg:w-[320px] lg:shrink-0';
+  };
+
+  const toggle = (key: PanelKey) =>
+    setCollapsed((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      writeCollapsed(next);
+      return next;
+    });
+
   const deferredModel = useDeferredValue(model);
   const furniture = useMemo(() => build(deferredModel), [deferredModel]);
   const rows = useMemo(() => cutList(furniture), [furniture]);
@@ -101,167 +169,192 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
         ]}
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-[340px_1fr_320px]">
-        <aside
-          className={`order-2 overflow-y-auto lg:order-1 lg:block ${
-            panel === 'settings' ? '' : 'hidden'
-          }`}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 lg:flex-row">
+        <div
+          className={`order-2 min-h-0 lg:order-1 ${
+            panel === 'settings' ? 'flex' : 'hidden'
+          } lg:flex ${sideWidth('settings')}`}
         >
-          <Card className="p-4">
+          <Panel
+            title={t('designer.tabs.settings')}
+            side="left"
+            collapsed={isCollapsed('settings')}
+            canCollapse={openCount > 1}
+            onToggle={() => toggle('settings')}
+            className="w-full"
+          >
             <Controls model={model} dispatch={act} />
-          </Card>
-        </aside>
+          </Panel>
+        </div>
 
-        <section
-          className={`order-1 flex min-h-[55vh] flex-col gap-3 lg:order-2 lg:flex ${
+        <div
+          className={`order-1 min-h-[55vh] lg:order-2 lg:min-h-0 ${
             panel === 'view' ? 'flex' : 'hidden'
-          }`}
+          } lg:flex ${isCollapsed('view') ? 'lg:w-11 lg:shrink-0' : 'flex-1'}`}
         >
-          <div className="flex items-center gap-2">
-            {/* La 3D montre le meuble, la 2D le mesure. Les deux sont des vues du même
+          <Panel
+            title={t('designer.tabs.view')}
+            side="left"
+            collapsed={isCollapsed('view')}
+            canCollapse={openCount > 1}
+            onToggle={() => toggle('view')}
+            className="w-full"
+          >
+            <section className="flex h-full min-h-0 flex-col gap-3">
+              <div className="flex items-center gap-2">
+                {/* La 3D montre le meuble, la 2D le mesure. Les deux sont des vues du même
               modèle, calculées par le même moteur : basculer ne recharge rien. */}
-            <div className="inline-flex rounded-md border border-outline-variant bg-surface p-0.5">
-              {(['3d', '2d'] as const).map((candidate) => (
-                <button
-                  key={candidate}
-                  type="button"
-                  onClick={() => setMode(candidate)}
-                  className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-                    candidate === mode
-                      ? 'bg-primary text-on-primary'
-                      : 'text-ink-variant hover:text-ink'
-                  }`}
+                <div className="inline-flex rounded-md border border-outline-variant bg-surface p-0.5">
+                  {(['3d', '2d'] as const).map((candidate) => (
+                    <button
+                      key={candidate}
+                      type="button"
+                      onClick={() => setMode(candidate)}
+                      className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                        candidate === mode
+                          ? 'bg-primary text-on-primary'
+                          : 'text-ink-variant hover:text-ink'
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        {candidate === '3d' ? <CubeIcon /> : <RulerIcon />}
+                        {t(`designer.mode.${candidate}`)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {mode === '2d' && (
+                  <select
+                    className="ml-1 rounded-md border border-outline-variant bg-surface px-2.5 py-1.5 text-sm"
+                    value={view}
+                    aria-label={t('plans.view')}
+                    onChange={(event) => setView(event.target.value as ViewName)}
+                  >
+                    {VIEWS.map((name) => (
+                      <option key={name} value={name}>
+                        {t(`plans.views.${name}`)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-hidden rounded border border-hairline bg-surface">
+                {mode === '3d' ? (
+                  <Suspense
+                    fallback={
+                      <p className="p-4 text-sm text-stone-500">{t('state.loading')}</p>
+                    }
+                  >
+                    <Scene
+                      furniture={furniture}
+                      selectedPartId={selectedPartId}
+                      onSelect={setSelectedPartId}
+                      explode={explode}
+                    />
+                  </Suspense>
+                ) : (
+                  <div
+                    className="h-full overflow-auto bg-surface p-3"
+                    role="img"
+                    aria-label={t(`plans.views.${view}`)}
+                    // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère.
+                    dangerouslySetInnerHTML={{
+                      __html: technicalViewSvg(
+                        drawing?.views.find((candidate) => candidate.view === view) ??
+                          (drawing?.views[0] as NonNullable<
+                            typeof drawing
+                          >['views'][number]),
+                      ),
+                    }}
+                  />
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-5 text-sm">
+                <label
+                  className={`flex items-center gap-2 ${mode === '3d' ? '' : 'opacity-40'}`}
                 >
-                  <span className="inline-flex items-center gap-1.5">
-                    {candidate === '3d' ? <CubeIcon /> : <RulerIcon />}
-                    {t(`designer.mode.${candidate}`)}
-                  </span>
-                </button>
-              ))}
+                  {t('designer.explode')}
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={explode}
+                    disabled={mode !== '3d'}
+                    onChange={(event) => setExplode(Number(event.target.value))}
+                    aria-label={t('designer.explode')}
+                  />
+                </label>
+
+                <fieldset className="flex items-center gap-2">
+                  <legend className="sr-only">{t('units.legend')}</legend>
+                  {UNIT_SYSTEMS.map((system) => (
+                    <label key={system} className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name="unit-system"
+                        checked={unitSystem === system}
+                        onChange={() => setUnitSystem(system)}
+                      />
+                      {t(`units.${system}`)}
+                    </label>
+                  ))}
+                </fieldset>
+
+                {onSave && (
+                  <Button
+                    tone="primary"
+                    className="ml-auto"
+                    onClick={() => onSave(model)}
+                    disabled={saving}
+                  >
+                    <SaveIcon />
+                    {saving ? t('action.saving') : t('action.save')}
+                  </Button>
+                )}
+              </div>
+
+              {furniture.warnings.length > 0 && (
+                <ul className="flex flex-col gap-1 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
+                  {furniture.warnings.map((warning, index) => (
+                    <li key={index} className="flex gap-2">
+                      <Badge tone="warning">
+                        <WarningIcon className="mr-1" />
+                        {t('designer.warning')}
+                      </Badge>
+                      <span>{t(`warning.${warning.code}`)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </Panel>
+        </div>
+
+        <div
+          className={`order-3 min-h-0 lg:order-3 ${
+            panel === 'parts' ? 'flex' : 'hidden'
+          } lg:flex ${sideWidth('parts')}`}
+        >
+          <Panel
+            title={t('layers.title')}
+            hint={t('designer.partsCount', { count: rows.length })}
+            side="right"
+            collapsed={isCollapsed('parts')}
+            canCollapse={openCount > 1}
+            onToggle={() => toggle('parts')}
+            className="w-full"
+          >
+            <div className="mb-4 border-b border-hairline pb-4">
+              <h3 className="label-caps mb-2 text-ink-variant">
+                {t('designer.selection')}
+              </h3>
+              <PartDetails furniture={furniture} selectedPartId={selectedPartId} />
             </div>
 
-            {mode === '2d' && (
-              <select
-                className="ml-1 rounded-md border border-outline-variant bg-surface px-2.5 py-1.5 text-sm"
-                value={view}
-                aria-label={t('plans.view')}
-                onChange={(event) => setView(event.target.value as ViewName)}
-              >
-                {VIEWS.map((name) => (
-                  <option key={name} value={name}>
-                    {t(`plans.views.${name}`)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-hidden rounded border border-hairline bg-surface">
-            {mode === '3d' ? (
-              <Suspense
-                fallback={
-                  <p className="p-4 text-sm text-stone-500">{t('state.loading')}</p>
-                }
-              >
-                <Scene
-                  furniture={furniture}
-                  selectedPartId={selectedPartId}
-                  onSelect={setSelectedPartId}
-                  explode={explode}
-                />
-              </Suspense>
-            ) : (
-              <div
-                className="h-full overflow-auto bg-surface p-3"
-                role="img"
-                aria-label={t(`plans.views.${view}`)}
-                // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère.
-                dangerouslySetInnerHTML={{
-                  __html: technicalViewSvg(
-                    drawing?.views.find((candidate) => candidate.view === view) ??
-                      (drawing?.views[0] as NonNullable<
-                        typeof drawing
-                      >['views'][number]),
-                  ),
-                }}
-              />
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-5 text-sm">
-            <label
-              className={`flex items-center gap-2 ${mode === '3d' ? '' : 'opacity-40'}`}
-            >
-              {t('designer.explode')}
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={explode}
-                disabled={mode !== '3d'}
-                onChange={(event) => setExplode(Number(event.target.value))}
-                aria-label={t('designer.explode')}
-              />
-            </label>
-
-            <fieldset className="flex items-center gap-2">
-              <legend className="sr-only">{t('units.legend')}</legend>
-              {UNIT_SYSTEMS.map((system) => (
-                <label key={system} className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    name="unit-system"
-                    checked={unitSystem === system}
-                    onChange={() => setUnitSystem(system)}
-                  />
-                  {t(`units.${system}`)}
-                </label>
-              ))}
-            </fieldset>
-
-            {onSave && (
-              <Button
-                tone="primary"
-                className="ml-auto"
-                onClick={() => onSave(model)}
-                disabled={saving}
-              >
-                <SaveIcon />
-                {saving ? t('action.saving') : t('action.save')}
-              </Button>
-            )}
-          </div>
-
-          {furniture.warnings.length > 0 && (
-            <ul className="flex flex-col gap-1 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
-              {furniture.warnings.map((warning, index) => (
-                <li key={index} className="flex gap-2">
-                  <Badge tone="warning">
-                    <WarningIcon className="mr-1" />
-                    {t('designer.warning')}
-                  </Badge>
-                  <span>{t(`warning.${warning.code}`)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <aside
-          className={`order-3 flex-col gap-4 overflow-y-auto lg:flex ${
-            panel === 'parts' ? 'flex' : 'hidden'
-          }`}
-        >
-          <Card className="p-4">
-            <SectionTitle>{t('designer.selection')}</SectionTitle>
-            <PartDetails furniture={furniture} selectedPartId={selectedPartId} />
-          </Card>
-
-          <Card className="p-4">
-            <SectionTitle hint={t('designer.partsCount', { count: rows.length })}>
-              {t('layers.title')}
-            </SectionTitle>
             <Layers
               parts={furniture.parts}
               hidden={hidden}
@@ -277,8 +370,8 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
               }
               onShowAll={() => setHidden(new Set())}
             />
-          </Card>
-        </aside>
+          </Panel>
+        </div>
       </div>
     </div>
   );

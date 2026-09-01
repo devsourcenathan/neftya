@@ -298,5 +298,10 @@
     "draft": "Brouillon",
     "needs_review": "À revoir",
     "ready": "Prêt à couper"
+  },
+  "panel": {
+    "expand": "Ouvrir {{panel}}",
+    "collapse": "Replier {{panel}}",
+    "lastOpen": "Le dernier panneau ouvert ne peut pas être replié."
   }
 }

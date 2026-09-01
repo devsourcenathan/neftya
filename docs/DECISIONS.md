@@ -1306,3 +1306,45 @@ retirer** — le défaut le plus coûteux possible dans ce produit, et le plus s
 **La règle est extraite en fonction pure**, `visibleParts`, et testée. Un canevas WebGL ne
 se lit pas dans un test : laisser la règle à l'intérieur de la scène revenait à ne pas la
 vérifier du tout. Retirer le filtre fait échouer un test.
+
+---
+
+## 2026-09-01 — Les trois panneaux du mode conception se replient
+
+**Décision.** Réglages, Vue et Calques se replient chacun en un bandeau étroit qui porte son
+nom à la verticale et se rouvre d'un clic. Le réglage est mémorisé d'une session à l'autre.
+
+**Deux gardes, et elles comptent plus que la fonctionnalité :**
+
+- **Le dernier panneau ouvert ne peut pas être replié.** Tout replier laisserait un écran
+  vide, et un écran vide dont on ne sait pas sortir est pire qu'un panneau de trop. Le
+  bouton est désactivé et dit pourquoi.
+- **Un panneau replié ne disparaît pas.** Le bandeau garde son nom : un volet qui
+  s'évanouit laisse l'utilisateur sans moyen de le retrouver, et c'est la faute classique
+  des interfaces à volets.
+
+**La vue reprend la place quand les côtés se replient**, et inversement : vue repliée, les
+panneaux restants se partagent la largeur. Laisser deux colonnes étroites et un grand vide
+au milieu n'aurait servi personne.
+
+**Sous `lg`, le repli n'a pas cours** : les panneaux y sont des onglets. L'état est donc lu
+à travers une requête média en JavaScript et non par une classe CSS — `hidden` cache un
+état, il ne le change pas, et un panneau replié la veille sur un ordinateur serait revenu en
+bandeau illisible sur un téléphone.
+
+---
+
+## 2026-09-01 — Une mesure que le navigateur d'essai ne permet pas de faire
+
+**Constat.** Dans le navigateur automatisé de cette session, le canevas 3D reste à sa taille
+par défaut de 300 × 150 tant qu'un événement `resize` n'est pas envoyé à la main.
+
+**Ce n'est pas concluant.** Ce navigateur ne compose pas d'images ; `ResizeObserver` n'y
+délivre donc aucune notification, et c'est précisément ce mécanisme qui dimensionne le
+canevas. Le symptôme est le même que celui d'un vrai défaut, et rien ici ne permet de les
+distinguer.
+
+**Ce qui a été fait :** la mesure est demandée immédiate (`resize={{ debounce: 0 }}`) — une
+précaution sans coût, qui ne peut que rendre le dimensionnement plus prompt. **Ce qui n'a
+pas été fait :** affirmer que cela corrige quoi que ce soit. À vérifier dans un vrai
+navigateur, et c'est écrit dans le code à côté du réglage.
