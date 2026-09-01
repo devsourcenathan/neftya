@@ -100,10 +100,10 @@ export function Scene({
        * différée laisse le canevas à sa taille par défaut de 300 × 150 jusqu'au premier
        * redimensionnement.
        *
-       * **Précaution non vérifiée.** Le navigateur d'essai ne compose pas d'images, donc
-       * `ResizeObserver` n'y délivre rien et le canevas y reste à 300 × 150 quoi qu'on
-       * fasse : impossible d'y distinguer le défaut de l'artefact. À confirmer dans un
-       * vrai navigateur.
+       * **Vérifié dans un vrai navigateur le 1er septembre 2026** : le canevas occupe bien
+       * son panneau. Le navigateur automatisé des essais, lui, ne compose pas d'images et
+       * n'y délivre donc aucune notification de `ResizeObserver` — le canevas y reste à
+       * 300 × 150 quoi qu'on fasse. Ne pas conclure d'une mesure prise là-bas.
        */
       resize={{ debounce: 0, scroll: false }}
       shadows="soft"

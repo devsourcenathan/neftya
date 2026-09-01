@@ -1346,8 +1346,17 @@ distinguer.
 
 **Ce qui a été fait :** la mesure est demandée immédiate (`resize={{ debounce: 0 }}`) — une
 précaution sans coût, qui ne peut que rendre le dimensionnement plus prompt. **Ce qui n'a
-pas été fait :** affirmer que cela corrige quoi que ce soit. À vérifier dans un vrai
-navigateur, et c'est écrit dans le code à côté du réglage.
+pas été fait :** affirmer que cela corrige quoi que ce soit.
+
+**Vérifié le 1er septembre 2026 dans un vrai navigateur : il n'y avait pas de défaut.** Le
+canevas 3D occupe son panneau, et la barre latérale se rétrécit bien à 64 px. Les deux
+symptômes venaient du navigateur d'essai, qui ne compose pas d'images et n'y déclenche donc
+ni `ResizeObserver` ni recalcul fiable de mise en page.
+
+**La leçon est l'inverse de celle qu'on attend.** L'outil qui avait trouvé les défauts les
+plus utiles de ce projet — téléchargements en `401`, CORS muet sur `PUT` — est le même qui
+en a inventé deux ici. Ses assertions sur **l'état et le DOM** sont fiables ; ses mesures de
+**géométrie** ne le sont pas, et c'est désormais écrit dans le code à côté du réglage.
 
 ---
 
