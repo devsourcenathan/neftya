@@ -61,7 +61,8 @@
     "mode": {
       "3d": "3D",
       "2d": "2D dimensioned"
-    }
+    },
+    "doors": "Doors"
   },
   "units": {
     "legend": "Unit system",
@@ -95,7 +96,8 @@
       "drawer_front_panel": "Drawer front panel",
       "drawer_back_panel": "Drawer back panel",
       "drawer_bottom": "Drawer bottom",
-      "drawer_face": "Drawer face"
+      "drawer_face": "Drawer face",
+      "door": "Door"
     },
     "grains": {
       "length": "Along the length",
@@ -114,7 +116,9 @@
     "NO_BACK_PANEL": "Without a back panel the carcass racks over time.",
     "FRONT_GAP_OFF_DIVIDER": "A front gap does not sit on its divider.",
     "COMPARTMENT_TOO_NARROW": "A bay is too narrow for what it must hold.",
-    "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it."
+    "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it.",
+    "DOOR_DOES_NOT_FIT": "A door leaf does not fit its bay: no parts are produced for it.",
+    "DOOR_LEAF_TOO_WIDE": "A door leaf is wide: it will pull on its hinges and end up rubbing. Fit a pair."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
@@ -161,7 +165,8 @@
     "shelves": "Rest the shelves on their supports.",
     "back": "Slide the back into its groove, then check the carcass is square.",
     "drawers": "Build the drawer boxes: sides, front, back, then bottom.",
-    "drawer_faces": "Fit the faces onto the boxes, with an even gap between them."
+    "drawer_faces": "Fit the faces onto the boxes, with an even gap between them.",
+    "doors": "Hang the doors last, then adjust the hinges: an even gap all the way round."
   },
   "plans": {
     "open": "Technical drawings",

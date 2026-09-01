@@ -61,7 +61,8 @@
     "mode": {
       "3d": "3D",
       "2d": "2D coté"
-    }
+    },
+    "doors": "Portes"
   },
   "units": {
     "legend": "Système d'unités",
@@ -95,7 +96,8 @@
       "drawer_front_panel": "Devant de tiroir",
       "drawer_back_panel": "Arrière de tiroir",
       "drawer_bottom": "Fond de tiroir",
-      "drawer_face": "Façade de tiroir"
+      "drawer_face": "Façade de tiroir",
+      "door": "Porte"
     },
     "grains": {
       "length": "Dans la longueur",
@@ -114,7 +116,9 @@
     "NO_BACK_PANEL": "Sans fond, le caisson se déforme dans le temps.",
     "FRONT_GAP_OFF_DIVIDER": "Un jeu de façade ne tombe pas sur sa séparation.",
     "COMPARTMENT_TOO_NARROW": "Un compartiment est trop étroit pour ce qu'il doit recevoir.",
-    "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui."
+    "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
+    "DOOR_DOES_NOT_FIT": "Un vantail ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
+    "DOOR_LEAF_TOO_WIDE": "Un vantail est large : il pèsera sur ses charnières et finira par frotter. Posez-en deux."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",
@@ -161,7 +165,8 @@
     "shelves": "Posez les étagères sur leurs taquets.",
     "back": "Glissez le fond dans sa rainure, puis vérifiez l'équerrage du caisson.",
     "drawers": "Montez les caissons de tiroir : côtés, devant, arrière, puis fond.",
-    "drawer_faces": "Fixez les façades sur les caissons, jeu régulier entre elles."
+    "drawer_faces": "Fixez les façades sur les caissons, jeu régulier entre elles.",
+    "doors": "Posez les portes en dernier, puis réglez les charnières : jeu régulier sur tout le pourtour."
   },
   "plans": {
     "open": "Plans techniques",

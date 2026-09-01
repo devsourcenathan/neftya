@@ -363,7 +363,7 @@ prouve.
 ## Ce qui n'est pas dans ce plan
 
 Volontairement absents de la V1, et donc de cette roadmap : analyse d'image, assistant IA,
-portes, positions de perçage, catalogue de quincaillerie, éditeur manuel, export DXF,
+positions de perçage, catalogue de quincaillerie, éditeur manuel, export DXF,
 contrainte de sens du fil. Tout cela est en V2 ou V3 ([ROADMAP.md](ROADMAP.md)).
 
 **Ne pas les commencer « puisqu'on y est ».** C'est exactement ainsi que DealerOS a livré,

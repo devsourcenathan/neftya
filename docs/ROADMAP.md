@@ -16,6 +16,7 @@ manuel. Son objectif unique est de prouver que le moteur produit des cotes juste
 
 - Panneaux, étagères, compartiments
 - **Tiroirs** — caisson simple et façade rapportée
+- **Portes** — en applique, un ou deux vantaux, charnières comptées à la hauteur
 - Convention d'assemblage par défaut (côtés entre dessus et dessous)
 - Propagation par étirement
 - Validation de la flèche des étagères
@@ -96,7 +97,8 @@ V2 ne doit être engagée.
 - Notify : envoi du devis au client
 - AI : clé d'API à tâches en liste blanche
 - **Positions de perçage** et catalogue de quincaillerie (coulisses, charnières, tourillons)
-- **Portes**, recouvrement total
+- ~~**Portes**, recouvrement total~~ — **livrées en V1 le 1er septembre 2026**, en applique,
+  un ou deux vantaux par compartiment
 - Optimisation avancée des panneaux, avec contrainte de sens du fil
 - Export DXF
 - Estimation automatique des coûts

@@ -21,7 +21,8 @@ export type DesignerAction =
   | { type: 'back'; hasBack: boolean }
   | { type: 'compartments'; count: number }
   | { type: 'shelves'; index: number; count: number }
-  | { type: 'drawers'; index: number; count: number };
+  | { type: 'drawers'; index: number; count: number }
+  | { type: 'doors'; index: number; count: number };
 
 /** Bornes de saisie. Le moteur en refuserait d'autres ; autant ne pas les proposer. */
 export const LIMITS = {
@@ -31,6 +32,8 @@ export const LIMITS = {
   compartments: { min: 1, max: 12 },
   shelves: { min: 0, max: 12 },
   drawers: { min: 0, max: 8 },
+  // Au-delà de deux, ce n'est plus une porte mais une séparation.
+  doors: { min: 0, max: 2 },
 } as const;
 
 export function reduce(
@@ -76,6 +79,16 @@ export function reduce(
             : compartment,
         ),
       };
+
+    case 'doors':
+      return {
+        ...model,
+        compartments: model.compartments.map((compartment, index) =>
+          index === action.index
+            ? { ...compartment, doors: clamp(action.count, LIMITS.doors) }
+            : compartment,
+        ),
+      };
   }
 }
 
@@ -99,6 +112,7 @@ function resize(
     ...Array.from({ length: target - compartments.length }, () => ({
       shelves: 0,
       drawers: 0,
+      doors: 0,
     })),
   ];
 }
@@ -151,8 +165,9 @@ export function presets(): Preset[] {
       model: furnitureInput.parse({
         dimensions: { widthMm: 2000, heightMm: 2400, depthMm: 600 },
         compartments: [
-          { shelves: 1, drawers: 0 },
-          { shelves: 2, drawers: 3 },
+          // Une paire de vantaux par compartiment : un vantail de 1000 mm s'affaisserait.
+          { shelves: 1, drawers: 0, doors: 2 },
+          { shelves: 2, drawers: 3, doors: 2 },
         ],
       }),
     },
@@ -172,8 +187,8 @@ export function presets(): Preset[] {
       model: furnitureInput.parse({
         dimensions: { widthMm: 1200, heightMm: 900, depthMm: 450 },
         compartments: [
-          { shelves: 1, drawers: 2 },
-          { shelves: 1, drawers: 2 },
+          { shelves: 1, drawers: 1, doors: 1 },
+          { shelves: 1, drawers: 1, doors: 1 },
         ],
       }),
     },

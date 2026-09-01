@@ -336,6 +336,36 @@ mais n'est pas exposé en V1.
 7. Fond.
 8. Quincaillerie et assemblages.
 
+### 7.2 bis Le plan de façade
+
+Tiroirs et portes vivent dans **le même plan** — celui qu'on voit de face — et se partagent
+donc la hauteur du compartiment. Chaque rangée reçoit une part égale, moins les jeux.
+
+**Convention V1 : les tiroirs en bas, la porte au-dessus.** C'est l'arrangement d'un dressing
+à socle de tiroirs. Un buffet range souvent l'inverse ; rendre l'ordre configurable est un
+travail de V2, et l'inventer ici reviendrait à choisir à la place du menuisier.
+
+Les portes sont **en applique** : elles recouvrent le devant du caisson, comme les façades de
+tiroir. Une porte encastrée à fleur demanderait un jeu périmétrique différent sur chaque
+bord et un caisson d'équerre au dixième de millimètre — ce qu'on n'obtient pas d'un panneau
+scié.
+
+**Deux vantaux sont rigoureusement égaux**, et le jeu central absorbe le millimètre impair.
+Un écart d'un millimètre est invisible sur une étagère et voyant entre deux portes qu'on
+regarde de face toute la journée.
+
+Le nombre de charnières dépend de la **hauteur** du vantail, pas de son nombre :
+
+| Hauteur | Charnières |
+|---|---|
+| ≤ 900 mm | 2 |
+| ≤ 1600 mm | 3 |
+| ≤ 2000 mm | 4 |
+| au-delà | 5 |
+
+Un vantail unique de plus de 600 mm de large est **signalé, pas refusé** : il pèsera sur ses
+charnières et finira par frotter, mais c'est au menuisier de trancher.
+
 ### 7.3 Répartition d'un espace intérieur
 
 Pour `n` compartiments dans une largeur intérieure `Li` avec `k = n − 1` séparateurs :

@@ -47,6 +47,14 @@ export const parameters = z.object({
   drawerBackClearanceMm: positiveMillimetres.default(10),
   /** Jeu entre deux façades. */
   frontGapMm: positiveMillimetres.default(3),
+  /**
+   * Largeur au-delà de laquelle un vantail unique n'est plus raisonnable.
+   *
+   * Une porte large pèse sur ses charnières, s'affaisse et finit par frotter. Au-delà, un
+   * atelier pose deux vantaux. Le moteur ne refuse pas — c'est le menuisier qui décide —
+   * mais il le dit.
+   */
+  maxDoorLeafWidthMm: positiveMillimetres.default(600),
   assemblyConvention: assemblyConvention.default('sides_between_top_bottom'),
   /**
    * Charge de référence pour la validation de flèche, en kilogrammes par étagère.

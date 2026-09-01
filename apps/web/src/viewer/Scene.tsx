@@ -30,6 +30,7 @@ const COLOURS: Record<string, string> = {
   shelf: '#d7bd94',
   back: '#8d7350',
   drawer_face: '#a67c48',
+  door: '#a67c48',
   drawer_side: '#c0a273',
   drawer_front_panel: '#c0a273',
   drawer_back_panel: '#c0a273',

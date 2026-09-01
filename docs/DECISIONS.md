@@ -1094,3 +1094,35 @@ la chute, là où ils doivent être.
 **Corollaire de dessin.** Le plan montre la limite de délignage en trait interrompu. Sans
 elle, l'opérateur mesure depuis le bord du panneau et se trompe de dix millimètres sur
 chaque cote — l'inverse exact du but recherché.
+
+---
+
+## 2026-09-01 — Les portes entrent en V1
+
+**Décision.** Un compartiment porte 0, 1 ou 2 vantaux, en applique. Ils partagent le plan de
+façade avec les tiroirs : tiroirs en bas, porte au-dessus.
+
+**Motif.** L'analyse comparative au brief l'a montré : le moteur ne connaissait que onze
+rôles de pièces, tous de caisson. Le modèle prédéfini « Dressing » était un dressing sans
+portes — pour un menuisier, une bibliothèque profonde. La cible primaire du brief dit
+« je veux exactement ce meuble » ; sans portes, la moitié des meubles courants était hors
+d'atteinte.
+
+**Trois choix de menuiserie, chacun défendable et chacun discutable :**
+
+- **En applique et non encastrée.** Une porte à fleur demande un jeu périmétrique différent
+  sur chaque bord et un caisson d'équerre au dixième — ce qu'on n'obtient pas d'un panneau
+  scié.
+- **Deux vantaux rigoureusement égaux**, le jeu central absorbant l'impair. `divideEvenly`
+  aurait donné 498 et 499 : invisible sur une étagère, voyant entre deux portes.
+- **Tiroirs en bas, porte au-dessus.** Un buffet range souvent l'inverse. L'ordre sera
+  configurable en V2 ; l'inventer maintenant reviendrait à choisir à la place du menuisier.
+
+**Un défaut plus ancien, révélé au passage.** Quand la hauteur d'un compartiment ne suffit
+même pas aux jeux entre façades, `divideEvenly` distribuait des hauteurs **négatives** et
+laissait le reste à la dernière rangée. Les tiroirs étaient sauvés par leur propre contrôle ;
+la porte, elle, héritait d'une hauteur plausible tirée d'un partage impossible. Le partage
+est désormais refusé en amont.
+
+**Vérifié en le cassant :** rendre les vantaux inégaux fait tomber 3 tests, inverser
+tiroirs et porte 3 autres, retirer la garde de façade 1.

@@ -24,6 +24,7 @@ export const partRole = z.enum([
   'drawer_back_panel',
   'drawer_bottom',
   'drawer_face',
+  'door',
 ]);
 
 export type PartRole = z.infer<typeof partRole>;

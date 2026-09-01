@@ -72,6 +72,32 @@ export function billOfMaterials(
  * qu'éparpillés dans une vue : le jour où un atelier travaille autrement, il n'y a qu'un
  * endroit à changer.
  */
+/**
+ * Le nombre de charnières d'un vantail dépend de sa **hauteur**, pas de son nombre.
+ *
+ * Deux charnières tiennent une porte basse ; une porte de dressing qui n'en aurait que
+ * deux s'affaisse et finit par frotter sur le caisson. Les paliers sont ceux des
+ * fabricants de quincaillerie.
+ */
+function hingesFor(leafHeightMm: number): number {
+  if (leafHeightMm <= 900) return 2;
+  if (leafHeightMm <= 1600) return 3;
+  if (leafHeightMm <= 2000) return 4;
+  return 5;
+}
+
+function hinges(furniture: Furniture): number {
+  return furniture.parts
+    .filter((part) => part.role === 'door')
+    .reduce(
+      // La hauteur d'un vantail est sa plus grande dimension : les cotes de découpe sont
+      // normalisées, une porte de 2000 × 498 se lit dans cet ordre.
+      (total, part) =>
+        total + hingesFor(Math.max(part.lengthMm, part.widthMm)) * part.quantity,
+      0,
+    );
+}
+
 function accessories(furniture: Furniture): AccessoryLine[] {
   const count = (role: string) =>
     furniture.parts
@@ -91,6 +117,7 @@ function accessories(furniture: Furniture): AccessoryLine[] {
     // Quatre taquets par étagère.
     { key: 'shelf_support', quantity: shelves * 4 },
     { key: 'drawer_slide_pair', quantity: drawers },
+    { key: 'hinge', quantity: hinges(furniture) },
     { key: 'glue', quantity: 1 },
   ];
 

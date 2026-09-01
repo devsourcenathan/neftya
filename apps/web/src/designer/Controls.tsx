@@ -84,6 +84,13 @@ export function Controls({ model, dispatch }: ControlsProps) {
                   max={LIMITS.drawers.max}
                   onChange={(count) => dispatch({ type: 'drawers', index, count })}
                 />
+                <CountControl
+                  label={t('designer.doors')}
+                  value={compartment.doors}
+                  min={LIMITS.doors.min}
+                  max={LIMITS.doors.max}
+                  onChange={(count) => dispatch({ type: 'doors', index, count })}
+                />
               </div>
             </li>
           ))}

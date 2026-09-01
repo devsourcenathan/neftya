@@ -77,6 +77,9 @@ export const DEFAULT_ASSEMBLY: readonly AssemblyStepTemplate[] = [
     roles: ['drawer_face'],
     fastener: { key: 'drawer_slide_pair', per: 'drawer_face', count: 1 },
   },
+  // Les portes en dernier : elles se règlent une fois tout le reste en place, et un
+  // caisson qu'on manipule encore dérègle ce qu'on vient d'ajuster.
+  { key: 'doors', roles: ['door'] },
 ];
 
 export function assemblySteps(

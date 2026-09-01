@@ -24,7 +24,9 @@ export interface Warning {
     | 'NO_BACK_PANEL'
     | 'FRONT_GAP_OFF_DIVIDER'
     | 'COMPARTMENT_TOO_NARROW'
-    | 'DRAWER_DOES_NOT_FIT';
+    | 'DRAWER_DOES_NOT_FIT'
+    | 'DOOR_DOES_NOT_FIT'
+    | 'DOOR_LEAF_TOO_WIDE';
   /** Identifiant de la pièce concernée, quand il y en a une. */
   partId?: string;
   details: Record<string, number | string>;
@@ -156,19 +158,34 @@ export function build(rawInput: FurnitureInput): Furniture {
       ),
     );
 
+    const face = faces[index] as { startMm: number; widthMm: number };
+    const rows = facadeRows(compartment, height, p);
+
     const drawers = drawersOf({
       compartment,
       span,
-      innerHeight,
+      // Les caissons de tiroir n'occupent que la part intérieure située sous la porte.
+      innerHeight: innerHeight - rows.doorHeightMm,
       innerDepth,
       parameters: p,
-      faceWidthMm: (faces[index] as { widthMm: number }).widthMm,
-      faceOffsetMm: (faces[index] as { startMm: number }).startMm,
-      heightMm: height,
+      faceWidthMm: face.widthMm,
+      faceOffsetMm: face.startMm,
+      faceHeights: rows.drawerHeights,
     });
 
     drafts.push(...drawers.drafts);
     warnings.push(...drawers.warnings);
+
+    const doors = doorsOf({
+      count: compartment.doors,
+      face,
+      yMm: rows.doorYMm,
+      heightMm: rows.doorHeightMm,
+      parameters: p,
+    });
+
+    drafts.push(...doors.drafts);
+    warnings.push(...doors.warnings);
   });
 
   // 7. Fond, logé dans une rainure.
@@ -260,7 +277,8 @@ function drawersOf(options: {
   parameters: Parameters;
   faceWidthMm: number;
   faceOffsetMm: number;
-  heightMm: number;
+  /** Hauteur de chaque façade, du bas vers le haut. Calculée par `facadeRows`. */
+  faceHeights: readonly number[];
 }): { drafts: DraftPart[]; warnings: Warning[] } {
   const { compartment, span, innerHeight, innerDepth, parameters: p } = options;
   const count = compartment.drawers;
@@ -296,10 +314,7 @@ function drawersOf(options: {
       ],
     };
   }
-  const faceHeights = divideEvenly(
-    options.heightMm - (count - 1) * p.frontGapMm,
-    count,
-  );
+  const faceHeights = options.faceHeights;
 
   const drafts: DraftPart[] = [];
   let y = e;
@@ -398,6 +413,150 @@ function drawersOf(options: {
  *
  * @see docs/NEFTYA_ENGINE.md §5.1
  */
+/**
+ * Le partage vertical du plan de façade d'un compartiment.
+ *
+ * Tiroirs et portes vivent dans **le même plan** — celui qu'on voit de face — et se
+ * partagent donc la hauteur. Chaque rangée reçoit une part égale, moins les jeux.
+ *
+ * **Convention V1 : les tiroirs en bas, la porte au-dessus.** C'est l'arrangement d'un
+ * dressing à socle de tiroirs, le meuble que la V1 doit savoir faire. Un buffet range
+ * souvent l'inverse ; rendre l'ordre configurable est un travail de V2, et l'inventer ici
+ * demanderait de choisir à la place du menuisier.
+ *
+ * @see docs/NEFTYA_ENGINE.md §7.2
+ */
+function facadeRows(
+  compartment: { drawers: number; doors: number },
+  heightMm: number,
+  p: Parameters,
+): { drawerHeights: number[]; doorYMm: number; doorHeightMm: number } {
+  const hasDoor = compartment.doors > 0;
+  const rows = compartment.drawers + (hasDoor ? 1 : 0);
+
+  if (rows === 0) return { drawerHeights: [], doorYMm: 0, doorHeightMm: 0 };
+
+  const available = heightMm - (rows - 1) * p.frontGapMm;
+
+  // Quand la hauteur ne suffit même pas aux jeux, il n'y a pas de façade à partager.
+  //
+  // `divideEvenly` distribuerait alors des hauteurs **négatives** et laisserait le reste à
+  // la dernière rangée : la porte héritait d'une hauteur plausible tirée d'un partage
+  // impossible. Les tiroirs étaient déjà refusés par leur propre contrôle ; la porte, non.
+  if (available <= 0) {
+    return {
+      drawerHeights: Array.from({ length: compartment.drawers }, () => 0),
+      doorYMm: 0,
+      doorHeightMm: 0,
+    };
+  }
+
+  const heights = divideEvenly(available, rows);
+  const drawerHeights = heights.slice(0, compartment.drawers);
+
+  // La porte occupe la dernière rangée, donc tout ce qui reste au-dessus des tiroirs.
+  const doorYMm = drawerHeights.reduce(
+    (total, height) => total + height + p.frontGapMm,
+    0,
+  );
+
+  return {
+    drawerHeights,
+    doorYMm: hasDoor ? doorYMm : 0,
+    doorHeightMm: hasDoor ? (heights[rows - 1] as number) : 0,
+  };
+}
+
+/**
+ * Les vantaux.
+ *
+ * Une porte est **en applique** : elle recouvre le devant du caisson, comme les façades de
+ * tiroir, et pave la même surface. Encastrée à fleur, elle demanderait un jeu périmétrique
+ * différent sur chaque bord et un caisson d'équerre au dixième — ce qui n'est pas ce
+ * qu'on obtient d'un panneau scié.
+ *
+ * Deux vantaux se partagent la largeur du compartiment, moins le jeu qui les sépare.
+ */
+function doorsOf(options: {
+  count: number;
+  face: { startMm: number; widthMm: number };
+  yMm: number;
+  heightMm: number;
+  parameters: Parameters;
+}): { drafts: DraftPart[]; warnings: Warning[] } {
+  const { count, face, parameters: p } = options;
+  if (count === 0) return { drafts: [], warnings: [] };
+
+  // **Deux vantaux égaux**, et le jeu central absorbe le millimètre impair.
+  //
+  // `divideEvenly` donnerait 498 et 499 : invisible sur une étagère, voyant entre deux
+  // portes voisines qu'on regarde de face toute la journée. Un atelier aligne les vantaux
+  // sur les bords du meuble et laisse le jeu rattraper la différence.
+  const leafWidth =
+    count === 2 ? Math.floor((face.widthMm - p.frontGapMm) / 2) : face.widthMm;
+  const leafWidths = Array.from({ length: count }, () => leafWidth);
+  const narrowest = leafWidth;
+
+  // Un compartiment trop étroit ou une rangée trop basse ne produit **aucune** pièce :
+  // une cote négative dans une liste de découpe est un plan faux.
+  if (narrowest <= 0 || options.heightMm <= 0) {
+    return {
+      drafts: [],
+      warnings: [
+        {
+          code: 'DOOR_DOES_NOT_FIT',
+          details: {
+            compartmentWidthMm: face.widthMm,
+            leafWidthMm: narrowest,
+            leafHeightMm: options.heightMm,
+          },
+        },
+      ],
+    };
+  }
+
+  const drafts: DraftPart[] = [];
+  const warnings: Warning[] = [];
+
+  // Chaque vantail est aligné sur son bord : le premier à gauche, le dernier à droite.
+  // Ce qui reste au milieu est le jeu, légèrement plus large que nominal si la largeur
+  // du compartiment est impaire.
+  leafWidths.forEach((widthMm, index) => {
+    const xMm = index === 0 ? face.startMm : face.startMm + face.widthMm - widthMm;
+
+    drafts.push(
+      panel(
+        'door',
+        widthMm,
+        options.heightMm,
+        p.panelThicknessMm,
+        ['front', 'back', 'left', 'right'],
+        {
+          xMm,
+          yMm: options.yMm,
+          // En avant du caisson, comme une façade de tiroir.
+          zMm: -p.panelThicknessMm,
+          sizeXMm: widthMm,
+          sizeYMm: options.heightMm,
+          sizeZMm: p.panelThicknessMm,
+        },
+      ),
+    );
+  });
+
+  if (narrowest > p.maxDoorLeafWidthMm) {
+    warnings.push({
+      code: 'DOOR_LEAF_TOO_WIDE',
+      details: {
+        leafWidthMm: narrowest,
+        maximumMm: p.maxDoorLeafWidthMm,
+      },
+    });
+  }
+
+  return { drafts, warnings };
+}
+
 function faceLayout(
   dividerCentres: readonly number[],
   widthMm: number,

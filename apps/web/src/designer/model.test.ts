@@ -58,7 +58,7 @@ describe('modifications du modèle', () => {
 
     expect(model.compartments).toHaveLength(5);
     expect(model.compartments[0]?.shelves).toBe(3);
-    expect(model.compartments[4]).toEqual({ shelves: 0, drawers: 0 });
+    expect(model.compartments[4]).toEqual({ shelves: 0, drawers: 0, doors: 0 });
   });
 
   it('ne modifie jamais le modèle reçu', () => {

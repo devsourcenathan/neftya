@@ -19,6 +19,13 @@ export const compartment = z.object({
   shelves: z.number().int().nonnegative().default(0),
   /** Nombre de tiroirs superposés dans ce compartiment. */
   drawers: z.number().int().nonnegative().default(0),
+  /**
+   * Nombre de vantaux fermant ce compartiment : aucun, un, ou une paire.
+   *
+   * Au-delà de deux, ce n'est plus une porte mais une séparation : le meuble gagne un
+   * compartiment, il ne gagne pas un troisième vantail.
+   */
+  doors: z.number().int().min(0).max(2).default(0),
 });
 
 export type CompartmentInput = z.infer<typeof compartment>;
