@@ -7,6 +7,8 @@ import { createApiClient, createFileClient } from './api/client.js';
 import { PreferencesProvider } from './preferences/PreferencesContext.js';
 import { SessionProvider, useSession } from './sekuu/SessionContext.js';
 import { redirectToPortal } from './sekuu/session.js';
+import { Landing } from './landing/Landing.js';
+import { Button, Card } from './ui/index.js';
 import { router } from './router.js';
 
 /**
@@ -50,20 +52,27 @@ function Authenticated() {
   const files = useMemo(() => createFileClient(token), [token]);
 
   if (state.status === 'loading') {
-    return <Centered>{t('state.loading')}</Centered>;
-  }
-
-  if (state.status === 'anonymous') {
     return (
       <Centered>
-        <p className="mb-3">{t('auth.required')}</p>
-        <button
-          type="button"
-          className="rounded bg-emerald-700 px-4 py-2 text-white"
-          onClick={() => redirectToPortal('login')}
-        >
-          {t('auth.signIn')}
-        </button>
+        <p className="text-sm text-muted">{t('state.loading')}</p>
+      </Centered>
+    );
+  }
+
+  // Un visiteur non connecté voit la page publique, pas un message d'erreur. La connexion
+  // et l'inscription vivent sur le portail de la plateforme.
+  if (state.status === 'anonymous') return <Landing />;
+
+  if (state.status === 'unreachable') {
+    return (
+      <Centered>
+        <Card className="w-full max-w-sm p-6">
+          <h1 className="font-display text-lg text-ink">{t('auth.unreachable')}</h1>
+          <p className="mt-2 text-sm text-muted">{t('auth.unreachableHint')}</p>
+          <Button tone="primary" className="mt-5 w-full" onClick={state.retry}>
+            {t('action.retry')}
+          </Button>
+        </Card>
       </Centered>
     );
   }
@@ -71,29 +80,35 @@ function Authenticated() {
   if (state.status === 'choosing') {
     return (
       <Centered>
-        <p className="mb-3">{t('auth.chooseOrganization')}</p>
-        <ul className="flex flex-col gap-2">
-          {state.session.organizations.map((organization) => (
-            <li key={organization.id}>
-              <button
-                type="button"
-                className="w-full rounded border border-stone-300 px-4 py-2 hover:border-emerald-700"
-                onClick={() => void choose(organization.id)}
-              >
-                {organization.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-        {state.session.organizations.length === 0 && (
-          <button
-            type="button"
-            className="mt-3 rounded bg-emerald-700 px-4 py-2 text-white"
-            onClick={() => redirectToPortal('subscribe')}
-          >
-            {t('auth.subscribe')}
-          </button>
-        )}
+        <Card className="w-full max-w-sm p-6 text-left">
+          <h1 className="font-display text-xl text-ink">
+            {t('auth.chooseOrganization')}
+          </h1>
+          <p className="mt-1 text-sm text-muted">{t('auth.chooseHint')}</p>
+
+          <ul className="mt-5 flex flex-col gap-2">
+            {state.session.organizations.map((organization) => (
+              <li key={organization.id}>
+                <Button
+                  className="w-full justify-start"
+                  onClick={() => void choose(organization.id)}
+                >
+                  {organization.name}
+                </Button>
+              </li>
+            ))}
+          </ul>
+
+          {state.session.organizations.length === 0 && (
+            <Button
+              tone="primary"
+              className="mt-4 w-full"
+              onClick={() => redirectToPortal('subscribe')}
+            >
+              {t('auth.subscribe')}
+            </Button>
+          )}
+        </Card>
       </Centered>
     );
   }

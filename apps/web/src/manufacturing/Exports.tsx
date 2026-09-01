@@ -26,7 +26,7 @@ export function Exports({ projectId }: { projectId: string }) {
 
   if (exports.isPending || exports.isError) return null;
   if (exports.data.length === 0) {
-    return <p className="text-sm text-stone-500">{t('exports.none')}</p>;
+    return <p className="text-sm text-muted">{t('exports.none')}</p>;
   }
 
   const dates = new Intl.DateTimeFormat(i18n.language, {
@@ -41,13 +41,13 @@ export function Exports({ projectId }: { projectId: string }) {
           <span className="tabular-nums">
             {dates.format(new Date(record.created_at))}
           </span>
-          <span className="uppercase text-stone-500">{record.kind}</span>
+          <span className="uppercase text-muted">{record.kind}</span>
           {record.storage_object_id ? (
-            <span className="text-emerald-700">{t('exports.stored')}</span>
+            <span className="text-success">{t('exports.stored')}</span>
           ) : (
             // Dit, pas tu : l'export existe et reste consultable, mais il n'est pas rangé
             // chez Sekuu Storage — souvent parce qu'aucune clé d'API n'est configurée.
-            <span className="text-amber-700">{t('exports.notStored')}</span>
+            <span className="text-accent">{t('exports.notStored')}</span>
           )}
         </li>
       ))}

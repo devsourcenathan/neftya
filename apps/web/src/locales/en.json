@@ -6,13 +6,17 @@
   "action": {
     "save": "Save",
     "saving": "Saving…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "retry": "Try again"
   },
   "auth": {
     "required": "Sign in to Sekuu to use Neftya.",
     "signIn": "Sign in",
     "chooseOrganization": "Choose your organisation.",
-    "subscribe": "Subscribe to Neftya"
+    "subscribe": "Subscribe to Neftya",
+    "chooseHint": "Your projects belong to an organisation.",
+    "unreachable": "Sekuu is unreachable",
+    "unreachableHint": "Check your connection. Your session has not expired — the platform did not answer."
   },
   "state": {
     "loading": "Loading…",
@@ -24,11 +28,18 @@
   },
   "projects": {
     "title": "Your projects",
-    "empty": "No projects yet. Start from a template below.",
+    "empty": "Start from a template below: dimensions, structure and material are adjusted afterwards.",
     "name": "Project name",
     "notFound": "This project cannot be found.",
     "delete": "Delete",
-    "confirmDelete": "Delete this project? This is permanent."
+    "confirmDelete": "Delete this project? This is permanent.",
+    "emptyTitle": "No projects yet",
+    "count_one": "{{count}} project",
+    "count_other": "{{count}} projects",
+    "compartments_one": "{{count}} bay",
+    "compartments_other": "{{count}} bays",
+    "nameHint": "Leave empty to reuse the template name.",
+    "namePlaceholder": "Living room bookcase"
   },
   "presets": {
     "title": "Templates",
@@ -36,7 +47,9 @@
     "bookcase": "Bookcase",
     "wardrobe": "Wardrobe",
     "tvUnit": "TV unit",
-    "sideboard": "Sideboard"
+    "sideboard": "Sideboard",
+    "details_one": "{{compartments}} bay · {{doors}} door",
+    "details_other": "{{compartments}} bays · {{doors}} doors"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -62,7 +75,11 @@
       "3d": "3D",
       "2d": "2D dimensioned"
     },
-    "doors": "Doors"
+    "doors": "Doors",
+    "warning": "Check",
+    "partsTitle": "Parts",
+    "partsCount_one": "{{count}} item",
+    "partsCount_other": "{{count}} items"
   },
   "units": {
     "legend": "Unit system",
@@ -215,5 +232,35 @@
     "BE": "Belgium",
     "CA": "Canada",
     "US": "United States"
+  },
+  "landing": {
+    "createAccount": "Create an account",
+    "start": "Get started",
+    "haveAccount": "I already have an account",
+    "headline": "From the piece your client shows you to the cut plan, without modelling anything.",
+    "subhead": "Set the dimensions and Neftya recomputes the part sizes, the cut plan, the hardware and the quote. Whole millimetres throughout, and everything recalculates.",
+    "platformNote": "Signing in happens on the Sekuu portal: Neftya never sees your password.",
+    "previewNote": "This drawing is computed live by the engine, not a screenshot.",
+    "previewAlt": "Dimensioned front view of a bookcase",
+    "features": {
+      "dimensions": {
+        "title": "Dimensions that add up",
+        "body": "Every inner width, thickness and clearance: the chain sums to the overall size, to the millimetre, checked by tests across thousands of configurations."
+      },
+      "cutplan": {
+        "title": "A cut plan a saw can follow",
+        "body": "Through cuts, kerf reserved, 10 mm trimmed off each edge: what comes out is what a panel saw can actually do."
+      },
+      "quote": {
+        "title": "A quote that does not lie",
+        "body": "Neftya invents no prices. You enter yours once; while any is missing, no total is shown."
+      }
+    },
+    "honestTitle": "What Neftya does not do yet",
+    "honestBody": "No image analysis, no assistant: you start from a template and adjust it. The engine builds carcasses — shelves, drawers, doors — and nothing else: no curves, no angles, no drilling positions. No piece designed here has been cut by a joiner yet; that is the next step, and it will decide the rest.",
+    "footer": "Neftya — a Sekuu product."
+  },
+  "nav": {
+    "projects": "Projects"
   }
 }

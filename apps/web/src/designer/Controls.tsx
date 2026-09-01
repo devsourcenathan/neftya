@@ -9,6 +9,7 @@ import {
 } from '@neftya/engine';
 import { roundingIsNotable, stepFor } from '@neftya/units';
 import { usePreferences } from '../preferences/PreferencesContext.js';
+import { SectionTitle } from '../ui/index.js';
 import { LIMITS, type DesignerAction } from './model.js';
 
 /**
@@ -32,9 +33,7 @@ export function Controls({ model, dispatch }: ControlsProps) {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-          {t('designer.dimensions')}
-        </h2>
+        <SectionTitle>{t('designer.dimensions')}</SectionTitle>
 
         {(['widthMm', 'heightMm', 'depthMm'] as const).map((axis) => (
           <LengthControl
@@ -49,9 +48,7 @@ export function Controls({ model, dispatch }: ControlsProps) {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-          {t('designer.structure')}
-        </h2>
+        <SectionTitle>{t('designer.structure')}</SectionTitle>
 
         <CountControl
           label={t('designer.compartments')}
@@ -65,8 +62,8 @@ export function Controls({ model, dispatch }: ControlsProps) {
           {model.compartments.map((compartment, index) => (
             // La clé est l'indice : les compartiments n'ont pas d'identité propre, ils
             // sont définis par leur rang dans le meuble.
-            <li key={index} className="rounded border border-stone-200 p-3">
-              <p className="mb-2 text-sm font-medium">
+            <li key={index} className="rounded-md border border-line bg-paper/60 p-3">
+              <p className="mb-2 text-sm font-medium text-ink">
                 {t('designer.compartment', { index: index + 1 })}
               </p>
               <div className="flex flex-col gap-2">
@@ -98,9 +95,7 @@ export function Controls({ model, dispatch }: ControlsProps) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-          {t('designer.material')}
-        </h2>
+        <SectionTitle>{t('designer.material')}</SectionTitle>
 
         <ToggleGroup.Root
           type="single"
@@ -117,7 +112,7 @@ export function Controls({ model, dispatch }: ControlsProps) {
             <ToggleGroup.Item
               key={material}
               value={material}
-              className="rounded border border-stone-300 px-3 py-1 text-sm data-[state=on]:border-emerald-700 data-[state=on]:bg-emerald-700 data-[state=on]:text-white"
+              className="rounded-md border border-line-strong px-3 py-1.5 text-sm transition-colors hover:border-ink/40 data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-paper"
             >
               {t(`material.${material}`)}
             </ToggleGroup.Item>
@@ -171,9 +166,9 @@ function LengthControl({ label, valueMm, min, max, onChange }: LengthControlProp
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between gap-2">
-        <label className="text-sm">{label}</label>
+        <label className="text-sm text-ink">{label}</label>
         <input
-          className="w-28 rounded border border-stone-300 px-2 py-1 text-right text-sm tabular-nums"
+          className="w-28 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
           value={draft ?? format(valueMm)}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={(event) => commit(event.target.value)}
@@ -193,18 +188,18 @@ function LengthControl({ label, valueMm, min, max, onChange }: LengthControlProp
         onValueChange={([next]) => onChange(next as number)}
         aria-label={label}
       >
-        <Slider.Track className="relative h-1 w-full rounded bg-stone-200">
-          <Slider.Range className="absolute h-full rounded bg-emerald-700" />
+        <Slider.Track className="relative h-1 w-full rounded-full bg-line">
+          <Slider.Range className="absolute h-full rounded-full bg-accent" />
         </Slider.Track>
-        <Slider.Thumb className="block h-4 w-4 rounded-full border border-stone-400 bg-white shadow" />
+        <Slider.Thumb className="block h-4 w-4 rounded-full border border-line-strong bg-surface shadow-sm transition-shadow hover:shadow" />
       </Slider.Root>
 
-      {rejected && <p className="text-xs text-red-700">{t('designer.badLength')}</p>}
+      {rejected && <p className="text-xs text-danger">{t('designer.badLength')}</p>}
 
       {/* L'écart d'arrondi impérial est dit, pas masqué : le modèle vaut autre chose que
           ce que le mètre affiche. */}
       {unitSystem === 'imperial' && roundingIsNotable(valueMm) && (
-        <p className="text-xs text-amber-700">
+        <p className="text-xs text-accent">
           {t('designer.roundedDisplay', { exact: `${valueMm} mm` })}
         </p>
       )}
@@ -223,10 +218,10 @@ interface CountControlProps {
 function CountControl({ label, value, min, max, onChange }: CountControlProps) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <label className="text-sm">{label}</label>
+      <label className="text-sm text-ink">{label}</label>
       <input
         type="number"
-        className="w-20 rounded border border-stone-300 px-2 py-1 text-right text-sm tabular-nums"
+        className="w-20 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
         value={value}
         min={min}
         max={max}

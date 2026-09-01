@@ -6,13 +6,17 @@
   "action": {
     "save": "Enregistrer",
     "saving": "Enregistrement…",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "retry": "Réessayer"
   },
   "auth": {
     "required": "Connectez-vous à Sekuu pour accéder à Neftya.",
     "signIn": "Se connecter",
     "chooseOrganization": "Choisissez votre organisation.",
-    "subscribe": "Souscrire à Neftya"
+    "subscribe": "Souscrire à Neftya",
+    "chooseHint": "Vos projets appartiennent à une organisation.",
+    "unreachable": "Sekuu est injoignable",
+    "unreachableHint": "Vérifiez votre connexion. Ce n'est pas votre session qui a expiré : la plateforme n'a pas répondu."
   },
   "state": {
     "loading": "Chargement…",
@@ -24,11 +28,18 @@
   },
   "projects": {
     "title": "Vos projets",
-    "empty": "Aucun projet pour l'instant. Partez d'un modèle ci-dessous.",
+    "empty": "Partez d'un modèle prédéfini ci-dessous : dimensions, structure et matériau se règlent ensuite.",
     "name": "Nom du projet",
     "notFound": "Ce projet est introuvable.",
     "delete": "Supprimer",
-    "confirmDelete": "Supprimer ce projet ? C’est définitif."
+    "confirmDelete": "Supprimer ce projet ? C’est définitif.",
+    "emptyTitle": "Aucun projet pour le moment",
+    "count_one": "{{count}} projet",
+    "count_other": "{{count}} projets",
+    "compartments_one": "{{count}} compartiment",
+    "compartments_other": "{{count}} compartiments",
+    "nameHint": "Laissez vide pour reprendre le nom du modèle.",
+    "namePlaceholder": "Bibliothèque du salon"
   },
   "presets": {
     "title": "Modèles prédéfinis",
@@ -36,7 +47,9 @@
     "bookcase": "Bibliothèque",
     "wardrobe": "Dressing",
     "tvUnit": "Meuble TV",
-    "sideboard": "Buffet"
+    "sideboard": "Buffet",
+    "details_one": "{{compartments}} compartiment · {{doors}} vantail",
+    "details_other": "{{compartments}} compartiments · {{doors}} vantaux"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -62,7 +75,11 @@
       "3d": "3D",
       "2d": "2D coté"
     },
-    "doors": "Portes"
+    "doors": "Portes",
+    "warning": "À vérifier",
+    "partsTitle": "Pièces",
+    "partsCount_one": "{{count}} référence",
+    "partsCount_other": "{{count}} références"
   },
   "units": {
     "legend": "Système d'unités",
@@ -215,5 +232,35 @@
     "BE": "Belgique",
     "CA": "Canada",
     "US": "États-Unis"
+  },
+  "landing": {
+    "createAccount": "Créer un compte",
+    "start": "Commencer",
+    "haveAccount": "J'ai déjà un compte",
+    "headline": "Du meuble que votre client vous montre au plan de découpe, sans passer par la case modélisation.",
+    "subhead": "Réglez les dimensions, Neftya recalcule les cotes, le plan de découpe, la quincaillerie et le devis. Tout est en millimètres entiers, et tout se recalcule.",
+    "platformNote": "La connexion se fait sur le portail Sekuu : Neftya ne voit jamais votre mot de passe.",
+    "previewNote": "Ce plan est calculé à l'instant par le moteur, pas capturé en image.",
+    "previewAlt": "Vue de face cotée d'une bibliothèque",
+    "features": {
+      "dimensions": {
+        "title": "Des cotes qui se recomposent",
+        "body": "Chaque largeur intérieure, chaque épaisseur, chaque jeu : la somme fait le hors-tout, au millimètre, vérifié par test sur des milliers de configurations."
+      },
+      "cutplan": {
+        "title": "Un plan de découpe réalisable",
+        "body": "Coupes traversantes, trait de scie réservé, panneau déligné de 10 mm : ce qui sort est ce qu'une scie à panneaux sait faire."
+      },
+      "quote": {
+        "title": "Un devis qui ne ment pas",
+        "body": "Neftya n'invente aucun tarif. Vous saisissez vos prix une fois ; tant qu'il en manque un, aucun total ne s'affiche."
+      }
+    },
+    "honestTitle": "Ce que Neftya ne fait pas encore",
+    "honestBody": "Pas d'analyse d'image ni d'assistant : on part d'un modèle prédéfini et on l'ajuste. Le moteur produit des caissons — étagères, tiroirs, portes — et rien d'autre : ni courbes, ni angles, ni perçages. Aucun meuble conçu ici n'a encore été coupé par un menuisier ; c'est la prochaine étape, et elle décidera du reste.",
+    "footer": "Neftya — un produit Sekuu."
+  },
+  "nav": {
+    "projects": "Projets"
   }
 }

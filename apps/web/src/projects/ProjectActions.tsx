@@ -46,7 +46,7 @@ export function ProjectActions({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <input
-        className="rounded border border-stone-300 px-2 py-1 text-lg font-semibold"
+        className="rounded-md border border-line-strong px-2 py-1 text-lg font-semibold"
         value={draft ?? name}
         aria-label={t('projects.name')}
         onChange={(event) => setDraft(event.target.value)}
@@ -64,10 +64,10 @@ export function ProjectActions({
       />
 
       {rename.isPending && (
-        <span className="text-sm text-stone-500">{t('state.saving')}</span>
+        <span className="text-sm text-muted">{t('state.saving')}</span>
       )}
       {rename.isError && (
-        <span className="text-sm text-red-700">
+        <span className="text-sm text-danger">
           {rename.error instanceof ApiRequestError
             ? rename.error.message
             : t('state.error')}
@@ -87,7 +87,7 @@ export function ProjectActions({
           </button>
           <button
             type="button"
-            className="rounded border border-stone-300 px-3 py-1"
+            className="rounded-md border border-line-strong px-3 py-1"
             onClick={() => setConfirming(false)}
           >
             {t('action.cancel')}
@@ -96,7 +96,7 @@ export function ProjectActions({
       ) : (
         <button
           type="button"
-          className="ml-auto text-sm text-red-700 underline"
+          className="ml-auto text-sm text-danger underline"
           onClick={() => setConfirming(true)}
         >
           {t('projects.delete')}
@@ -104,7 +104,7 @@ export function ProjectActions({
       )}
 
       {remove.isError && (
-        <span className="text-sm text-red-700">
+        <span className="text-sm text-danger">
           {remove.error instanceof ApiRequestError
             ? remove.error.message
             : t('state.error')}

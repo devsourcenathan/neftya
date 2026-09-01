@@ -27,21 +27,45 @@ function Shell() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex h-screen flex-col bg-white text-stone-900">
-      <header className="flex items-center gap-4 border-b border-stone-200 px-4 py-2">
-        <Link to="/" className="font-semibold">
-          {t('app.name')}
-        </Link>
-        <span className="text-sm text-stone-500">{t('app.tagline')}</span>
-        <Link to="/settings" className="ml-auto text-sm text-emerald-700 underline">
-          {t('settings.title')}
-        </Link>
+    <div className="flex h-screen flex-col bg-paper text-ink">
+      <header className="border-b border-line bg-surface/80 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
+          <Link to="/" className="font-display text-lg text-ink">
+            {t('app.name')}
+          </Link>
+
+          <nav className="flex items-center gap-1 text-sm">
+            <NavItem to="/">{t('nav.projects')}</NavItem>
+          </nav>
+
+          <Link
+            to="/settings"
+            className="ml-auto rounded-md px-3 py-1.5 text-sm text-muted transition-colors hover:bg-line/60 hover:text-ink"
+          >
+            {t('settings.title')}
+          </Link>
+        </div>
       </header>
 
       <main className="min-h-0 flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>
+  );
+}
+
+/** Un onglet de navigation, qui se marque lui-même quand il est actif. */
+function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <Link
+      to={to}
+      // TanStack pose `data-status="active"` sur le lien de la route courante : c'est lui
+      // qui décide, pas une comparaison d'URL écrite à la main.
+      className="rounded-md px-3 py-1.5 text-muted transition-colors hover:bg-line/60 hover:text-ink [&[data-status=active]]:bg-line/70 [&[data-status=active]]:text-ink"
+      activeOptions={{ exact: true }}
+    >
+      {children}
+    </Link>
   );
 }
 

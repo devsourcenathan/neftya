@@ -17,6 +17,7 @@ import {
 } from '@neftya/drawing';
 import { UNIT_SYSTEMS } from '@neftya/units';
 import { usePreferences } from '../preferences/PreferencesContext.js';
+import { Badge, Button, Card, SectionTitle } from '../ui/index.js';
 import { Controls } from './Controls.js';
 import { PartDetails, PartList } from './PartDetails.js';
 import { reduce, type DesignerAction } from './model.js';
@@ -75,33 +76,35 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
   const act = useCallback((action: DesignerAction) => dispatch(action), []);
 
   return (
-    <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[320px_1fr_300px]">
+    <div className="grid h-full grid-cols-1 gap-5 lg:grid-cols-[340px_1fr_320px]">
       <aside className="order-2 overflow-y-auto lg:order-1">
-        <Controls model={model} dispatch={act} />
+        <Card className="p-4">
+          <Controls model={model} dispatch={act} />
+        </Card>
       </aside>
 
       <section className="order-1 flex min-h-[50vh] flex-col gap-2 lg:order-2">
         <div className="flex items-center gap-2">
           {/* La 3D montre le meuble, la 2D le mesure. Les deux sont des vues du même
               modèle, calculées par le même moteur : basculer ne recharge rien. */}
-          {(['3d', '2d'] as const).map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              onClick={() => setMode(candidate)}
-              className={`rounded border px-3 py-1 text-sm ${
-                candidate === mode
-                  ? 'border-emerald-700 bg-emerald-700 text-white'
-                  : 'border-stone-300 hover:border-emerald-700'
-              }`}
-            >
-              {t(`designer.mode.${candidate}`)}
-            </button>
-          ))}
+          <div className="inline-flex rounded-md border border-line-strong bg-surface p-0.5">
+            {(['3d', '2d'] as const).map((candidate) => (
+              <button
+                key={candidate}
+                type="button"
+                onClick={() => setMode(candidate)}
+                className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                  candidate === mode ? 'bg-ink text-paper' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {t(`designer.mode.${candidate}`)}
+              </button>
+            ))}
+          </div>
 
           {mode === '2d' && (
             <select
-              className="ml-2 rounded border border-stone-300 px-2 py-1 text-sm"
+              className="ml-1 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-sm"
               value={view}
               aria-label={t('plans.view')}
               onChange={(event) => setView(event.target.value as ViewName)}
@@ -115,7 +118,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
           )}
         </div>
 
-        <div className="flex-1 overflow-hidden rounded-lg border border-stone-200">
+        <div className="flex-1 overflow-hidden rounded-panel border border-line bg-surface">
           {mode === '3d' ? (
             <Suspense
               fallback={
@@ -131,7 +134,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
             </Suspense>
           ) : (
             <div
-              className="h-full overflow-auto bg-white p-2"
+              className="h-full overflow-auto bg-surface p-3"
               role="img"
               aria-label={t(`plans.views.${view}`)}
               // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère.
@@ -145,7 +148,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-5 text-sm">
           <label
             className={`flex items-center gap-2 ${mode === '3d' ? '' : 'opacity-40'}`}
           >
@@ -178,44 +181,45 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
           </fieldset>
 
           {onSave && (
-            <button
-              type="button"
-              className="ml-auto rounded bg-emerald-700 px-3 py-1 text-white disabled:opacity-50"
+            <Button
+              tone="primary"
+              className="ml-auto"
               onClick={() => onSave(model)}
               disabled={saving}
             >
               {saving ? t('action.saving') : t('action.save')}
-            </button>
+            </Button>
           )}
         </div>
 
         {furniture.warnings.length > 0 && (
-          <ul className="rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+          <ul className="flex flex-col gap-1 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
             {furniture.warnings.map((warning, index) => (
-              <li key={index}>{t(`warning.${warning.code}`)}</li>
+              <li key={index} className="flex gap-2">
+                <Badge tone="warning">{t('designer.warning')}</Badge>
+                <span>{t(`warning.${warning.code}`)}</span>
+              </li>
             ))}
           </ul>
         )}
       </section>
 
       <aside className="order-3 flex flex-col gap-4 overflow-y-auto">
-        <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">
-            {t('designer.selection')}
-          </h2>
+        <Card className="p-4">
+          <SectionTitle>{t('designer.selection')}</SectionTitle>
           <PartDetails furniture={furniture} selectedPartId={selectedPartId} />
-        </div>
+        </Card>
 
-        <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">
-            {t('designer.parts', { count: rows.length })}
-          </h2>
+        <Card className="p-4">
+          <SectionTitle hint={t('designer.partsCount', { count: rows.length })}>
+            {t('designer.partsTitle')}
+          </SectionTitle>
           <PartList
             parts={furniture.parts}
             selectedPartId={selectedPartId}
             onSelect={setSelectedPartId}
           />
-        </div>
+        </Card>
       </aside>
     </div>
   );

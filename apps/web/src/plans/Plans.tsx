@@ -47,11 +47,11 @@ export function Plans({ projectId }: { projectId: string }) {
   );
 
   if (project.isPending)
-    return <p className="p-6 text-sm text-stone-500">{t('state.loading')}</p>;
+    return <p className="p-6 text-sm text-muted">{t('state.loading')}</p>;
 
   if (project.isError || !drawing) {
     return (
-      <p className="p-6 text-sm text-red-700">
+      <p className="p-6 text-sm text-danger">
         {project.error instanceof ApiRequestError
           ? project.error.message
           : t('state.error')}
@@ -69,10 +69,10 @@ export function Plans({ projectId }: { projectId: string }) {
             key={name}
             type="button"
             onClick={() => setView(name)}
-            className={`rounded border px-3 py-1 text-sm ${
+            className={`rounded-md border px-3 py-1 text-sm ${
               name === view
-                ? 'border-emerald-700 bg-emerald-700 text-white'
-                : 'border-stone-300 hover:border-emerald-700'
+                ? 'border-ink bg-ink text-white'
+                : 'border-line-strong hover:border-ink'
             }`}
           >
             {t(`plans.views.${name}`)}
@@ -89,7 +89,7 @@ export function Plans({ projectId }: { projectId: string }) {
 
       {current && (
         <div
-          className="overflow-x-auto rounded border border-stone-200 bg-white p-2"
+          className="overflow-x-auto rounded-md border border-line bg-surface p-2"
           role="img"
           aria-label={t(`plans.views.${view}`)}
           // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère — étiquettes de
@@ -99,13 +99,13 @@ export function Plans({ projectId }: { projectId: string }) {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
           {t('plans.parts')}
         </h2>
 
         <table className="w-full max-w-3xl text-sm">
           <thead>
-            <tr className="text-left text-stone-500">
+            <tr className="text-left text-muted">
               <th className="py-1">{t('part.id')}</th>
               <th className="py-1">{t('part.role')}</th>
               <th className="py-1 text-right">{t('part.length')}</th>
@@ -116,7 +116,7 @@ export function Plans({ projectId }: { projectId: string }) {
           </thead>
           <tbody>
             {drawing.parts.map((part) => (
-              <tr key={part.partId} className="border-t border-stone-100">
+              <tr key={part.partId} className="border-t border-line">
                 <td className="py-1 font-mono">{part.partId}</td>
                 <td className="py-1">{t(`part.roles.${part.role}`)}</td>
                 <td className="py-1 text-right tabular-nums">
@@ -133,7 +133,7 @@ export function Plans({ projectId }: { projectId: string }) {
         </table>
       </section>
 
-      <p className="text-xs text-stone-500">{t('plans.pdfInMillimetres')}</p>
+      <p className="text-xs text-muted">{t('plans.pdfInMillimetres')}</p>
     </div>
   );
 }

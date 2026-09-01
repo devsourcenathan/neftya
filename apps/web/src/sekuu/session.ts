@@ -55,6 +55,22 @@ export class NotSignedIn extends Error {
 }
 
 /**
+ * La plateforme n'a pas répondu du tout.
+ *
+ * À distinguer de `NotSignedIn` : l'un veut dire « connectez-vous », l'autre « réessayez ».
+ * Les confondre enverrait au portail quelqu'un dont le réseau a simplement toussé — et,
+ * sans distinction, `fetch` qui échoue laisse l'application sur son écran de chargement,
+ * indéfiniment.
+ */
+export class PlatformUnreachable extends Error {
+  constructor(cause: unknown) {
+    super('Sekuu Platform est injoignable.');
+    this.name = 'PlatformUnreachable';
+    this.cause = cause;
+  }
+}
+
+/**
  * Envoie l'utilisateur se connecter sur le portail, et revenir ici.
  *
  * Le portail valide `redirect` contre la liste des origines de produits. Si celle de
@@ -89,11 +105,19 @@ export function refresh(): Promise<Session> {
 async function performRefresh(): Promise<Session> {
   // `credentials: 'include'` : le jeton de rafraîchissement est un cookie HttpOnly du
   // domaine de la plateforme. Le JavaScript de Neftya ne le lit jamais, et c'est le but.
-  const response = await fetch(`${IDENTITY_URL}/api/v1/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { accept: 'application/json' },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${IDENTITY_URL}/api/v1/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { accept: 'application/json' },
+    });
+  } catch (error) {
+    // `fetch` ne rejette que sur un échec réseau : serveur éteint, DNS, CORS. Un 401 passe
+    // par le chemin normal en dessous.
+    throw new PlatformUnreachable(error);
+  }
 
   if (!response.ok) throw new NotSignedIn();
 

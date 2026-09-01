@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from 'react';
 import {
   NotSignedIn,
+  PlatformUnreachable,
   openSession,
   refresh,
   switchOrganization,
@@ -26,6 +27,8 @@ import {
 export type SessionState =
   | { status: 'loading' }
   | { status: 'anonymous' }
+  /** La plateforme n'a pas répondu : ce n'est pas à l'utilisateur de se reconnecter. */
+  | { status: 'unreachable'; retry: () => void }
   /** Connecté, mais aucune organisation active : `switch-organization` n'a pas abouti. */
   | { status: 'choosing'; session: Session }
   | { status: 'ready'; session: Session };
@@ -45,6 +48,8 @@ const RENEW_MARGIN_MS = 60_000;
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>({ status: 'loading' });
 
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -55,14 +60,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        if (error instanceof NotSignedIn) setState({ status: 'anonymous' });
-        else throw error;
+        if (error instanceof NotSignedIn) {
+          setState({ status: 'anonymous' });
+          return;
+        }
+
+        // Sans ce cas, un `fetch` en échec laissait l'application sur « Chargement… »
+        // indéfiniment, sans rien dire.
+        if (error instanceof PlatformUnreachable) {
+          setState({
+            status: 'unreachable',
+            retry: () => setAttempt((previous) => previous + 1),
+          });
+          return;
+        }
+
+        throw error;
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const choose = useCallback(
     async (organizationId: string) => {

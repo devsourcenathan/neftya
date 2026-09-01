@@ -32,7 +32,7 @@ export function PriceEditor({
   return (
     <table className="w-full max-w-3xl text-sm">
       <thead>
-        <tr className="text-left text-stone-500">
+        <tr className="text-left text-muted">
           <th className="py-1">{t('manufacturing.item')}</th>
           <th className="py-1 text-right">{t('manufacturing.quantity')}</th>
           <th className="py-1 text-right">{t('manufacturing.unitPrice')}</th>
@@ -105,12 +105,12 @@ function PriceRow({
   };
 
   return (
-    <tr className="border-t border-stone-100">
+    <tr className="border-t border-line">
       <td className="py-1">
         <span className="block">{label(line.reference, t)}</span>
         {/* La référence est montrée : c'est elle qui fait foi, et elle aide à comprendre
             pourquoi deux épaisseurs ont deux prix. */}
-        <span className="font-mono text-xs text-stone-400">{line.reference}</span>
+        <span className="font-mono text-xs text-muted">{line.reference}</span>
       </td>
 
       <td className="py-1 text-right tabular-nums">
@@ -119,8 +119,8 @@ function PriceRow({
 
       <td className="py-1 text-right">
         <input
-          className={`w-28 rounded border px-2 py-1 text-right tabular-nums ${
-            rejected ? 'border-red-400' : 'border-stone-300'
+          className={`w-28 rounded-md border px-2 py-1 text-right tabular-nums ${
+            rejected ? 'border-red-400' : 'border-line-strong'
           }`}
           value={draft ?? (line.unitPrice ? amount(line.unitPrice) : '')}
           placeholder={t('manufacturing.enterPrice')}
@@ -132,10 +132,10 @@ function PriceRow({
           }}
         />
         {rejected && (
-          <p className="text-xs text-red-700">{t('manufacturing.badPrice')}</p>
+          <p className="text-xs text-danger">{t('manufacturing.badPrice')}</p>
         )}
         {save.isError && (
-          <p className="text-xs text-red-700">
+          <p className="text-xs text-danger">
             {save.error instanceof ApiRequestError
               ? save.error.message
               : t('state.error')}

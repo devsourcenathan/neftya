@@ -1126,3 +1126,55 @@ est désormais refusé en amont.
 
 **Vérifié en le cassant :** rendre les vantaux inégaux fait tomber 3 tests, inverser
 tiroirs et porte 3 autres, retirer la garde de façade 1.
+
+---
+
+## 2026-09-01 — Une page publique, et toujours aucun champ de mot de passe
+
+**Décision.** Un visiteur non connecté voit une page d'accueil : la proposition de valeur,
+un plan coté calculé en direct, et deux boutons qui renvoient au portail Sekuu — connexion
+et inscription.
+
+**Motif.** Il n'y avait rien : un visiteur tombait sur « Connectez-vous à Sekuu » et un
+bouton nu. Ce n'était pas une décision, c'était un trou.
+
+**Ce qui n'a pas changé, et ne changera pas :** Neftya n'héberge ni écran de connexion ni
+écran d'inscription. Un produit qui affiche un champ de mot de passe voit passer un mot de
+passe. Les deux boutons redirigent, ils ne demandent rien.
+
+**Le dessin de la page est calculé par le moteur au chargement**, pas capturé en image.
+Montrer une capture d'un plan qu'on ne saurait pas produire serait la première promesse
+fausse — et une image se périme sans que personne ne le remarque.
+
+---
+
+## 2026-09-01 — Une trousse d'interface, et des jetons plutôt que des classes
+
+**Décision.** `apps/web/src/ui/` porte six composants — bouton, carte, titre de section,
+champ, état vide, pastille — et `index.css` porte les couleurs, la typographie et les
+rayons.
+
+**Motif.** Chaque écran inventait ses bordures et ses gris : `border-stone-300` ici,
+`border-stone-200` là, trois verts différents pour la même action. Une interface où le
+bouton d'un écran a deux pixels de plus que celui d'à côté se lit comme un brouillon,
+quelle que soit la justesse de ce qu'elle calcule.
+
+**Le choix esthétique est assumé** : neutres chauds, encre presque noire pour les actions,
+une seule couleur d'accent, et des titres en serif. Un outil de menuisier n'a pas à
+ressembler à un tableau de bord d'analytique. Les deux familles de police sont celles du
+système : aucune requête réseau, aucun texte qui saute au chargement.
+
+---
+
+## 2026-09-01 — Une plateforme injoignable n'est pas une session expirée
+
+**Décision.** `PlatformUnreachable` est distinct de `NotSignedIn`. L'un affiche « réessayer »,
+l'autre la page publique.
+
+**Motif.** `fetch` ne rejette que sur un échec réseau ; un `401` passe par le chemin normal.
+Sans cette distinction, une plateforme éteinte laissait l'application sur « Chargement… »
+**indéfiniment**, sans message et sans issue. Trouvé en coupant l'Identity de démonstration
+pour regarder la page publique.
+
+Les confondre serait pire encore : envoyer au portail quelqu'un dont le réseau a simplement
+toussé lui ferait croire que sa session a expiré.

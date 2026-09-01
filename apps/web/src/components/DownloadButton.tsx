@@ -26,7 +26,7 @@ export function DownloadButton({
     <span className="inline-flex items-center gap-2">
       <button
         type="button"
-        className="rounded border border-stone-300 px-3 py-1 hover:border-emerald-700 disabled:opacity-50"
+        className="rounded-md border border-line-strong px-3 py-1 hover:border-ink disabled:opacity-50"
         disabled={state === 'busy'}
         onClick={() => {
           setState('busy');
@@ -44,7 +44,7 @@ export function DownloadButton({
       </button>
 
       {state === 'failed' && (
-        <span className="text-xs text-red-700">{t('state.downloadFailed')}</span>
+        <span className="text-xs text-danger">{t('state.downloadFailed')}</span>
       )}
     </span>
   );

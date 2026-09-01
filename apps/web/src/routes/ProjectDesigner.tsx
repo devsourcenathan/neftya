@@ -34,7 +34,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
   });
 
   if (project.isPending) {
-    return <p className="p-6 text-sm text-stone-500">{t('state.loading')}</p>;
+    return <p className="p-6 text-sm text-muted">{t('state.loading')}</p>;
   }
 
   if (project.isError) {
@@ -44,7 +44,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
       project.error instanceof ApiRequestError && project.error.code === 'NOT_FOUND';
 
     return (
-      <p className="p-6 text-sm text-red-700">
+      <p className="p-6 text-sm text-danger">
         {missing ? t('projects.notFound') : t('state.error')}
       </p>
     );
@@ -57,22 +57,22 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
         <Link
           to="/projects/$projectId/manufacturing"
           params={{ projectId }}
-          className="text-sm text-emerald-700 underline"
+          className="text-sm text-success underline"
         >
           {t('manufacturing.open')}
         </Link>
         <Link
           to="/projects/$projectId/plans"
           params={{ projectId }}
-          className="text-sm text-emerald-700 underline"
+          className="text-sm text-success underline"
         >
           {t('plans.open')}
         </Link>
         {save.isSuccess && !save.isPending && (
-          <span className="text-sm text-emerald-700">{t('state.saved')}</span>
+          <span className="text-sm text-success">{t('state.saved')}</span>
         )}
         {save.isError && (
-          <span className="text-sm text-red-700">
+          <span className="text-sm text-danger">
             {save.error instanceof ApiRequestError
               ? save.error.message
               : t('state.error')}
