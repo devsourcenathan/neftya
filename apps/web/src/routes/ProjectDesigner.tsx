@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client.js';
 import { getProject, updateProject, useApi } from '../api/projects.js';
 import { Designer } from '../designer/Designer.js';
 import { ProjectActions } from '../projects/ProjectActions.js';
+import { PlanIcon, ToolsIcon } from '../ui/icons.js';
 
 /**
  * Un projet ouvert dans le mode conception.
@@ -57,15 +58,17 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
         <Link
           to="/projects/$projectId/manufacturing"
           params={{ projectId }}
-          className="text-sm text-success underline"
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-line/60 hover:text-ink"
         >
+          <ToolsIcon />
           {t('manufacturing.open')}
         </Link>
         <Link
           to="/projects/$projectId/plans"
           params={{ projectId }}
-          className="text-sm text-success underline"
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-line/60 hover:text-ink"
         >
+          <PlanIcon />
           {t('plans.open')}
         </Link>
         {save.isSuccess && !save.isPending && (

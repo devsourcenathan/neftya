@@ -30,26 +30,30 @@ export function PriceEditor({
   const { t } = useTranslation();
 
   return (
-    <table className="w-full max-w-3xl text-sm">
-      <thead>
-        <tr className="text-left text-muted">
-          <th className="py-1">{t('manufacturing.item')}</th>
-          <th className="py-1 text-right">{t('manufacturing.quantity')}</th>
-          <th className="py-1 text-right">{t('manufacturing.unitPrice')}</th>
-          <th className="py-1 text-right">{t('manufacturing.lineTotal')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {lines.map((line) => (
-          <PriceRow
-            key={line.reference}
-            line={line}
-            currency={currency}
-            projectId={projectId}
-          />
-        ))}
-      </tbody>
-    </table>
+    // Sur téléphone, quatre colonnes ne tiennent pas dans 375 pixels. La table défile
+    // dans son propre cadre plutôt que d'être coupée — ou de faire défiler la page entière.
+    <div className="-mx-1 overflow-x-auto px-1">
+      <table className="w-full min-w-md max-w-3xl text-sm">
+        <thead>
+          <tr className="text-left text-muted">
+            <th className="py-1">{t('manufacturing.item')}</th>
+            <th className="py-1 text-right">{t('manufacturing.quantity')}</th>
+            <th className="py-1 text-right">{t('manufacturing.unitPrice')}</th>
+            <th className="py-1 text-right">{t('manufacturing.lineTotal')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((line) => (
+            <PriceRow
+              key={line.reference}
+              line={line}
+              currency={currency}
+              projectId={projectId}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

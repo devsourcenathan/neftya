@@ -144,3 +144,76 @@ export function Badge({
     </span>
   );
 }
+
+/**
+ * Une esquisse de contenu pendant le chargement.
+ *
+ * « Chargement… » ne dit rien de ce qui arrive ; une esquisse de la bonne forme évite que
+ * la page saute quand le contenu se pose. C'est aussi ce qui distingue une attente d'une
+ * panne aux yeux de qui regarde.
+ */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded-md bg-line/70 ${className}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+/** Un groupe de cartes en attente, de la forme de celles qui vont les remplacer. */
+export function SkeletonCards({ count = 3 }: { count?: number }) {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }, (_, index) => (
+        <li key={index}>
+          <Card className="flex flex-col gap-3 p-4">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+          </Card>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Un sélecteur segmenté : deux ou trois choix exclusifs, tous visibles.
+ *
+ * Une liste déroulante cacherait les options derrière un clic ; à trois choix, les montrer
+ * coûte moins de place que la flèche qui les cacherait.
+ */
+export function SegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+  className = '',
+}: {
+  value: T;
+  options: readonly { value: T; label: ReactNode }[];
+  onChange: (value: T) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`inline-flex rounded-md border border-line-strong bg-surface p-0.5 ${className}`}
+      role="tablist"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="tab"
+          aria-selected={option.value === value}
+          onClick={() => onChange(option.value)}
+          className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+            option.value === value ? 'bg-ink text-paper' : 'text-muted hover:text-ink'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}

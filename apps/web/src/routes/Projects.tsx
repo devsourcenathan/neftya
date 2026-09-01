@@ -6,7 +6,15 @@ import { ApiRequestError } from '../api/client.js';
 import { createProject, listProjects, useApi } from '../api/projects.js';
 import { presets } from '../designer/model.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
-import { Badge, Card, EmptyState, Field, Input, SectionTitle } from '../ui/index.js';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  SectionTitle,
+  SkeletonCards,
+} from '../ui/index.js';
 
 /**
  * L'accueil : les projets de l'organisation, et la bibliothèque de modèles.
@@ -51,9 +59,9 @@ export function Projects() {
           {t('projects.title')}
         </SectionTitle>
 
-        {projects.isPending && (
-          <p className="text-sm text-muted">{t('state.loading')}</p>
-        )}
+        {/* Une esquisse de la bonne forme : la page ne saute pas quand les projets se
+            posent, et l'attente ne ressemble pas à une panne. */}
+        {projects.isPending && <SkeletonCards />}
 
         {projects.isError && (
           <p className="text-sm text-danger">

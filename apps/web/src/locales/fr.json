@@ -79,7 +79,12 @@
     "warning": "À vérifier",
     "partsTitle": "Pièces",
     "partsCount_one": "{{count}} référence",
-    "partsCount_other": "{{count}} références"
+    "partsCount_other": "{{count}} références",
+    "tabs": {
+      "settings": "Réglages",
+      "view": "Vue",
+      "parts": "Pièces"
+    }
   },
   "units": {
     "legend": "Système d'unités",

@@ -79,7 +79,12 @@
     "warning": "Check",
     "partsTitle": "Parts",
     "partsCount_one": "{{count}} item",
-    "partsCount_other": "{{count}} items"
+    "partsCount_other": "{{count}} items",
+    "tabs": {
+      "settings": "Settings",
+      "view": "View",
+      "parts": "Parts"
+    }
   },
   "units": {
     "legend": "Unit system",

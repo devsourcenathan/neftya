@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client.js';
+import { Button } from '../ui/index.js';
+import { DownloadIcon } from '../ui/icons.js';
 
 /**
  * Un bouton qui télécharge un fichier de l'API.
@@ -24,9 +26,7 @@ export function DownloadButton({
 
   return (
     <span className="inline-flex items-center gap-2">
-      <button
-        type="button"
-        className="rounded-md border border-line-strong px-3 py-1 hover:border-ink disabled:opacity-50"
+      <Button
         disabled={state === 'busy'}
         onClick={() => {
           setState('busy');
@@ -40,8 +40,9 @@ export function DownloadButton({
             });
         }}
       >
+        <DownloadIcon />
         {state === 'busy' ? t('state.preparing') : label}
-      </button>
+      </Button>
 
       {state === 'failed' && (
         <span className="text-xs text-danger">{t('state.downloadFailed')}</span>

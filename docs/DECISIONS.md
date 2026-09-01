@@ -1178,3 +1178,48 @@ pour regarder la page publique.
 
 Les confondre serait pire encore : envoyer au portail quelqu'un dont le réseau a simplement
 toussé lui ferait croire que sa session a expiré.
+
+---
+
+## 2026-09-01 — La caméra cadre le meuble, elle ne le suppose pas
+
+**Décision.** La scène 3D est enveloppée dans `Bounds fit observe` : la caméra s'ajuste aux
+dimensions du meuble, et se réajuste quand elles changent.
+
+**Motif.** La position était fixe. Elle cadrait convenablement un caisson de 600 mm et
+laissait un dressing de 2,4 m sortir de l'écran — dans un produit dont le premier geste est
+de faire glisser une largeur. Ce n'était pas un défaut d'esthétique.
+
+**Le reste de la passe 3D** — ombre de contact, trois sources de lumière, bois plus sombre
+sur l'enveloppe que sur ce qu'elle contient, pièce sélectionnée qui s'éclaire au lieu de
+changer de teinte — sert la même lecture : comprendre la structure d'un coup d'œil, avant
+de distinguer les pièces.
+
+---
+
+## 2026-09-01 — Sur téléphone, un panneau à la fois
+
+**Décision.** Sous `lg`, le mode conception montre un seul des trois panneaux — réglages,
+vue, pièces — choisi par un sélecteur segmenté. Au-dessus, les trois reviennent côte à côte.
+
+**Motif.** Empilés, ils obligeaient à faire défiler trois écrans pour régler une cote et en
+voir l'effet. Le menuisier consulte souvent sur téléphone, et c'est précisément là que le
+va-et-vient coûte le plus.
+
+**Les tables larges défilent dans leur propre cadre**, jamais en faisant défiler la page.
+Le devis fait 448 pixels ; l'écran d'un téléphone en fait 375. Sans cadre, la table était
+coupée sans que rien ne le laisse voir.
+
+---
+
+## 2026-09-01 — Douze icônes écrites à la main
+
+**Décision.** `ui/icons.tsx` porte douze pictogrammes en SVG, hérités de la couleur et de
+la taille du texte. Aucune bibliothèque.
+
+**Motif.** Les bibliothèques d'icônes en embarquent deux mille pour en servir douze. Celles
+d'ici tiennent en cent lignes, ne pèsent rien, et se dessinent au trait du reste de
+l'interface.
+
+**Une icône ne remplace jamais un libellé.** Un atelier ne devine pas un pictogramme, et
+l'interface est déjà traduite : elles accompagnent le texte, elles ne s'y substituent pas.

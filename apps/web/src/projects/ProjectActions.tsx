@@ -4,6 +4,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client.js';
 import { deleteProject, updateProject, useApi } from '../api/projects.js';
+import { Button, Input } from '../ui/index.js';
+import { TrashIcon } from '../ui/icons.js';
 
 /**
  * Renommer et supprimer un projet.
@@ -45,8 +47,8 @@ export function ProjectActions({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <input
-        className="rounded-md border border-line-strong px-2 py-1 text-lg font-semibold"
+      <Input
+        className="max-w-xs font-display text-lg"
         value={draft ?? name}
         aria-label={t('projects.name')}
         onChange={(event) => setDraft(event.target.value)}
@@ -94,13 +96,10 @@ export function ProjectActions({
           </button>
         </span>
       ) : (
-        <button
-          type="button"
-          className="ml-auto text-sm text-danger underline"
-          onClick={() => setConfirming(true)}
-        >
+        <Button tone="ghost" className="ml-auto" onClick={() => setConfirming(true)}>
+          <TrashIcon />
           {t('projects.delete')}
-        </button>
+        </Button>
       )}
 
       {remove.isError && (

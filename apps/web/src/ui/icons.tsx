@@ -1,0 +1,104 @@
+/**
+ * Les icônes.
+ *
+ * Douze traits, écrits à la main, plutôt qu'une bibliothèque de deux mille pictogrammes
+ * dont on en utiliserait douze. Elles héritent de la couleur du texte (`currentColor`) et
+ * de sa taille (`1em`) : posées dans un bouton, elles s'alignent sans réglage.
+ *
+ * Une icône ne remplace jamais un libellé — elle l'accompagne. Un atelier ne devine pas
+ * un pictogramme, et l'interface est déjà traduite.
+ */
+
+type IconProps = { className?: string };
+
+function Svg({ children, className = '' }: IconProps & { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`shrink-0 ${className}`}
+    >
+      {children}
+    </svg>
+  );
+}
+
+export const DownloadIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M12 3v12" />
+    <path d="m7 11 5 5 5-5" />
+    <path d="M4 20h16" />
+  </Svg>
+);
+
+export const SaveIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M5 4h11l3 3v13H5z" />
+    <path d="M9 4v5h6V4" />
+    <path d="M8 20v-6h8v6" />
+  </Svg>
+);
+
+export const TrashIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M4 7h16" />
+    <path d="M9 7V5h6v2" />
+    <path d="M6 7v13h12V7" />
+    <path d="M10 11v5M14 11v5" />
+  </Svg>
+);
+
+export const CubeIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z" />
+    <path d="m4 7.5 8 4.5 8-4.5" />
+    <path d="M12 12v9" />
+  </Svg>
+);
+
+export const RulerIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M3 9h18v6H3z" />
+    <path d="M7 9v3M11 9v4M15 9v3M19 9v4" />
+  </Svg>
+);
+
+export const PlanIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M4 4h16v16H4z" />
+    <path d="M4 10h16M10 10v10" />
+  </Svg>
+);
+
+export const ToolsIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M14 4a4 4 0 0 0 5 5l-9 9-4 2 2-4z" />
+    <path d="m5 5 4 4" />
+  </Svg>
+);
+
+export const WarningIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M12 4 3 20h18z" />
+    <path d="M12 10v4M12 17h.01" />
+  </Svg>
+);
+
+export const PlusIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M12 5v14M5 12h14" />
+  </Svg>
+);
+
+export const BackIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M15 5l-7 7 7 7" />
+  </Svg>
+);

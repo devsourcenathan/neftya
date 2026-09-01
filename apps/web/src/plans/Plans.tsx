@@ -103,34 +103,38 @@ export function Plans({ projectId }: { projectId: string }) {
           {t('plans.parts')}
         </h2>
 
-        <table className="w-full max-w-3xl text-sm">
-          <thead>
-            <tr className="text-left text-muted">
-              <th className="py-1">{t('part.id')}</th>
-              <th className="py-1">{t('part.role')}</th>
-              <th className="py-1 text-right">{t('part.length')}</th>
-              <th className="py-1 text-right">{t('part.width')}</th>
-              <th className="py-1 text-right">{t('part.thickness')}</th>
-              <th className="py-1 text-right">{t('part.quantity')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drawing.parts.map((part) => (
-              <tr key={part.partId} className="border-t border-line">
-                <td className="py-1 font-mono">{part.partId}</td>
-                <td className="py-1">{t(`part.roles.${part.role}`)}</td>
-                <td className="py-1 text-right tabular-nums">
-                  {format(part.lengthMm)}
-                </td>
-                <td className="py-1 text-right tabular-nums">{format(part.widthMm)}</td>
-                <td className="py-1 text-right tabular-nums">
-                  {format(part.thicknessMm)}
-                </td>
-                <td className="py-1 text-right tabular-nums">{part.quantity}</td>
+        <div className="-mx-1 overflow-x-auto px-1">
+          <table className="w-full min-w-lg max-w-3xl text-sm">
+            <thead>
+              <tr className="text-left text-muted">
+                <th className="py-1">{t('part.id')}</th>
+                <th className="py-1">{t('part.role')}</th>
+                <th className="py-1 text-right">{t('part.length')}</th>
+                <th className="py-1 text-right">{t('part.width')}</th>
+                <th className="py-1 text-right">{t('part.thickness')}</th>
+                <th className="py-1 text-right">{t('part.quantity')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {drawing.parts.map((part) => (
+                <tr key={part.partId} className="border-t border-line">
+                  <td className="py-1 font-mono">{part.partId}</td>
+                  <td className="py-1">{t(`part.roles.${part.role}`)}</td>
+                  <td className="py-1 text-right tabular-nums">
+                    {format(part.lengthMm)}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">
+                    {format(part.widthMm)}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">
+                    {format(part.thicknessMm)}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">{part.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <p className="text-xs text-muted">{t('plans.pdfInMillimetres')}</p>
