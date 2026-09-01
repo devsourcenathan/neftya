@@ -15,6 +15,14 @@ import {
   SkeletonCards,
 } from '../ui/index.js';
 import { PlusIcon } from '../ui/icons.js';
+import type { ProjectStatus } from '../api/projects.js';
+
+/** « À revoir » passe en or : c'est le seul état qui demande une action. */
+const STATUS_TONES: Record<ProjectStatus, 'neutral' | 'accent' | 'success'> = {
+  draft: 'neutral',
+  needs_review: 'accent',
+  ready: 'success',
+};
 
 /**
  * L'accueil : les projets de l'organisation, et la bibliothèque de modèles.
@@ -92,18 +100,10 @@ export function Projects() {
                       })
                     }
                   >
-                    <Badge
-                      tone={
-                        project.model.compartments.some((c) => c.doors > 0)
-                          ? 'accent'
-                          : 'neutral'
-                      }
-                    >
-                      {t(
-                        project.model.compartments.some((c) => c.doors > 0)
-                          ? 'projects.withDoors'
-                          : 'projects.openCarcass',
-                      )}
+                    {/* Le statut vient du serveur, où il est **déduit** du modèle et
+                        des exports figés — jamais saisi. */}
+                    <Badge tone={STATUS_TONES[project.status]}>
+                      {t(`status.${project.status}`)}
                     </Badge>
 
                     <span className="mt-3 text-headline-md text-ink">

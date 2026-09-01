@@ -16,10 +16,21 @@ import type { ApiClient, FileClient } from './client.js';
  * serveur n'y cassait aucun build, il produisait un `undefined` à l'exécution.
  */
 
+/**
+ * L'état d'avancement, **déduit par le serveur** à chaque lecture.
+ *
+ * `needs_review` prime : un plan parti à l'atelier avec un avertissement reste un plan à
+ * relire. Il n'y a pas d'état « optimisé » — le plan de découpe est recalculé à chaque
+ * appel, il l'est donc toujours, et l'annoncer comme une étape franchie ne dirait rien.
+ */
+export type ProjectStatus = 'draft' | 'needs_review' | 'ready';
+
 export interface ProjectResource {
   id: string;
   name: string;
   model: ParsedFurnitureInput;
+  status: ProjectStatus;
+  export_count: number;
   created_by: string;
   created_at: string;
   updated_at: string;

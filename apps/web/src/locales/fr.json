@@ -285,5 +285,18 @@
     "design": "Conception",
     "materials": "Plans",
     "manufacturing": "Fabrication"
+  },
+  "layers": {
+    "title": "Calques",
+    "show": "Afficher {{part}}",
+    "hide": "Masquer {{part}}",
+    "showAll": "Tout afficher",
+    "hiddenCount_one": "{{count}} pièce masquée",
+    "hiddenCount_other": "{{count}} pièces masquées"
+  },
+  "status": {
+    "draft": "Brouillon",
+    "needs_review": "À revoir",
+    "ready": "Prêt à couper"
   }
 }

@@ -50,9 +50,38 @@ export interface SceneProps {
   onSelect: (partId: string | null) => void;
   /** Écarte les pièces depuis le centre, de 0 (assemblé) à 1 (éclaté). */
   explode: number;
+  /**
+   * Identifiants des pièces masquées.
+   *
+   * **Masquer est une affaire de vue.** Une pièce invisible reste dans la liste de découpe,
+   * dans la nomenclature et dans le devis : on la cache pour voir derrière, pas pour ne
+   * plus la fabriquer.
+   */
+  hidden?: ReadonlySet<string>;
 }
 
-export function Scene({ furniture, selectedPartId, onSelect, explode }: SceneProps) {
+/**
+ * Les pièces effectivement dessinées.
+ *
+ * Extraite de la scène pour être vérifiable : un canevas WebGL ne se lit pas dans un test,
+ * et la règle qui décide ce qu'on voit mérite mieux qu'une inspection à l'œil.
+ */
+export function visibleParts(
+  furniture: Furniture,
+  hidden?: ReadonlySet<string>,
+): Part[] {
+  if (!hidden || hidden.size === 0) return furniture.parts;
+
+  return furniture.parts.filter((part) => !hidden.has(part.id));
+}
+
+export function Scene({
+  furniture,
+  selectedPartId,
+  onSelect,
+  explode,
+  hidden,
+}: SceneProps) {
   const centre = useMemo(() => boundingCentre(furniture), [furniture]);
 
   // Le meuble change de taille ; la caméra doit suivre. Une position fixe cadrait un
@@ -85,7 +114,7 @@ export function Scene({ furniture, selectedPartId, onSelect, explode }: ScenePro
 
       <Bounds key={fitKey} fit clip observe margin={1.25}>
         <group position={[-centre.x, -centre.y, -centre.z]}>
-          {furniture.parts.flatMap((part) =>
+          {visibleParts(furniture, hidden).flatMap((part) =>
             part.instances.map((placement, index) => (
               <PartMesh
                 key={`${part.id}-${index}`}

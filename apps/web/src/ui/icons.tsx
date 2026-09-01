@@ -109,3 +109,18 @@ export const SettingsIcon = (props: IconProps) => (
     <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
   </Svg>
 );
+
+export const EyeIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
+    <circle cx="12" cy="12" r="2.5" />
+  </Svg>
+);
+
+export const EyeOffIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M4 4l16 16" />
+    <path d="M9.9 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10 6 10 6a17 17 0 0 1-3.3 3.9" />
+    <path d="M6.3 7.5A17 17 0 0 0 2 11s3.5 6 10 6a9.6 9.6 0 0 0 3.8-.8" />
+  </Svg>
+);

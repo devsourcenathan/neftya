@@ -20,7 +20,8 @@ import { usePreferences } from '../preferences/PreferencesContext.js';
 import { Badge, Button, Card, SectionTitle, SegmentedControl } from '../ui/index.js';
 import { CubeIcon, RulerIcon, SaveIcon, WarningIcon } from '../ui/icons.js';
 import { Controls } from './Controls.js';
-import { PartDetails, PartList } from './PartDetails.js';
+import { PartDetails } from './PartDetails.js';
+import { Layers } from './Layers.js';
 import { reduce, type DesignerAction } from './model.js';
 
 /**
@@ -66,6 +67,13 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
   // faire défiler trois écrans pour régler une cote. Un onglet à la fois ; au-dessus de
   // `lg`, les trois reviennent ensemble et l'onglet n'a plus d'effet.
   const [panel, setPanel] = useState<'settings' | 'view' | 'parts'>('view');
+  /**
+   * Les pièces masquées dans la vue.
+   *
+   * Rien d'autre ne les connaît : ni la liste de découpe, ni le devis, ni ce qui est
+   * enregistré. Masquer sert à regarder derrière une porte, pas à retirer la porte.
+   */
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
 
   const deferredModel = useDeferredValue(model);
   const furniture = useMemo(() => build(deferredModel), [deferredModel]);
@@ -252,12 +260,22 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
 
           <Card className="p-4">
             <SectionTitle hint={t('designer.partsCount', { count: rows.length })}>
-              {t('designer.partsTitle')}
+              {t('layers.title')}
             </SectionTitle>
-            <PartList
+            <Layers
               parts={furniture.parts}
+              hidden={hidden}
               selectedPartId={selectedPartId}
               onSelect={setSelectedPartId}
+              onToggle={(partId) =>
+                setHidden((previous) => {
+                  const next = new Set(previous);
+                  if (next.has(partId)) next.delete(partId);
+                  else next.add(partId);
+                  return next;
+                })
+              }
+              onShowAll={() => setHidden(new Set())}
             />
           </Card>
         </aside>

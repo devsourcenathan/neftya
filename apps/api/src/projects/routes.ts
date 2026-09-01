@@ -155,11 +155,36 @@ function parse<T extends z.ZodType>(schema: T, payload: unknown): z.infer<T> {
   throw validationFailed(details);
 }
 
+/**
+ * L'état d'avancement d'un projet, **déduit et non saisi**.
+ *
+ * Un statut qu'on choisit dans une liste déroulante ment dès le lendemain : personne ne
+ * revient le corriger. Celui-ci se lit des données à chaque appel, et il ne peut donc pas
+ * diverger de ce que le projet est vraiment.
+ *
+ *  - `needs_review` : le moteur signale quelque chose — une flèche d'étagère, un vantail
+ *    trop large, un tiroir qui ne rentre pas. Cela prime sur le reste : un plan parti à
+ *    l'atelier avec un avertissement reste un plan à relire.
+ *  - `ready` : un export a été figé. C'est la seule trace qu'un plan est parti.
+ *  - `draft` : tout le reste.
+ *
+ * Il n'y a **pas** d'état « optimisé » : le plan de découpe est recalculé à chaque appel,
+ * il l'est donc toujours, et l'annoncer comme une étape franchie ne dirait rien.
+ */
+export type ProjectStatus = 'draft' | 'needs_review' | 'ready';
+
+function statusOf(project: Project): ProjectStatus {
+  if (build(project.model).warnings.length > 0) return 'needs_review';
+  return project.exportCount > 0 ? 'ready' : 'draft';
+}
+
 function toResource(project: Project) {
   return {
     id: project.id,
     name: project.name,
     model: project.model,
+    status: statusOf(project),
+    export_count: project.exportCount,
     created_by: project.createdBy,
     created_at: project.createdAt.toISOString(),
     updated_at: project.updatedAt.toISOString(),

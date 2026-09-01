@@ -285,5 +285,18 @@
     "design": "Design",
     "materials": "Drawings",
     "manufacturing": "Manufacturing"
+  },
+  "layers": {
+    "title": "Layers",
+    "show": "Show {{part}}",
+    "hide": "Hide {{part}}",
+    "showAll": "Show all",
+    "hiddenCount_one": "{{count}} part hidden",
+    "hiddenCount_other": "{{count}} parts hidden"
+  },
+  "status": {
+    "draft": "Draft",
+    "needs_review": "Needs review",
+    "ready": "Ready to cut"
   }
 }

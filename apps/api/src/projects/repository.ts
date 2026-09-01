@@ -22,6 +22,14 @@ export interface Project {
   model: ParsedFurnitureInput;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * Nombre d'exports figés. **Compté par la base, pas deviné.**
+   *
+   * C'est ce qui distingue un projet parti à l'atelier d'un brouillon, et la seule chose
+   * qui le distingue : tout le reste — pièces, plan, devis — est recalculable à tout
+   * moment et ne dit rien de l'avancement.
+   */
+  exportCount: number;
 }
 
 export class ProjectRepository {
@@ -31,6 +39,16 @@ export class ProjectRepository {
     const rows = await this.db
       .selectFrom('projects')
       .selectAll()
+      // Une sous-requête corrélée plutôt qu'une requête par projet : la liste doit tenir
+      // en un aller-retour, quel que soit le nombre de projets.
+      .select((eb) =>
+        eb
+          .selectFrom('project_exports')
+          .select((inner) => inner.fn.countAll<string>().as('total'))
+          .whereRef('project_exports.project_id', '=', 'projects.id')
+          .where('project_exports.organization_id', '=', organizationId)
+          .as('export_count'),
+      )
       .where('organization_id', '=', organizationId)
       .where('deleted_at', 'is', null)
       .orderBy('updated_at', 'desc')
@@ -48,6 +66,14 @@ export class ProjectRepository {
     const row = await this.db
       .selectFrom('projects')
       .selectAll()
+      .select((eb) =>
+        eb
+          .selectFrom('project_exports')
+          .select((inner) => inner.fn.countAll<string>().as('total'))
+          .whereRef('project_exports.project_id', '=', 'projects.id')
+          .where('project_exports.organization_id', '=', organizationId)
+          .as('export_count'),
+      )
       .where('organization_id', '=', organizationId)
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
@@ -129,6 +155,7 @@ function toProject(row: {
   model: ParsedFurnitureInput;
   created_at: Date;
   updated_at: Date;
+  export_count?: string | number | null;
 }): Project {
   return {
     id: row.id,
@@ -138,5 +165,8 @@ function toProject(row: {
     model: row.model,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // `count` revient en chaîne : le pilote refuse de perdre de la précision sur un
+    // `bigint`, et il a raison. La conversion est explicite.
+    exportCount: Number(row.export_count ?? 0),
   };
 }

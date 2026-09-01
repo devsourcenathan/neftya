@@ -1260,3 +1260,49 @@ et la précision froide de l'ingénierie ». Ce n'était pas à moi d'en décide
 
 Les maquettes sont exclues du contrôle de format : les reformater ferait diverger ce que
 nous lisons de ce qui nous a été remis.
+
+---
+
+## 2026-09-01 — Le statut d'un projet est déduit, jamais saisi
+
+**Décision.** Trois états, calculés par le serveur à chaque lecture :
+
+| État | Ce qui le déclenche |
+|---|---|
+| `needs_review` | le moteur signale quelque chose — flèche, vantail trop large, tiroir qui ne rentre pas |
+| `ready` | un export a été figé |
+| `draft` | tout le reste |
+
+**Motif.** Un statut qu'on choisit dans une liste déroulante ment dès le lendemain :
+personne ne revient le corriger. Celui-ci se lit des données, il ne peut donc pas diverger
+de ce que le projet est vraiment. Corriger une étagère qui fléchit fait passer le projet de
+« à revoir » à « brouillon » sans que personne n'ait rien déclaré.
+
+**`needs_review` prime sur `ready`** : un plan parti à l'atelier avec un avertissement reste
+un plan à relire.
+
+**Il n'y a pas d'état « optimisé »**, contrairement aux maquettes. Le plan de découpe est
+recalculé à chaque appel : il l'est donc toujours, et l'annoncer comme une étape franchie ne
+dirait rien. Reprendre l'étiquette pour la ressemblance aurait produit un badge décoratif.
+
+**Le compte d'exports passe par une sous-requête corrélée**, pas par une requête par projet :
+la liste tient en un aller-retour quel que soit le nombre de projets. Elle porte le
+cloisonnement comme le reste — les exports d'une autre organisation ne comptent pas.
+
+---
+
+## 2026-09-01 — Masquer une pièce est une affaire de vue, et rien d'autre
+
+**Décision.** Le panneau de calques masque des pièces dans la 3D. Une pièce masquée reste
+dans la liste de découpe, la nomenclature, le devis et l'export.
+
+**Motif.** Le geste existe pour regarder derrière une porte ou un fond — c'est ce que
+réclame une vue 3D dès qu'un meuble est fermé, et sans lui un dressing à deux vantaux ne
+montre que ses vantaux. Il ne dit rien de ce qu'on fabrique.
+
+Confondre les deux produirait **un plan amputé d'une pièce que personne n'aurait décidé de
+retirer** — le défaut le plus coûteux possible dans ce produit, et le plus silencieux.
+
+**La règle est extraite en fonction pure**, `visibleParts`, et testée. Un canevas WebGL ne
+se lit pas dans un test : laisser la règle à l'intérieur de la scène revenait à ne pas la
+vérifier du tout. Retirer le filtre fait échouer un test.
