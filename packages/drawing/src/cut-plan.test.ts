@@ -123,8 +123,15 @@ describe('SVG', () => {
   it('dessine chaque pièce placée', () => {
     const rectangles = [...svg.matchAll(/<rect /g)].length;
 
-    // Un rectangle par pièce, plus celui du panneau.
-    expect(rectangles).toBe(panel.placements.length + 1);
+    // Un rectangle par pièce, plus celui du panneau, plus la limite de délignage.
+    expect(rectangles).toBe(panel.placements.length + 2);
+  });
+
+  it('montre la limite de délignage', () => {
+    // Sans elle, l'opérateur mesure depuis le bord du panneau et se trompe de dix
+    // millimètres sur chaque cote.
+    expect(svg).toContain('stroke-dasharray');
+    expect(svg).toContain(`width="${panel.usableFormat.lengthMm}"`);
   });
 
   it('échappe ce qui casserait le XML', () => {

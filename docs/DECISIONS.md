@@ -839,7 +839,8 @@ placement libre serait plus dense et infaisable à l'atelier.
 
 **Ce que cela coûte.** Ce n'est pas l'optimum — le *bin packing* 2D est NP-difficile, et
 Neftya cherche une bonne solution rapide. Sur le meuble de référence, cette heuristique
-donne exactement le plan documenté : 93,2 %.
+donne exactement le plan documenté : 93,2 % à cette date, 93,1 % depuis que le délignage
+et le jeu des étagères sont entrés dans le modèle — voir la décision du 1er septembre.
 
 ---
 
@@ -1052,3 +1053,44 @@ et le découvrir à la scie coûte plus cher que le découvrir dans une réponse
 
 **Vérifié en le cassant.** Trois mutations — trait de scie horizontal, trait de scie
 vertical, une pièce perdue en silence — font échouer quatre tests chacune.
+
+---
+
+## 2026-09-01 — Une étagère a 2 mm de jeu par côté
+
+**Décision.** `shelfSideClearanceMm`, 2 mm par défaut. Une étagère mesure la largeur de son
+ouverture moins 4 mm, et se pose centrée dedans.
+
+**Motif.** Le moteur coupait les étagères à la cote exacte de leur compartiment. Il faut les
+engager entre deux panneaux déjà posés, et ni le bois ni l'assemblage ne sont parfaitement
+d'équerre : à la cote, elles ne rentrent pas. Il y avait des jeux pour les tiroirs et pour
+les façades, aucun pour les étagères — un oubli, pas un choix.
+
+**Ce que cela dit du reste.** Le plan produit était **cohérent avec lui-même et infaisable**.
+Aucun test ne pouvait le voir : l'invariant de recomposition était respecté, les cotes
+s'additionnaient juste, et le meuble ne se montait pas. C'est précisément la classe de
+défaut que la validation terrain existe pour trouver, et il en reste probablement d'autres.
+
+**Effet de bord révélateur.** Le test « recompose la largeur hors-tout » utilisait la
+longueur de l'étagère comme raccourci pour l'ouverture du compartiment. Il a fallu le
+réécrire sur les panneaux verticaux eux-mêmes — ce qu'il aurait dû mesurer depuis le début.
+
+---
+
+## 2026-09-01 — Le panneau est déligné de 10 mm par rive
+
+**Décision.** `trimMm`, 10 mm par défaut, réglable. Le placement n'utilise que la surface
+délignée ; les positions restent données dans le repère du panneau **acheté**.
+
+**Motif.** Un panneau livré arrive avec des rives abîmées et rarement d'équerre : un atelier
+les déligne avant de scier. Placer les pièces jusqu'au bord nominal donne un plan qui ne
+tient que sur le papier, et c'est la dernière coupe qui manque.
+
+**L'utilisation reste rapportée au panneau acheté**, pas à la surface délignée. C'est le
+panneau qu'on paie, et rapporter le chiffre à la surface utile ferait disparaître du calcul
+une perte bien réelle : 93,1 % au lieu de 93,2 %, et les 72 800 mm² du délignage sont dans
+la chute, là où ils doivent être.
+
+**Corollaire de dessin.** Le plan montre la limite de délignage en trait interrompu. Sans
+elle, l'opérateur mesure depuis le bord du panneau et se trompe de dix millimètres sur
+chaque cote — l'inverse exact du but recherché.

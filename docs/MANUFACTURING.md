@@ -20,7 +20,7 @@ découpe et le guide d'assemblage.
 | P02 | Dessous | 1800 × 400 | 18 | 1 | avant |
 | P03 | Côté | 564 × 400 | 18 | 2 | avant |
 | P04 | Séparateur central | 564 × 382 | 18 | 1 | avant |
-| P05 | Étagère | 873 × 382 | 18 | 2 | avant |
+| P05 | Étagère | 869 × 382 | 18 | 2 | avant |
 | P06 | Fond | 1772 × 572 | 8 | 1 | — |
 
 ---
@@ -30,35 +30,47 @@ découpe et le guide d'assemblage.
 L'optimiseur place les pièces sur des panneaux standard en réservant le trait de scie
 (`kerf_mm`, 3 mm par défaut — voir §6 de [NEFTYA_ENGINE.md](NEFTYA_ENGINE.md)).
 
-### Panneau MDF 18 mm — 2440 × 1220
+### Panneau MDF 18 mm — 2440 × 1220, déligné à 10 mm
 
 ```text
-      0                                    1800 1803        2367   2440
-    0 ┌────────────────────────────────────┬────┬───────────┬──────┐
+      10                                  1810 1813        2377   2430
+   10 ┌────────────────────────────────────┬────┬───────────┬──────┐
       │                                    │    │           │      │
       │  P01  Dessus  1800 × 400           │////│ P03  côté │      │
-  400 ├────────────────────────────────────┤////│  564×400  │      │
-  403 ├────────────────────────────────────┼────┼───────────┤      │
+  410 ├────────────────────────────────────┤////│  564×400  │      │
+  413 ├────────────────────────────────────┼────┼───────────┤      │
       │                                    │////│           │      │
       │  P02  Dessous  1800 × 400          │////│ P03  côté │      │
-  803 ├──────────────┬──────────────┬──────┴────┴───────────┤      │
-  806 ├──────────────┼──────────────┼───────────────────────┤      │
+  813 ├──────────────┬──────────────┬──────┴────┴───────────┤      │
+  816 ├──────────────┼──────────────┼───────────────────────┤      │
       │ P05 étagère  │ P05 étagère  │ P04  séparateur       │      │
-      │   873×382    │   873×382    │      564×382          │      │
- 1188 └──────────────┴──────────────┴───────────────────────┘      │
- 1220 └───────────────────────────────────────────────────────────-┘
+      │   869×382    │   869×382    │      564×382          │      │
+ 1198 └──────────────┴──────────────┴───────────────────────┘      │
+ 1210 └───────────────────────────────────────────────────────────-┘
 
       ////  trait de scie (3 mm)
+      Les cotes partent du coin du panneau acheté ; la bande de 10 mm
+      qui l'entoure est le délignage, et rien n'y est posé.
 ```
 
 ```text
-Surface des pièces  : 2 773 620 mm²
-Surface du panneau  : 2 976 800 mm²
-Utilisation         : 93,2 %
-Chute               :  6,8 %
+Surface des pièces  : 2 770 564 mm²
+Surface du panneau  : 2 976 800 mm²   (2440 × 1220, acheté)
+Surface utilisable  : 2 904 000 mm²   (2420 × 1200, déligné)
+Utilisation         : 93,1 %          (rapportée au panneau acheté)
+Chute               :  6,9 %
 Panneaux 18 mm      : 1
 Panneaux 8 mm       : 1  (fond)
 ```
+
+> **Ce plan a changé le 1er septembre 2026.** Il annonçait des étagères de 873 mm — la
+> largeur exacte de leur ouverture — et un panneau utilisé jusqu'au bord nominal. Les deux
+> sont infaisables à l'atelier : une étagère coupée à la cote ne s'engage pas entre deux
+> panneaux déjà posés, et un panneau livré arrive avec des rives abîmées qu'on déligne.
+>
+> Les étagères font désormais 869 mm (2 mm de jeu par côté) et le placement réserve 10 mm
+> sur chaque rive. L'utilisation passe de 93,2 % à 93,1 % : la perte du délignage est
+> réelle, et la rapporter à la surface utile la ferait disparaître du chiffre.
 
 > **Note sur cet exemple.** Les deux côtés P03 sont posés pivotés (564 le long de la
 > longueur du panneau). C'est licite en V1, où le sens du fil est modélisé mais non
@@ -72,6 +84,8 @@ cherchera pas l'optimum mais une bonne solution rapide, avec des contraintes ré
 
 - coupes guillotine (traversantes de bord à bord), seules réalisables sur scie à panneaux ;
 - trait de scie réservé à chaque coupe ;
+- **délignage** de 10 mm par rive, réglable : un panneau livré n'est ni intact ni d'équerre
+  sur ses bords ;
 - sens du fil (V2) ;
 - réutilisation des chutes entre projets (non planifié).
 
@@ -95,9 +109,9 @@ déduits des cotes de découpe** (§7.4 de [NEFTYA_ENGINE.md](NEFTYA_ENGINE.md))
 P01 + P02 : 1800 × 2   = 3600 mm
 P03       :  564 × 2   = 1128 mm
 P04       :  564       =  564 mm
-P05       :  873 × 2   = 1746 mm
+P05       :  869 × 2   = 1738 mm
                         ─────────
-                          7038 mm   ≈ 7,04 m
+                          7030 mm   ≈ 7,03 m
 ```
 
 ### Accessoires

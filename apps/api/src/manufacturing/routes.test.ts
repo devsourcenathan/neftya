@@ -49,7 +49,7 @@ async function createProject(organizationId = ORGANIZATION_A): Promise<string> {
 }
 
 describe('plan de fabrication', () => {
-  it('rend le plan documenté : un panneau de 18 mm, 93,2 %', async () => {
+  it('rend le plan documenté : un panneau de 18 mm, 93,1 %', async () => {
     const id = await createProject();
 
     const response = await harness.app.inject({
@@ -66,8 +66,8 @@ describe('plan de fabrication', () => {
     );
 
     expect(thick).toHaveLength(1);
-    expect(Math.round(thick[0].utilisation * 1000) / 10).toBe(93.2);
-    expect(data.bill.edgeBandingMm).toBe(7038);
+    expect(Math.round(thick[0].utilisation * 1000) / 10).toBe(93.1);
+    expect(data.bill.edgeBandingMm).toBe(7030);
     expect(data.assembly[0].key).toBe('carcass');
   });
 
@@ -356,7 +356,8 @@ describe('exports', () => {
     expect([...pdf.matchAll(/\/Type \/Page[^s]/gu)]).toHaveLength(7);
     // La table porte les cotes de découpe : ce qu'aucune élévation ne dit.
     expect(pdf).toContain('(P05)');
-    expect(pdf).toContain('(873 x 382)');
+    // 869 et non 873 : l'étagère porte 2 mm de jeu par côté.
+    expect(pdf).toContain('(869 x 382)');
   });
 
   it('cote les plans en millimètres, même pour une organisation impériale', async () => {

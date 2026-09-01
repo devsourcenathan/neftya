@@ -39,9 +39,11 @@ describe('liste des matériaux', () => {
     ]);
   });
 
-  it('cumule 7,04 m de chant, comme le document', () => {
-    // P01+P02 : 3600, P03 : 1128, P04 : 564, P05 : 1746 → 7038 mm.
-    expect(bill.edgeBandingMm).toBe(7038);
+  it('cumule 7,03 m de chant', () => {
+    // P01+P02 : 3600, P03 : 1128, P04 : 564, P05 : 1738 → 7030 mm. Les étagères ayant
+    // 2 mm de jeu par côté, elles portent 8 mm de chant de moins que ce qu'annonçait le
+    // document d'origine.
+    expect(bill.edgeBandingMm).toBe(7030);
   });
 
   it('compte les panneaux d’après le placement, jamais par division de surfaces', () => {
@@ -99,7 +101,7 @@ describe('lignes de coût', () => {
     const banding = lines.find((line) => line.reference === 'edge_banding');
 
     expect(banding?.unit).toBe('metre');
-    expect(banding?.quantity).toBe(7.04);
+    expect(banding?.quantity).toBe(7.03);
   });
 });
 

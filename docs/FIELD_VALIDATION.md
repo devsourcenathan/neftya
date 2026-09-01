@@ -43,7 +43,7 @@ moteur, et chacun peut échouer indépendamment.
 `1800 × 600 × 400`, deux compartiments, une étagère chacun, MDF 18 mm, avec fond.
 
 C'est le meuble du §2 de [MANUFACTURING.md](MANUFACTURING.md), celui dont le plan de
-découpe est documenté au millimètre : un panneau de 18 mm à 93,2 %, un de 8 mm pour le
+découpe est documenté au millimètre : un panneau de 18 mm à 93,1 %, un de 8 mm pour le
 fond. **S'il ne se monte pas, rien d'autre n'a d'intérêt.**
 
 Ce qu'il éprouve : les cotes intérieures, la recomposition, le fond en rainure.

@@ -203,8 +203,11 @@ sortie reste ouverte.
 **Critère de sortie**
 
 > Le meuble de référence produit **exactement** le plan documenté au §2 de
-> [MANUFACTURING.md](MANUFACTURING.md) : un panneau, 93,2 % d'utilisation, aucune pièce hors
+> [MANUFACTURING.md](MANUFACTURING.md) : un panneau, 93,1 % d'utilisation, aucune pièce hors
 > limites — et la somme des surfaces plus les traits de scie ne dépasse jamais le panneau.
+
+> Les chiffres de ce critère ont été corrigés le 1er septembre 2026, quand le jeu des
+> étagères et le délignage sont entrés dans le modèle. 93,2 % décrivait un plan infaisable.
 
 **Risque.** Élevé sur le nesting. Le placement est écrit sur mesure, sans bibliothèque, et
 c'est là que vivent les plans faux. Poser tôt un test qui vérifie l'absence de chevauchement
@@ -214,8 +217,9 @@ et le respect du trait de scie sur des configurations générées.
 
 Le meuble de référence produit **exactement** le plan du §2 de
 [MANUFACTURING.md](MANUFACTURING.md) : un panneau de 18 mm, un de 8 mm, 2 773 620 mm² de
-pièces sur 2 976 800 mm², **93,2 %**, et les pièces aux positions dessinées — P01 en
-(0, 0), P03 en (1803, 0), la bande des étagères à y = 806. Le placement est vérifié sur
+pièces sur 2 976 800 mm², **93,1 %**, et les pièces aux positions dessinées — P01 en
+(10, 10), P03 en (1813, 10), la bande des étagères à y = 816 — le décalage étant le
+délignage. Le placement est vérifié sur
 400 configurations générées : rien ne sort du panneau, rien ne se chevauche, et deux
 pièces voisines sont toujours séparées d'au moins un trait de scie.
 

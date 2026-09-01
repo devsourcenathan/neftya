@@ -145,7 +145,16 @@ export function build(rawInput: FurnitureInput): Furniture {
   input.compartments.forEach((compartment, index) => {
     const span = compartmentSpans[index] as { startMm: number; widthMm: number };
 
-    drafts.push(...shelvesOf(compartment.shelves, span, innerHeight, innerDepth, e));
+    drafts.push(
+      ...shelvesOf(
+        compartment.shelves,
+        span,
+        innerHeight,
+        innerDepth,
+        e,
+        p.shelfSideClearanceMm,
+      ),
+    );
 
     const drawers = drawersOf({
       compartment,
@@ -207,21 +216,25 @@ function shelvesOf(
   innerHeight: number,
   innerDepth: number,
   thickness: number,
+  clearanceMm: number,
 ): DraftPart[] {
   if (count === 0) return [];
 
   const spaces = divideEvenly(innerHeight - count * thickness, count + 1);
+  const widthMm = span.widthMm - clearanceMm * 2;
   const drafts: DraftPart[] = [];
 
   let y = thickness;
   for (let index = 0; index < count; index += 1) {
     y += spaces[index] as number;
     drafts.push(
-      panel('shelf', span.widthMm, innerDepth, thickness, ['front'], {
-        xMm: span.startMm,
+      // L'étagère est plus étroite que son ouverture, et centrée dedans : coupée à la cote
+      // exacte, elle ne s'engagerait pas entre deux panneaux déjà posés.
+      panel('shelf', widthMm, innerDepth, thickness, ['front'], {
+        xMm: span.startMm + clearanceMm,
         yMm: y,
         zMm: 0,
-        sizeXMm: span.widthMm,
+        sizeXMm: widthMm,
         sizeYMm: thickness,
         sizeZMm: innerDepth,
       }),

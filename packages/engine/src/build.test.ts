@@ -37,7 +37,9 @@ describe('meuble de référence', () => {
       { role: 'bottom', lengthMm: 1800, widthMm: 400, thicknessMm: 18, quantity: 1 },
       { role: 'side', lengthMm: 564, widthMm: 400, thicknessMm: 18, quantity: 2 },
       { role: 'divider', lengthMm: 564, widthMm: 382, thicknessMm: 18, quantity: 1 },
-      { role: 'shelf', lengthMm: 873, widthMm: 382, thicknessMm: 18, quantity: 2 },
+      // 873 d'ouverture moins 2 mm de jeu par côté : une étagère coupée à la cote exacte
+      // ne s'engage pas entre deux panneaux déjà posés.
+      { role: 'shelf', lengthMm: 869, widthMm: 382, thicknessMm: 18, quantity: 2 },
       { role: 'back', lengthMm: 1772, widthMm: 572, thicknessMm: 8, quantity: 1 },
     ]);
   });
@@ -54,10 +56,45 @@ describe('meuble de référence', () => {
   });
 
   it('recompose la largeur hors-tout', () => {
-    // 18 + 873 + 18 + 873 + 18 = 1800
-    const side = 18;
-    const shelf = rows.find((row) => row.role === 'shelf')?.lengthMm ?? 0;
-    expect(side + shelf + 18 + shelf + side).toBe(1800);
+    // 18 + 873 + 18 + 873 + 18 = 1800.
+    //
+    // La recomposition porte sur les **panneaux verticaux et les vides entre eux**, pas
+    // sur les étagères : depuis qu'elles ont un jeu, une étagère ne mesure plus son
+    // ouverture. La version précédente s'en servait comme raccourci, et ce raccourci
+    // cachait l'invariant au lieu de le vérifier.
+    const verticals = furniture.parts
+      .filter((part) => part.role === 'side' || part.role === 'divider')
+      .flatMap((part) => part.instances)
+      .map((placement) => ({
+        fromMm: placement.xMm,
+        toMm: placement.xMm + placement.sizeXMm,
+      }))
+      .sort((a, b) => a.fromMm - b.fromMm);
+
+    expect(verticals).toHaveLength(3);
+    expect(verticals[0]?.fromMm).toBe(0);
+    expect(verticals.at(-1)?.toMm).toBe(1800);
+
+    // Chaque vide entre deux panneaux est une ouverture de compartiment.
+    const openings = verticals
+      .slice(1)
+      .map((panel, index) => panel.fromMm - (verticals[index]?.toMm ?? 0));
+
+    expect(openings).toEqual([873, 873]);
+
+    const total =
+      verticals.reduce((sum, panel) => sum + (panel.toMm - panel.fromMm), 0) +
+      openings.reduce((sum, opening) => sum + opening, 0);
+
+    expect(total).toBe(1800);
+  });
+
+  it('donne à l’étagère son jeu, et la centre dans son ouverture', () => {
+    const shelf = furniture.parts.find((part) => part.role === 'shelf');
+
+    expect(shelf?.lengthMm).toBe(869);
+    // Centrée : 18 d'épaisseur de côté plus 2 de jeu.
+    expect(shelf?.instances[0]?.xMm).toBe(20);
   });
 
   it('recompose la hauteur hors-tout', () => {
@@ -80,12 +117,12 @@ describe('meuble de référence', () => {
   });
 
   it('compte le métrage de chant', () => {
-    // 1800×2 + 564×2 + 564 + 873×2 = 7038 mm.
-    expect(totalEdgeBandingMm(furniture)).toBe(7038);
+    // 1800×2 + 564×2 + 564 + 869×2 = 7030 mm.
+    expect(totalEdgeBandingMm(furniture)).toBe(7030);
   });
 
   it('signale la flèche de l’étagère', () => {
-    // 873 mm de portée en MDF 18 sous 20 kg : environ 3,05 mm pour 2,91 admissibles.
+    // 869 mm de portée en MDF 18 sous 20 kg : la flèche dépasse encore l'admissible.
     const warning = furniture.warnings.find((w) => w.code === 'SHELF_DEFLECTION');
     expect(warning).toBeDefined();
     expect(warning?.details['deflectionMm']).toBeCloseTo(3.05, 1);

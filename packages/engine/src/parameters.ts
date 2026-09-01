@@ -31,6 +31,16 @@ export const parameters = z.object({
    * calcul des cotes : une pièce mesure ce qu'elle doit mesurer une fois coupée.
    */
   kerfMm: positiveMillimetres.default(3),
+  /**
+   * Jeu par côté pour une étagère dans son compartiment.
+   *
+   * Une étagère coupée à la largeur exacte de son ouverture **ne rentre pas** : il faut
+   * l'engager entre deux panneaux déjà posés, et le bois n'est ni parfaitement droit ni
+   * parfaitement d'équerre. Deux millimètres par côté, c'est ce que coupe un atelier.
+   *
+   * L'oubli de ce paramètre produisait un plan cohérent avec lui-même et infaisable.
+   */
+  shelfSideClearanceMm: positiveMillimetres.default(2),
   /** Jeu par côté pour les coulisses de tiroir. */
   drawerSideClearanceMm: positiveMillimetres.default(13),
   /** Jeu à l'arrière du caisson de tiroir. */

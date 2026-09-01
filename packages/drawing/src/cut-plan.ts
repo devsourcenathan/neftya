@@ -75,6 +75,20 @@ export function cutPlanPdf(
       },
     ];
 
+    // La limite de délignage. Sans elle, l'opérateur mesure depuis le bord du panneau et
+    // se trompe de dix millimètres sur chaque cote.
+    if (panel.trimMm > 0) {
+      shapes.push({
+        kind: 'rect',
+        xPt: layout.offsetXPt + panel.trimMm * layout.scale,
+        yPt: layout.offsetYPt + panel.trimMm * layout.scale,
+        widthPt: panel.usableFormat.lengthMm * layout.scale,
+        heightPt: panel.usableFormat.widthMm * layout.scale,
+        stroke: 0.65,
+        lineWidthPt: 0.5,
+      });
+    }
+
     for (const placement of panel.placements) {
       const xPt = layout.offsetXPt + placement.xMm * layout.scale;
       const yPt = layout.offsetYPt + placement.yMm * layout.scale;
@@ -138,9 +152,17 @@ export function cutPlanSvg(panel: NestedPanel, labels: PlanLabels): string {
 
   // `viewBox` en millimètres : les cotes du plan sont les coordonnées du dessin, ce qui
   // rend toute erreur d'échelle visible immédiatement.
+  // La limite de délignage, en trait interrompu : l'opérateur voit d'où partent les cotes,
+  // et que la bande extérieure est perdue.
+  const trim =
+    panel.trimMm > 0
+      ? `<rect x="${panel.trimMm}" y="${panel.trimMm}" width="${panel.usableFormat.lengthMm}" height="${panel.usableFormat.widthMm}" fill="none" stroke="#a8a29e" stroke-width="2" stroke-dasharray="24 16"/>`
+      : '';
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${panel.format.lengthMm} ${panel.format.widthMm}" role="img">`,
     `<rect x="0" y="0" width="${panel.format.lengthMm}" height="${panel.format.widthMm}" fill="#ffffff" stroke="#1c1917" stroke-width="4"/>`,
+    trim,
     parts,
     '</svg>',
   ].join('');

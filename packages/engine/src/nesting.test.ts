@@ -36,11 +36,31 @@ describe('le meuble de référence produit le plan documenté', () => {
     expect(result.unplaced).toEqual([]);
   });
 
-  it('utilise 93,2 % du panneau', () => {
-    // 2 773 620 mm² de pièces sur 2 976 800 mm² de panneau.
-    expect(thick[0]?.usedAreaMm2).toBe(2_773_620);
+  it('utilise 93,1 % du panneau acheté', () => {
+    // 2 770 564 mm² de pièces sur 2 976 800 mm² de panneau.
+    //
+    // Rapporté au panneau **acheté**, pas à la surface délignée : la perte du délignage
+    // est réelle, et la rapporter à la surface utile ferait paraître le plan meilleur
+    // qu'il n'est.
+    expect(thick[0]?.usedAreaMm2).toBe(2_770_564);
     expect(thick[0]?.areaMm2).toBe(2_976_800);
-    expect(round(thick[0]?.utilisation ?? 0)).toBe(93.2);
+    expect(round(thick[0]?.utilisation ?? 0)).toBe(93.1);
+  });
+
+  it('déligne dix millimètres sur chaque rive', () => {
+    const panel = thick[0];
+
+    expect(panel?.trimMm).toBe(10);
+    expect(panel?.usableFormat).toEqual({ lengthMm: 2420, widthMm: 1200 });
+
+    // Rien n'est posé dans la bande délignée : un panneau livré arrive avec des rives
+    // abîmées, et la dernière coupe est celle qui manquerait.
+    for (const placement of panel?.placements ?? []) {
+      expect(placement.xMm).toBeGreaterThanOrEqual(10);
+      expect(placement.yMm).toBeGreaterThanOrEqual(10);
+      expect(placement.xMm + placement.sizeXMm).toBeLessThanOrEqual(2430);
+      expect(placement.yMm + placement.sizeYMm).toBeLessThanOrEqual(1210);
+    }
   });
 
   it('place les pièces là où le plan les montre', () => {
@@ -53,18 +73,20 @@ describe('le meuble de référence produit le plan documenté', () => {
     }
 
     // Bande 1 : le dessus et un côté ; bande 2 : le dessous et l'autre côté ; bande 3 :
-    // les deux étagères et la séparation. Les abscisses portent le trait de scie de 3 mm.
-    expect(byId.get('P01')).toEqual([{ xMm: 0, yMm: 0 }]);
-    expect(byId.get('P02')).toEqual([{ xMm: 0, yMm: 403 }]);
+    // les deux étagères et la séparation. Les abscisses portent le trait de scie de 3 mm,
+    // et tout est décalé des 10 mm de délignage : les positions sont données dans le
+    // repère du panneau acheté, celui où l'opérateur pose son mètre.
+    expect(byId.get('P01')).toEqual([{ xMm: 10, yMm: 10 }]);
+    expect(byId.get('P02')).toEqual([{ xMm: 10, yMm: 413 }]);
     expect(byId.get('P03')).toEqual([
-      { xMm: 1803, yMm: 0 },
-      { xMm: 1803, yMm: 403 },
+      { xMm: 1813, yMm: 10 },
+      { xMm: 1813, yMm: 413 },
     ]);
     expect(byId.get('P05')).toEqual([
-      { xMm: 0, yMm: 806 },
-      { xMm: 876, yMm: 806 },
+      { xMm: 10, yMm: 816 },
+      { xMm: 882, yMm: 816 },
     ]);
-    expect(byId.get('P04')).toEqual([{ xMm: 1752, yMm: 806 }]);
+    expect(byId.get('P04')).toEqual([{ xMm: 1754, yMm: 816 }]);
   });
 
   it('ne dépasse jamais le panneau, traits de scie compris', () => {

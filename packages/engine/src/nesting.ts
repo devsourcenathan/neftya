@@ -42,12 +42,23 @@ export interface Placement2D {
 export interface NestedPanel {
   material: MaterialKey;
   thicknessMm: number;
+  /** Le panneau **acheté**, cotes nominales. C'est lui qu'on paie. */
   format: PanelFormat;
+  /** Ce qui reste après délignage, et où les pièces sont réellement posées. */
+  usableFormat: PanelFormat;
+  /** Retiré sur chaque rive avant de scier. */
+  trimMm: number;
   placements: Placement2D[];
   /** Somme des surfaces des pièces posées. */
   usedAreaMm2: number;
+  /** Surface du panneau acheté. */
   areaMm2: number;
-  /** Part de la surface du panneau occupée par des pièces, de 0 à 1. */
+  /**
+   * Part du panneau **acheté** occupée par des pièces, de 0 à 1.
+   *
+   * Rapportée au panneau nominal et non à la surface délignée : la perte du délignage est
+   * une perte réelle, et la masquer ferait paraître le plan meilleur qu'il n'est.
+   */
   utilisation: number;
 }
 
@@ -67,6 +78,14 @@ export interface NestingOptions {
   /** Formats disponibles. Le premier qui peut recevoir la plus grande pièce est retenu. */
   formats?: readonly PanelFormat[];
   kerfMm?: number;
+  /**
+   * Délignage : ce qu'on retire sur chaque rive avant de scier.
+   *
+   * Un panneau livré arrive avec des rives abîmées et rarement d'équerre. Placer les pièces
+   * jusqu'au bord nominal donne un plan qui ne tient que sur le papier — et c'est la
+   * dernière coupe qui manque.
+   */
+  trimMm?: number;
 }
 
 interface Item {
@@ -83,12 +102,16 @@ interface Shelf {
   cursorXMm: number;
 }
 
+/** Dix millimètres par rive : la pratique courante d'un atelier. */
+export const DEFAULT_TRIM_MM = 10;
+
 export function nest(
   furniture: Furniture,
   options: NestingOptions = {},
 ): NestingResult {
   const kerfMm = options.kerfMm ?? furniture.parameters.kerfMm;
   const formats = options.formats ?? PANEL_FORMATS_MM.metric;
+  const trimMm = options.trimMm ?? DEFAULT_TRIM_MM;
 
   // Une pièce par instance : la liste de découpe groupe, la scie ne groupe pas.
   const items: Item[] = furniture.parts.flatMap((part) =>
@@ -107,7 +130,7 @@ export function nest(
   // Un panneau ne mélange ni les matériaux ni les épaisseurs : on ne scie pas du 8 mm et
   // du 18 mm dans la même planche.
   for (const group of groupBy(items)) {
-    const format = chooseFormat(group, formats);
+    const format = chooseFormat(group, formats, trimMm);
 
     if (!format) {
       unplaced.push(...group.map((item) => item.partId));
@@ -116,18 +139,27 @@ export function nest(
 
     // Une pièce trop grande pour le plus grand format ne condamne pas les autres : elle
     // est signalée, et le reste du groupe est placé.
-    const placeable = group.filter((item) => fitsIn(item, format));
+    const usable = usableFormatOf(format, trimMm);
+    const placeable = group.filter((item) => fitsIn(item, usable));
     unplaced.push(
-      ...group.filter((item) => !fitsIn(item, format)).map((item) => item.partId),
+      ...group.filter((item) => !fitsIn(item, usable)).map((item) => item.partId),
     );
 
-    if (placeable.length > 0) panels.push(...packGroup(placeable, format, kerfMm));
+    if (placeable.length > 0) {
+      panels.push(...packGroup(placeable, format, kerfMm, trimMm));
+    }
   }
 
   return { panels, kerfMm, unplaced };
 }
 
-function packGroup(items: Item[], format: PanelFormat, kerfMm: number): NestedPanel[] {
+function packGroup(
+  items: Item[],
+  format: PanelFormat,
+  kerfMm: number,
+  trimMm: number,
+): NestedPanel[] {
+  const usable = usableFormatOf(format, trimMm);
   // Décroissant par hauteur puis par largeur : les grandes pièces d'abord, sinon une
   // petite ouvre une bande haute qu'elle ne remplit pas.
   const sorted = [...items].sort(
@@ -141,7 +173,7 @@ function packGroup(items: Item[], format: PanelFormat, kerfMm: number): NestedPa
     let placed = false;
 
     for (const panel of panels) {
-      if (place(item, panel, format, kerfMm)) {
+      if (place(item, panel, usable, kerfMm)) {
         placed = true;
         break;
       }
@@ -152,7 +184,7 @@ function packGroup(items: Item[], format: PanelFormat, kerfMm: number): NestedPa
       panels.push(panel);
       // Le format a été choisi pour recevoir la plus grande pièce : un panneau neuf ne
       // peut pas refuser.
-      place(item, panel, format, kerfMm);
+      place(item, panel, usable, kerfMm);
     }
   }
 
@@ -162,7 +194,15 @@ function packGroup(items: Item[], format: PanelFormat, kerfMm: number): NestedPa
     material: items[0]?.material as MaterialKey,
     thicknessMm: items[0]?.thicknessMm as number,
     format,
-    placements: panel.placements,
+    usableFormat: usable,
+    trimMm,
+    // Les positions sont rendues dans le repère du panneau **acheté** : c'est celui que
+    // l'opérateur a devant lui, et son coin est là où il pose son mètre.
+    placements: panel.placements.map((placement) => ({
+      ...placement,
+      xMm: placement.xMm + trimMm,
+      yMm: placement.yMm + trimMm,
+    })),
     usedAreaMm2: panel.usedAreaMm2,
     areaMm2,
     utilisation: panel.usedAreaMm2 / areaMm2,
@@ -251,9 +291,18 @@ function fitsIn(item: Item, format: PanelFormat): boolean {
  * Arrondir au supérieur ferait croire à un millimètre de panneau qui n'existe pas, et
  * c'est exactement celui qui manquerait à la dernière coupe.
  */
+/** Le panneau une fois déligné, sur ses quatre rives. */
+function usableFormatOf(format: PanelFormat, trimMm: number): PanelFormat {
+  return {
+    lengthMm: format.lengthMm - trimMm * 2,
+    widthMm: format.widthMm - trimMm * 2,
+  };
+}
+
 function chooseFormat(
   items: Item[],
   formats: readonly PanelFormat[],
+  trimMm: number,
 ): PanelFormat | null {
   const usable = formats
     .map((format) => ({
@@ -263,7 +312,9 @@ function chooseFormat(
     .sort((a, b) => a.lengthMm * a.widthMm - b.lengthMm * b.widthMm);
 
   return (
-    usable.find((format) => items.every((item) => fitsIn(item, format))) ??
+    usable.find((format) =>
+      items.every((item) => fitsIn(item, usableFormatOf(format, trimMm))),
+    ) ??
     usable.at(-1) ??
     null
   );
