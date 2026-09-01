@@ -55,7 +55,7 @@ export function Settings() {
   });
 
   if (settings.isPending) {
-    return <p className="p-6 text-sm text-muted">{t('state.loading')}</p>;
+    return <p className="p-6 text-sm text-ink-variant">{t('state.loading')}</p>;
   }
 
   if (settings.isError) {
@@ -77,7 +77,7 @@ export function Settings() {
       <label className="flex flex-col gap-1 text-sm">
         {t('settings.country')}
         <select
-          className="rounded-md border border-line-strong px-2 py-1"
+          className="rounded-md border border-outline-variant px-2 py-1"
           value={current.country ?? ''}
           onChange={(event) => {
             setSaved(false);
@@ -91,7 +91,7 @@ export function Settings() {
             </option>
           ))}
         </select>
-        <span className="text-xs text-muted">
+        <span className="text-xs text-ink-variant">
           {t('settings.paperFrom', {
             paper: paperSizeFor(current.country).toUpperCase(),
           })}
@@ -101,7 +101,7 @@ export function Settings() {
       <label className="flex flex-col gap-1 text-sm">
         {t('settings.currency')}
         <select
-          className="rounded-md border border-line-strong px-2 py-1"
+          className="rounded-md border border-outline-variant px-2 py-1"
           value={current.currency ?? ''}
           onChange={(event) => {
             setSaved(false);
@@ -115,7 +115,7 @@ export function Settings() {
             </option>
           ))}
         </select>
-        <span className="text-xs text-muted">{t('settings.currencyHelp')}</span>
+        <span className="text-xs text-ink-variant">{t('settings.currencyHelp')}</span>
       </label>
 
       <fieldset className="flex flex-col gap-1 text-sm">
@@ -139,10 +139,12 @@ export function Settings() {
             </label>
           ))}
         </div>
-        <span className="text-xs text-muted">{t('settings.unitSystemHelp')}</span>
+        <span className="text-xs text-ink-variant">{t('settings.unitSystemHelp')}</span>
       </fieldset>
 
-      {save.isPending && <p className="text-sm text-muted">{t('state.saving')}</p>}
+      {save.isPending && (
+        <p className="text-sm text-ink-variant">{t('state.saving')}</p>
+      )}
       {saved && !save.isPending && (
         <p className="text-sm text-success">{t('state.saved')}</p>
       )}

@@ -7,3 +7,7 @@ node_modules
 # La documentation est de la prose : l'alignement des tableaux par Prettier crée du bruit
 # dans chaque diff pour aucun gain de lisibilité, et rend l'édition à la main pénible.
 *.md
+
+# Les maquettes du système de design sont de la référence, pas notre code : les reformater
+# ferait diverger ce que nous lisons de ce qui nous a été remis.
+stitch_neftya_furniture_design_platform/

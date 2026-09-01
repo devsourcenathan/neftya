@@ -22,9 +22,9 @@ export function Landing() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-canvas">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <span className="font-display text-xl text-ink">{t('app.name')}</span>
+        <span className="font-sans text-xl text-ink">{t('app.name')}</span>
         <div className="flex items-center gap-2">
           <Button tone="ghost" onClick={() => redirectToPortal('login')}>
             {t('auth.signIn')}
@@ -38,10 +38,12 @@ export function Landing() {
       <main className="mx-auto max-w-6xl px-6 pb-20">
         <section className="grid items-center gap-10 py-12 lg:grid-cols-2 lg:py-20">
           <div>
-            <h1 className="font-display text-4xl leading-tight text-ink sm:text-5xl">
+            <h1 className="font-sans text-4xl leading-tight text-ink sm:text-5xl">
               {t('landing.headline')}
             </h1>
-            <p className="mt-5 max-w-lg text-lg text-muted">{t('landing.subhead')}</p>
+            <p className="mt-5 max-w-lg text-lg text-ink-variant">
+              {t('landing.subhead')}
+            </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Button tone="primary" onClick={() => redirectToPortal('register')}>
@@ -52,38 +54,38 @@ export function Landing() {
               </Button>
             </div>
 
-            <p className="mt-4 text-sm text-muted">{t('landing.platformNote')}</p>
+            <p className="mt-4 text-sm text-ink-variant">{t('landing.platformNote')}</p>
           </div>
 
           <Card className="overflow-hidden p-4">
             <Preview />
-            <p className="mt-3 text-center text-xs text-muted">
+            <p className="mt-3 text-center text-xs text-ink-variant">
               {t('landing.previewNote')}
             </p>
           </Card>
         </section>
 
-        <section className="grid gap-5 border-t border-line py-14 sm:grid-cols-3">
+        <section className="grid gap-5 border-t border-hairline py-14 sm:grid-cols-3">
           {(['dimensions', 'cutplan', 'quote'] as const).map((key) => (
             <div key={key}>
-              <h2 className="font-display text-lg text-ink">
+              <h2 className="font-sans text-lg text-ink">
                 {t(`landing.features.${key}.title`)}
               </h2>
-              <p className="mt-2 text-sm text-muted">
+              <p className="mt-2 text-sm text-ink-variant">
                 {t(`landing.features.${key}.body`)}
               </p>
             </div>
           ))}
         </section>
 
-        <section className="border-t border-line py-14">
-          <h2 className="font-display text-2xl text-ink">{t('landing.honestTitle')}</h2>
-          <p className="mt-3 max-w-2xl text-muted">{t('landing.honestBody')}</p>
+        <section className="border-t border-hairline py-14">
+          <h2 className="font-sans text-2xl text-ink">{t('landing.honestTitle')}</h2>
+          <p className="mt-3 max-w-2xl text-ink-variant">{t('landing.honestBody')}</p>
         </section>
       </main>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto max-w-6xl px-6 py-6 text-sm text-muted">
+      <footer className="border-t border-hairline">
+        <div className="mx-auto max-w-6xl px-6 py-6 text-sm text-ink-variant">
           {t('landing.footer')}
         </div>
       </footer>

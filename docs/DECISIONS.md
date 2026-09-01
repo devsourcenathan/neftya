@@ -1223,3 +1223,40 @@ l'interface.
 
 **Une icône ne remplace jamais un libellé.** Un atelier ne devine pas un pictogramme, et
 l'interface est déjà traduite : elles accompagnent le texte, elles ne s'y substituent pas.
+
+---
+
+## 2026-09-01 — L'interface adopte le Neftya Industrial Design System
+
+**Décision.** Les jetons, la typographie et les motifs de l'interface viennent désormais de
+`stitch_neftya_furniture_design_platform/neftya_industrial_design_system/DESIGN.md`.
+
+Ce qui change par rapport à la passe précédente :
+
+| | Avant | Maintenant |
+|---|---|---|
+| Palette | neutres chauds, bois | **Artisan Blue** `#031632`, gris techniques |
+| Accent | ambre pour tout ce qui est actif | **Sawdust Gold**, réservé à l'actif et à ce qui finalise |
+| Titres | serif système | **Inter**, graisse 600–700 |
+| Cotes | chiffres tabulaires | **JetBrains Mono**, comme une donnée de CAO |
+| Rayon | 12 px | **4 px** — « soft-industrial » |
+| Profondeur | ombres légères | **filets d'un pixel**, aucune ombre |
+| Fond | papier uni | **pointillé de 24 px**, papier millimétré |
+| Navigation | barre supérieure | **barre latérale de 280 px** |
+
+**Motif.** J'avais improvisé une identité chaude et artisanale, cohérente mais inventée. Le
+système remis dit autre chose : un outil professionnel de CAO, « la chaleur de l'artisanat
+et la précision froide de l'ingénierie ». Ce n'était pas à moi d'en décider.
+
+**Trois écarts assumés, et leur raison :**
+
+- **Les polices sont servies par l'application**, pas par Google Fonts. Un atelier travaille
+  souvent sur une connexion médiocre, et une requête tierce qui traîne fait sauter tout le
+  texte au chargement.
+- **Les icônes restent les nôtres**, dessinées à la main. Les maquettes utilisent Material
+  Symbols, une police de plus à charger depuis un tiers, pour douze pictogrammes.
+- **La barre latérale devient horizontale sous `lg`.** 280 px sur un écran de 375, ce
+  seraient les trois quarts de la largeur pour une navigation à deux entrées.
+
+Les maquettes sont exclues du contrôle de format : les reformater ferait diverger ce que
+nous lisons de ce qui nous a été remis.

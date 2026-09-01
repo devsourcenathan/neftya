@@ -54,7 +54,7 @@ function Authenticated() {
   if (state.status === 'loading') {
     return (
       <Centered>
-        <p className="text-sm text-muted">{t('state.loading')}</p>
+        <p className="text-sm text-ink-variant">{t('state.loading')}</p>
       </Centered>
     );
   }
@@ -67,8 +67,8 @@ function Authenticated() {
     return (
       <Centered>
         <Card className="w-full max-w-sm p-6">
-          <h1 className="font-display text-lg text-ink">{t('auth.unreachable')}</h1>
-          <p className="mt-2 text-sm text-muted">{t('auth.unreachableHint')}</p>
+          <h1 className="font-sans text-lg text-ink">{t('auth.unreachable')}</h1>
+          <p className="mt-2 text-sm text-ink-variant">{t('auth.unreachableHint')}</p>
           <Button tone="primary" className="mt-5 w-full" onClick={state.retry}>
             {t('action.retry')}
           </Button>
@@ -81,10 +81,8 @@ function Authenticated() {
     return (
       <Centered>
         <Card className="w-full max-w-sm p-6 text-left">
-          <h1 className="font-display text-xl text-ink">
-            {t('auth.chooseOrganization')}
-          </h1>
-          <p className="mt-1 text-sm text-muted">{t('auth.chooseHint')}</p>
+          <h1 className="font-sans text-xl text-ink">{t('auth.chooseOrganization')}</h1>
+          <p className="mt-1 text-sm text-ink-variant">{t('auth.chooseHint')}</p>
 
           <ul className="mt-5 flex flex-col gap-2">
             {state.session.organizations.map((organization) => (

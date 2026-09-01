@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neftya - Project Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#e6c183",
+                      "surface-container": "#eceef0",
+                      "inverse-primary": "#b6c7eb",
+                      "surface-bright": "#f7f9fb",
+                      "tertiary": "#06172a",
+                      "on-secondary-container": "#785c29",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-tertiary-fixed": "#0b1c30",
+                      "surface-container-high": "#e6e8ea",
+                      "on-tertiary-fixed-variant": "#38485d",
+                      "secondary-container": "#fdd798",
+                      "tertiary-fixed-dim": "#b7c8e1",
+                      "on-primary-container": "#8293b5",
+                      "primary": "#031632",
+                      "outline": "#75777e",
+                      "inverse-surface": "#2d3133",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed-variant": "#374765",
+                      "on-secondary-fixed-variant": "#5b4311",
+                      "on-primary-fixed": "#081b38",
+                      "on-background": "#191c1e",
+                      "surface-tint": "#4e5f7e",
+                      "primary-container": "#1a2b48",
+                      "primary-fixed": "#d7e2ff",
+                      "secondary": "#755a26",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d8dadc",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-surface-variant": "#44474d",
+                      "on-surface": "#191c1e",
+                      "tertiary-container": "#1c2c40",
+                      "primary-fixed-dim": "#b6c7eb",
+                      "secondary-fixed": "#ffdea8",
+                      "surface-container-low": "#f2f4f6",
+                      "outline-variant": "#c5c6ce",
+                      "tertiary-fixed": "#d3e4fe",
+                      "on-tertiary": "#ffffff",
+                      "background": "#f7f9fb",
+                      "surface-variant": "#e0e3e5",
+                      "on-tertiary-container": "#8393ac",
+                      "error": "#ba1a1a",
+                      "surface": "#f7f9fb",
+                      "on-primary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#271900"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "max-width": "1440px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "technical-data": ["JetBrains Mono"],
+                      "body-lg": ["Inter"],
+                      "headline-lg-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "technical-data": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["32px", {"lineHeight": "40px", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Blueprint dot grid background */
+        .bg-blueprint-grid {
+            background-image: radial-gradient(var(--tw-colors-outline-variant) 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: -12px -12px;
+            opacity: 0.4;
+        }
+        /* Custom scrollbar for technical feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--tw-colors-surface-container);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--tw-colors-outline-variant);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--tw-colors-outline);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md min-h-screen relative flex">
+<!-- Ambient Blueprint Canvas Layer -->
+<div class="fixed inset-0 pointer-events-none bg-blueprint-grid z-0"></div>
+<!-- JSON Component: SideNavBar -->
+<nav class="bg-surface dark:bg-surface fixed left-0 top-0 h-screen w-[280px] border-r border-outline-variant dark:border-outline flat no shadows flex flex-col h-full py-unit-margin-desktop z-20">
+<!-- Header -->
+<div class="px-gutter mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary leading-none">Neftya</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Professional CAD</p>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-gutter mb-8">
+<button class="w-full bg-primary text-on-primary font-label-caps text-label-caps py-3 rounded hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Design
+            </button>
+</div>
+<!-- Navigation Tabs -->
+<ul class="flex-1 flex flex-col gap-1 px-4">
+<!-- Active Tab: Projects -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-primary dark:text-inverse-primary font-bold border-r-2 border-primary dark:border-inverse-primary bg-surface-container-high dark:bg-primary-container hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+<span class="font-body-md text-body-md font-medium">Projects</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-body-md text-body-md">AI Assistant</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-body-md text-body-md">Design</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">import_export</span>
+<span class="font-body-md text-body-md">Exports</span>
+</a>
+</li>
+</ul>
+<!-- Footer Tabs -->
+<ul class="mt-auto flex flex-col gap-1 px-4">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Workspace Area -->
+<main class="ml-[280px] w-full min-h-screen relative z-10 flex flex-col">
+<!-- Workspace Header -->
+<header class="px-margin-desktop py-8 border-b border-outline-variant bg-surface/80 backdrop-blur-md sticky top-0 z-30">
+<div class="max-w-[1440px] mx-auto flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Active Projects</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Manage your current manufacturing drafts and assemblies.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-low border-b border-outline-variant focus:border-primary focus:ring-0 pl-10 pr-4 py-2 font-technical-data text-technical-data w-64 transition-colors bg-transparent" placeholder="Search specifications..." type="text"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Grid -->
+<div class="flex-1 p-margin-desktop overflow-y-auto">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-8">
+<!-- Inspiration CTA Bento Box (AI Powered) -->
+<section class="w-full relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-8 group cursor-pointer hover:border-primary transition-colors">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-fixed/20 to-secondary-fixed/10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary-fixed-dim" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-caps text-label-caps text-secondary">NEFTYA AUTOPILOT</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-2">New Project from Inspiration</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-lg mb-6">Upload a reference image or sketch. Our AI will analyze dimensions, generate a structural blueprint, and estimate material costs instantly.</p>
+<div class="flex gap-4">
+<button class="bg-primary text-on-primary px-6 py-3 rounded font-label-caps text-label-caps flex items-center gap-2 hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined">upload_file</span>
+                                    Upload Image
+                                </button>
+<button class="border border-primary text-primary px-6 py-3 rounded font-label-caps text-label-caps flex items-center gap-2 hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">draw</span>
+                                    Open Canvas
+                                </button>
+</div>
+</div>
+<!-- Drop Zone Visual -->
+<div class="w-full md:w-[400px] h-[200px] border-2 border-dashed border-outline-variant rounded-lg flex flex-col items-center justify-center bg-surface-container/50 group-hover:border-primary/50 group-hover:bg-primary-fixed/10 transition-all">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">image</span>
+<span class="font-technical-data text-technical-data text-on-surface-variant">Drop .JPG, .PNG, or .CAD files</span>
+</div>
+</div>
+</section>
+<!-- Project Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1: Oak Bookshelf -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex flex-col group hover:shadow-[0_8px_32px_rgba(6,23,42,0.05)] transition-shadow">
+<div class="h-48 relative border-b border-outline-variant bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500" data-alt="A highly detailed, professional CAD style rendering of a modern minimalist oak bookshelf. The scene is lit with bright, neutral studio lighting, emphasizing the clean geometric lines and the natural wood grain texture. The background is a soft, pristine white studio space, reflecting a clean, technical, and precise architectural aesthetic. There are subtle architectural grid lines faintly visible in the backdrop to enhance the professional drafting vibe." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAvWMSYcSIUWiTSgDxV0W_pnK0MoM-CiX5AWSy-_9ssG5_UW-Dj9Dc5LyuxwdjRdkY8OixnVU0NiRxTVRo3G_EHUpIwsXBJBcEQsq3RGSLRbM66f9RZU8YltWW3wyMGNInZNiPf_i5okf_gT_nnUsDTQwxNw32Qv3VVXFsU_T5xajdUoeA9wEmXVsQdOnklED3M2_BlE_LxImFt03xNpOImDFEQjTDK7zafuOFO5YRpb2sBxWI7UKDjWg')"></div>
+<div class="absolute top-4 left-4 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded border border-outline-variant flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+<span class="font-label-caps text-label-caps text-on-surface">Draft</span>
+</div>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Oak Bookshelf</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 text-sm">Modular living room storage</p>
+<div class="mt-auto grid grid-cols-2 gap-4 border-t border-outline-variant pt-4">
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL PIECES</span>
+<span class="font-technical-data text-technical-data text-primary">24 units</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">EST. COST</span>
+<span class="font-technical-data text-technical-data text-primary">$450.00</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Modern Desk -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex flex-col group hover:shadow-[0_8px_32px_rgba(6,23,42,0.05)] transition-shadow">
+<div class="h-48 relative border-b border-outline-variant bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500" data-alt="A precise, photorealistic 3D architectural render of a sleek modern office desk featuring an integrated steel frame and a dark walnut wooden top. The lighting is clinical and perfectly balanced to eliminate harsh shadows, highlighting the precision engineering of the desk's joints. The image sits within a minimalist, technical white void environment, conveying a sense of high-end industrial design and functional minimalism." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBsMfLR4d_qJuVy7nUfQKVK8mplquPGnTQ2741x_vDuIRer5ph3vHJq4vRqqPHjlYOkZz_1yADuVfCabTfPFHROQXDJHRQin_cWvdxPqH-F-LGTS3bCvlQ65DXPb3iykwKq3wqz82rUd9csVQXuFal00agDTWa4HokvIUtc_UhuXcNnHnz9IzGigRR6L1GOcjefK-NCnW8Dk6Ex9oTCLlcKXdlfVc4moRF51rEruacA2QLqmyVuy6oQZw')"></div>
+<div class="absolute top-4 left-4 bg-primary-fixed/90 backdrop-blur px-2 py-1 rounded border border-primary-container flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="font-label-caps text-label-caps text-on-primary-container">Optimized</span>
+</div>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Modern Desk</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 text-sm">Executive workstation setup</p>
+<div class="mt-auto grid grid-cols-2 gap-4 border-t border-outline-variant pt-4">
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL PIECES</span>
+<span class="font-technical-data text-technical-data text-primary">12 units</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">EST. COST</span>
+<span class="font-technical-data text-technical-data text-primary">$320.50</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3: Kitchen Cabinets -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex flex-col group hover:shadow-[0_8px_32px_rgba(6,23,42,0.05)] transition-shadow shadow-[0_0_0_2px_rgba(230,193,131,0)] hover:shadow-[0_0_0_2px_rgba(230,193,131,0.5)]">
+<div class="h-48 relative border-b border-outline-variant bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500" data-alt="An isometric, high-fidelity CAD visualization of a set of modular kitchen cabinets. The cabinets are finished in a smooth, matte gray texture, showcasing precision CNC milling details. The environment is heavily stylized with a white-on-white blueprint aesthetic, featuring subtle millimeter grid markings on the floor plane. The lighting is perfectly diffused, giving the piece a robust, manufactured, and professional drafting table appearance." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDq_K_BOnZ5kJgLWHS_-wzM_qb29nU6nrsGyBgjVx01d5eXLBvmFFDskeDxAMsVUcDlyJ7WlUf-hVNh71WKRnVCT8VDgpLaNBeB-vrEGuT3-mtfv-d4n8miz4NOG6qfKEeGspRnHrWA9rO07k5gl5u4vmCSS40ScYEIT5EsXOnv9-zAtDDnSE_o3AxteehWr6WBRbDPmGQq-3WTQQrXo3mzv-3qOvxHPs8pQTjzCRYX60ZMnlspMlxs5w')"></div>
+<div class="absolute top-4 left-4 bg-secondary-fixed/90 backdrop-blur px-2 py-1 rounded border border-secondary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-caps text-label-caps text-on-secondary-container">Ready to Cut</span>
+</div>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Kitchen Cabinets</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 text-sm">Full assembly set, Upper &amp; Lower</p>
+<div class="mt-auto grid grid-cols-2 gap-4 border-t border-outline-variant pt-4">
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">TOTAL PIECES</span>
+<span class="font-technical-data text-technical-data text-primary">148 units</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">EST. COST</span>
+<span class="font-technical-data text-technical-data text-primary">$1,250.00</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</div>
+</div>
+</main>
+</body></html>

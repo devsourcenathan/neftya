@@ -62,7 +62,10 @@ export function Controls({ model, dispatch }: ControlsProps) {
           {model.compartments.map((compartment, index) => (
             // La clé est l'indice : les compartiments n'ont pas d'identité propre, ils
             // sont définis par leur rang dans le meuble.
-            <li key={index} className="rounded-md border border-line bg-paper/60 p-3">
+            <li
+              key={index}
+              className="rounded-md border border-hairline bg-canvas/60 p-3"
+            >
               <p className="mb-2 text-sm font-medium text-ink">
                 {t('designer.compartment', { index: index + 1 })}
               </p>
@@ -112,7 +115,7 @@ export function Controls({ model, dispatch }: ControlsProps) {
             <ToggleGroup.Item
               key={material}
               value={material}
-              className="rounded-md border border-line-strong px-3 py-1.5 text-sm transition-colors hover:border-ink/40 data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-paper"
+              className="rounded-md border border-outline-variant px-3 py-1.5 text-sm transition-colors hover:border-primary/40 data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-on-primary"
             >
               {t(`material.${material}`)}
             </ToggleGroup.Item>
@@ -168,7 +171,7 @@ function LengthControl({ label, valueMm, min, max, onChange }: LengthControlProp
       <div className="flex items-baseline justify-between gap-2">
         <label className="text-sm text-ink">{label}</label>
         <input
-          className="w-28 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
+          className="w-28 rounded-md border border-outline-variant bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
           value={draft ?? format(valueMm)}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={(event) => commit(event.target.value)}
@@ -188,10 +191,10 @@ function LengthControl({ label, valueMm, min, max, onChange }: LengthControlProp
         onValueChange={([next]) => onChange(next as number)}
         aria-label={label}
       >
-        <Slider.Track className="relative h-1 w-full rounded-full bg-line">
+        <Slider.Track className="relative h-1 w-full rounded-full bg-surface-high">
           <Slider.Range className="absolute h-full rounded-full bg-accent" />
         </Slider.Track>
-        <Slider.Thumb className="block h-4 w-4 rounded-full border border-line-strong bg-surface shadow-sm transition-shadow hover:shadow" />
+        <Slider.Thumb className="block h-4 w-4 rounded-full border border-outline-variant bg-surface shadow-sm transition-shadow hover:shadow" />
       </Slider.Root>
 
       {rejected && <p className="text-xs text-danger">{t('designer.badLength')}</p>}
@@ -221,7 +224,7 @@ function CountControl({ label, value, min, max, onChange }: CountControlProps) {
       <label className="text-sm text-ink">{label}</label>
       <input
         type="number"
-        className="w-20 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
+        className="w-20 rounded-md border border-outline-variant bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none"
         value={value}
         min={min}
         max={max}

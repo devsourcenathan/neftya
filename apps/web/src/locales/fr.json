@@ -39,7 +39,12 @@
     "compartments_one": "{{count}} compartiment",
     "compartments_other": "{{count}} compartiments",
     "nameHint": "Laissez vide pour reprendre le nom du modèle.",
-    "namePlaceholder": "Bibliothèque du salon"
+    "namePlaceholder": "Bibliothèque du salon",
+    "subtitle": "Vos brouillons de fabrication et vos assemblages en cours.",
+    "dimensions": "Cotes (mm)",
+    "updated": "Modifié le",
+    "withDoors": "Fermé",
+    "openCarcass": "Ouvert"
   },
   "presets": {
     "title": "Modèles prédéfinis",
@@ -49,7 +54,9 @@
     "tvUnit": "Meuble TV",
     "sideboard": "Buffet",
     "details_one": "{{compartments}} compartiment · {{doors}} vantail",
-    "details_other": "{{compartments}} compartiments · {{doors}} vantaux"
+    "details_other": "{{compartments}} compartiments · {{doors}} vantaux",
+    "contents": "Comp. × portes",
+    "create": "Partir de ce modèle"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -170,7 +177,12 @@
     "badPrice": "Prix non compris.",
     "priceHelp": "Les prix sont saisis une fois et mémorisés pour votre organisation. Neftya n'invente aucun tarif : un devis chiffré faux est pire qu'un devis vide.",
     "panelLine_one": "{{count}} panneau de {{material}} {{thickness}} mm, {{length}} × {{width}}",
-    "panelLine_other": "{{count}} panneaux de {{material}} {{thickness}} mm, {{length}} × {{width}}"
+    "panelLine_other": "{{count}} panneaux de {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "yield": "Rendement",
+    "board": "Panneau",
+    "trim": "Délignage",
+    "panelsUsed_one": "{{count}} panneau",
+    "panelsUsed_other": "{{count}} panneaux"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",
@@ -266,6 +278,12 @@
     "footer": "Neftya — un produit Sekuu."
   },
   "nav": {
-    "projects": "Projets"
+    "projects": "Projets",
+    "tagline": "Conception technique"
+  },
+  "pipeline": {
+    "design": "Conception",
+    "materials": "Plans",
+    "manufacturing": "Fabrication"
   }
 }

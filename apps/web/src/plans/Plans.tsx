@@ -12,6 +12,7 @@ import { ApiRequestError } from '../api/client.js';
 import { downloadPlans, getProject, useApi, useFiles } from '../api/projects.js';
 import { DownloadButton } from '../components/DownloadButton.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
+import { Pipeline, SectionTitle } from '../ui/index.js';
 
 /**
  * Les plans techniques cotés.
@@ -47,7 +48,7 @@ export function Plans({ projectId }: { projectId: string }) {
   );
 
   if (project.isPending)
-    return <p className="p-6 text-sm text-muted">{t('state.loading')}</p>;
+    return <p className="p-6 text-sm text-ink-variant">{t('state.loading')}</p>;
 
   if (project.isError || !drawing) {
     return (
@@ -62,7 +63,16 @@ export function Plans({ projectId }: { projectId: string }) {
   const current = drawing.views.find((candidate) => candidate.view === view);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-4 pt-20 pb-12 lg:px-margin-desktop lg:pt-margin-desktop">
+      <Pipeline
+        current="materials"
+        steps={[
+          { key: 'design', label: t('pipeline.design') },
+          { key: 'materials', label: t('pipeline.materials') },
+          { key: 'manufacturing', label: t('pipeline.manufacturing') },
+        ]}
+      />
+
       <div className="flex flex-wrap items-center gap-2">
         {VIEWS.map((name) => (
           <button
@@ -71,8 +81,8 @@ export function Plans({ projectId }: { projectId: string }) {
             onClick={() => setView(name)}
             className={`rounded-md border px-3 py-1 text-sm ${
               name === view
-                ? 'border-ink bg-ink text-white'
-                : 'border-line-strong hover:border-ink'
+                ? 'border-primary bg-primary text-white'
+                : 'border-outline-variant hover:border-primary'
             }`}
           >
             {t(`plans.views.${name}`)}
@@ -89,7 +99,7 @@ export function Plans({ projectId }: { projectId: string }) {
 
       {current && (
         <div
-          className="overflow-x-auto rounded-md border border-line bg-surface p-2"
+          className="overflow-x-auto rounded-md border border-hairline bg-surface p-2"
           role="img"
           aria-label={t(`plans.views.${view}`)}
           // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère — étiquettes de
@@ -99,14 +109,12 @@ export function Plans({ projectId }: { projectId: string }) {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
-          {t('plans.parts')}
-        </h2>
+        <SectionTitle>{t('plans.parts')}</SectionTitle>
 
         <div className="-mx-1 overflow-x-auto px-1">
           <table className="w-full min-w-lg max-w-3xl text-sm">
             <thead>
-              <tr className="text-left text-muted">
+              <tr className="text-left text-ink-variant">
                 <th className="py-1">{t('part.id')}</th>
                 <th className="py-1">{t('part.role')}</th>
                 <th className="py-1 text-right">{t('part.length')}</th>
@@ -117,7 +125,7 @@ export function Plans({ projectId }: { projectId: string }) {
             </thead>
             <tbody>
               {drawing.parts.map((part) => (
-                <tr key={part.partId} className="border-t border-line">
+                <tr key={part.partId} className="border-t border-hairline">
                   <td className="py-1 font-mono">{part.partId}</td>
                   <td className="py-1">{t(`part.roles.${part.role}`)}</td>
                   <td className="py-1 text-right tabular-nums">
@@ -137,7 +145,7 @@ export function Plans({ projectId }: { projectId: string }) {
         </div>
       </section>
 
-      <p className="text-xs text-muted">{t('plans.pdfInMillimetres')}</p>
+      <p className="text-xs text-ink-variant">{t('plans.pdfInMillimetres')}</p>
     </div>
   );
 }

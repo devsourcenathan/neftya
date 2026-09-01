@@ -112,7 +112,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
           <div className="flex items-center gap-2">
             {/* La 3D montre le meuble, la 2D le mesure. Les deux sont des vues du même
               modèle, calculées par le même moteur : basculer ne recharge rien. */}
-            <div className="inline-flex rounded-md border border-line-strong bg-surface p-0.5">
+            <div className="inline-flex rounded-md border border-outline-variant bg-surface p-0.5">
               {(['3d', '2d'] as const).map((candidate) => (
                 <button
                   key={candidate}
@@ -120,8 +120,8 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
                   onClick={() => setMode(candidate)}
                   className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
                     candidate === mode
-                      ? 'bg-ink text-paper'
-                      : 'text-muted hover:text-ink'
+                      ? 'bg-primary text-on-primary'
+                      : 'text-ink-variant hover:text-ink'
                   }`}
                 >
                   <span className="inline-flex items-center gap-1.5">
@@ -134,7 +134,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
 
             {mode === '2d' && (
               <select
-                className="ml-1 rounded-md border border-line-strong bg-surface px-2.5 py-1.5 text-sm"
+                className="ml-1 rounded-md border border-outline-variant bg-surface px-2.5 py-1.5 text-sm"
                 value={view}
                 aria-label={t('plans.view')}
                 onChange={(event) => setView(event.target.value as ViewName)}
@@ -148,7 +148,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
             )}
           </div>
 
-          <div className="flex-1 overflow-hidden rounded-panel border border-line bg-surface">
+          <div className="flex-1 overflow-hidden rounded border border-hairline bg-surface">
             {mode === '3d' ? (
               <Suspense
                 fallback={

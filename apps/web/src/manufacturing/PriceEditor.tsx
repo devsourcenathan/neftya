@@ -35,7 +35,7 @@ export function PriceEditor({
     <div className="-mx-1 overflow-x-auto px-1">
       <table className="w-full min-w-md max-w-3xl text-sm">
         <thead>
-          <tr className="text-left text-muted">
+          <tr className="text-left text-ink-variant">
             <th className="py-1">{t('manufacturing.item')}</th>
             <th className="py-1 text-right">{t('manufacturing.quantity')}</th>
             <th className="py-1 text-right">{t('manufacturing.unitPrice')}</th>
@@ -109,12 +109,12 @@ function PriceRow({
   };
 
   return (
-    <tr className="border-t border-line">
+    <tr className="border-t border-hairline">
       <td className="py-1">
         <span className="block">{label(line.reference, t)}</span>
         {/* La référence est montrée : c'est elle qui fait foi, et elle aide à comprendre
             pourquoi deux épaisseurs ont deux prix. */}
-        <span className="font-mono text-xs text-muted">{line.reference}</span>
+        <span className="font-mono text-xs text-ink-variant">{line.reference}</span>
       </td>
 
       <td className="py-1 text-right tabular-nums">
@@ -124,7 +124,7 @@ function PriceRow({
       <td className="py-1 text-right">
         <input
           className={`w-28 rounded-md border px-2 py-1 text-right tabular-nums ${
-            rejected ? 'border-red-400' : 'border-line-strong'
+            rejected ? 'border-red-400' : 'border-outline-variant'
           }`}
           value={draft ?? (line.unitPrice ? amount(line.unitPrice) : '')}
           placeholder={t('manufacturing.enterPrice')}

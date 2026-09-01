@@ -1,43 +1,89 @@
 @import 'tailwindcss';
 
+/*
+ * Les polices sont **servies par l'application**, pas par Google Fonts.
+ *
+ * Un atelier travaille souvent sur une connexion médiocre, et une requête tierce qui traîne
+ * fait sauter tout le texte au chargement. Elles pèsent ici, une fois, dans le paquet.
+ */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
 /**
- * Les jetons de l'interface.
+ * Neftya Industrial Design System.
  *
- * Un outil de menuisier n'a pas à ressembler à un tableau de bord d'analytique. La palette
- * est **chaude et sobre** : des neutres de bois, une encre presque noire pour les actions,
- * et un ambre qui ne sert qu'à désigner ce qui est actif ou sélectionné. Une seule couleur
- * d'accent, parce qu'une interface technique qui en porte trois ne dit plus laquelle
- * compte.
+ * **Minimalisme fonctionnel, d'inspiration CAO.** L'interface doit évoquer une table à
+ * dessin bien rangée : des aplats clairs, des filets d'un pixel plutôt que des ombres, et
+ * un fond en pointillé qui rappelle le papier millimétré.
  *
- * Les titres sont en serif : c'est ce qui distingue un atelier d'un tableur, et cela ne
- * coûte pas une requête réseau — les deux familles sont celles du système.
+ * L'**Artisan Blue** porte l'autorité technique ; le **Sawdust Gold** ne sert qu'à désigner
+ * ce qui est actif ou ce qui finalise. Une interface technique qui distribue ses accents
+ * ne dit plus lequel compte.
+ *
+ * @see stitch_neftya_furniture_design_platform/neftya_industrial_design_system/DESIGN.md
  */
 @theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
-    sans-serif;
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace;
 
-  /* Neutres chauds : le papier d'un plan, pas le blanc d'un écran. */
-  --color-paper: #faf8f5;
+  /* Artisan Blue */
+  --color-primary: #031632;
+  --color-primary-container: #1a2b48;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #8293b5;
+
+  /* Sawdust Gold — réservé à l'actif et à ce qui finalise. */
+  --color-accent: #755a26;
+  --color-accent-container: #fdd798;
+  --color-on-accent-container: #5b4311;
+
+  /* Gris techniques : les couches du plan. */
+  --color-canvas: #f7f9fb;
   --color-surface: #ffffff;
-  --color-ink: #1c1917;
-  --color-muted: #78716c;
-  --color-line: #e7e2da;
-  --color-line-strong: #d6cec2;
+  --color-surface-low: #f2f4f6;
+  --color-surface-high: #e6e8ea;
+  --color-ink: #191c1e;
+  --color-ink-variant: #44474d;
+  --color-outline: #75777e;
+  --color-outline-variant: #c5c6ce;
+  --color-hairline: #e2e8f0;
 
-  /* L'ambre ne désigne que ce qui est actif. */
-  --color-accent: #b45309;
-  --color-accent-soft: #fef3e2;
+  --color-danger: #ba1a1a;
+  --color-danger-container: #ffdad6;
+  --color-success: #1a6b3c;
 
-  --color-danger: #b91c1c;
-  --color-success: #15803d;
+  /* « Soft-Industrial » : arrondi présent mais discret. */
+  --radius-DEFAULT: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
 
-  --radius-panel: 0.75rem;
+  /* La grille de base est de 4 px ; la gouttière de 24. */
+  --spacing-gutter: 1.5rem;
+  --spacing-margin-desktop: 2.5rem;
+
+  --text-headline-lg: 3rem;
+  --text-headline-lg--line-height: 3.5rem;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 700;
+
+  --text-headline-md: 1.5rem;
+  --text-headline-md--line-height: 2rem;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+
+  --text-technical: 0.875rem;
+  --text-technical--line-height: 1.25rem;
+  --text-technical--letter-spacing: 0.01em;
+  --text-technical--font-weight: 500;
+
+  --text-label-caps: 0.75rem;
+  --text-label-caps--line-height: 1rem;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 700;
 }
 
-/* Le fond du document, pour que les zones vides restent du papier. */
 html,
 body,
 #root {
@@ -45,19 +91,50 @@ body,
 }
 
 body {
-  background-color: var(--color-paper);
+  background-color: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  /* Le rendu par défaut de Chrome épaissit le texte sur fond clair. */
   -webkit-font-smoothing: antialiased;
 }
 
 /**
- * Les champs numériques perdent leurs flèches.
+ * Le fond de plan.
  *
- * Elles occupent la moitié de la largeur d'un petit champ, se manquent au clic, et
- * n'apportent rien à un nombre qu'on tape.
+ * Un pointillé de 24 px à faible opacité, posé **derrière** tout le reste et sans capture
+ * de clic. C'est ce qui donne à l'écran son air de papier millimétré sans jamais gêner la
+ * lecture d'une cote.
  */
+.blueprint-grid {
+  background-image: radial-gradient(var(--color-outline-variant) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -12px -12px;
+  opacity: 0.35;
+}
+
+/** Un libellé de section, comme sur un plan technique. */
+.label-caps {
+  font-size: var(--text-label-caps);
+  line-height: var(--text-label-caps--line-height);
+  letter-spacing: var(--text-label-caps--letter-spacing);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/**
+ * Les valeurs numériques sont en chasse fixe.
+ *
+ * 1800 et 1888 doivent occuper la même largeur : c'est ce qui permet de comparer une
+ * colonne de cotes d'un coup d'œil, et ce qui distingue un outil d'un formulaire.
+ */
+.technical {
+  font-family: var(--font-mono);
+  font-size: var(--text-technical);
+  line-height: var(--text-technical--line-height);
+  letter-spacing: var(--text-technical--letter-spacing);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   appearance: none;
@@ -68,8 +145,23 @@ input[type='number'] {
   appearance: textfield;
 }
 
-/** Ce que le clavier doit voir, et rien de plus. */
+/** L'élément en cours d'édition prend un halo d'or, comme le veut le système. */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-accent-container);
+  outline-offset: 1px;
+}
+
+/** Une barre de défilement fine, dans le ton du plan. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-outline-variant);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }

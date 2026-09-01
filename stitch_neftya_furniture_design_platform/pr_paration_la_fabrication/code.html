@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manufacturing Preparation - Neftya</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#e6c183",
+                      "surface-container": "#eceef0",
+                      "inverse-primary": "#b6c7eb",
+                      "surface-bright": "#f7f9fb",
+                      "tertiary": "#06172a",
+                      "on-secondary-container": "#785c29",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-tertiary-fixed": "#0b1c30",
+                      "surface-container-high": "#e6e8ea",
+                      "on-tertiary-fixed-variant": "#38485d",
+                      "secondary-container": "#fdd798",
+                      "tertiary-fixed-dim": "#b7c8e1",
+                      "on-primary-container": "#8293b5",
+                      "primary": "#031632",
+                      "outline": "#75777e",
+                      "inverse-surface": "#2d3133",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed-variant": "#374765",
+                      "on-secondary-fixed-variant": "#5b4311",
+                      "on-primary-fixed": "#081b38",
+                      "on-background": "#191c1e",
+                      "surface-tint": "#4e5f7e",
+                      "primary-container": "#1a2b48",
+                      "primary-fixed": "#d7e2ff",
+                      "secondary": "#755a26",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d8dadc",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-surface-variant": "#44474d",
+                      "on-surface": "#191c1e",
+                      "tertiary-container": "#1c2c40",
+                      "primary-fixed-dim": "#b6c7eb",
+                      "secondary-fixed": "#ffdea8",
+                      "surface-container-low": "#f2f4f6",
+                      "outline-variant": "#c5c6ce",
+                      "tertiary-fixed": "#d3e4fe",
+                      "on-tertiary": "#ffffff",
+                      "background": "#f7f9fb",
+                      "surface-variant": "#e0e3e5",
+                      "on-tertiary-container": "#8393ac",
+                      "error": "#ba1a1a",
+                      "surface": "#f7f9fb",
+                      "on-primary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#271900"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "max-width": "1440px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "technical-data": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "technical-data": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            background-image: radial-gradient(theme('colors.outline-variant') 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: 0 0;
+            color: theme('colors.on-background');
+        }
+        .technical-table th, .technical-table td {
+            border-bottom: 1px solid theme('colors.outline-variant');
+        }
+        .technical-table tr:last-child td {
+            border-bottom: none;
+        }
+      </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface dark:bg-surface border-r border-outline-variant dark:border-outline fixed left-0 top-0 h-screen w-[280px] flex flex-col h-full py-[40px] z-50">
+<div class="px-gutter mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">Neftya</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Professional CAD</p>
+</div>
+<div class="px-gutter mb-6">
+<button class="w-full bg-primary text-on-primary py-3 px-4 rounded font-label-caps text-label-caps flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Design
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-2 px-4">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+                        Projects
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+                        AI Assistant
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container dark:hover:bg-primary-container transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">architecture</span>
+                        Design
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-primary dark:text-inverse-primary font-bold border-r-2 border-primary dark:border-inverse-primary bg-surface-container-high dark:bg-primary-container font-body-md text-body-md active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">import_export</span>
+                        Exports
+                    </a>
+</li>
+</ul>
+</div>
+<div class="mt-auto pt-6 px-4 border-t border-outline-variant">
+<ul class="space-y-2">
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                        Settings
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+                        Support
+                    </a>
+</li>
+</ul>
+<div class="mt-6 flex items-center gap-3 px-4">
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A small, professional portrait avatar of a user in a modern industrial setting. Clean lighting, subtle metallic background, realistic and high fidelity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfP-b5eJSrnW5qM4prT9fDKgYH3iDQJBsCGebqzXv-gXHBv1lYbC7lXBuZed1reL1WodW0z7p0UMpETTQA0PyNo_EhWvDLkJUONziS66goxIaQuU0b7pXxcGj-9o4B7lTpOvI58hKAvHYnuESA39T0_fr-3mizovQSrTrk3ouAYl4_HjgDQ5v49rHGtqA-NPSn4lEe-t8nl3livRVr30EPxpUoaeGLvLoqNHLvhxecnDkPiYQIa83CZg"/>
+</div>
+<div class="flex flex-col">
+<span class="font-technical-data text-technical-data text-on-surface">U. 4892</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-[280px] flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface-bright dark:bg-surface-dim docked full-width top-0 h-16 border-b border-outline-variant dark:border-outline flex justify-between items-center px-margin-desktop w-full shrink-0">
+<div class="flex items-center gap-6 h-full">
+<nav class="flex h-full items-end gap-6">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-all pb-1 font-label-caps text-label-caps tracking-widest uppercase cursor-pointer active:opacity-70" href="#">Dashboard</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-all pb-1 font-label-caps text-label-caps tracking-widest uppercase cursor-pointer active:opacity-70" href="#">Workspace</a>
+<a class="text-primary dark:text-inverse-primary border-b-2 border-primary dark:border-inverse-primary pb-1 font-label-caps text-label-caps tracking-widest uppercase cursor-pointer active:opacity-70" href="#">Technical</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<button class="font-label-caps text-label-caps text-on-surface hover:text-primary transition-colors border border-outline-variant rounded px-4 py-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">share</span>
+                    Share
+                </button>
+<button class="font-label-caps text-label-caps bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-container transition-colors rounded px-4 py-1.5 flex items-center gap-2 shadow-sm border border-secondary-fixed">
+<span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                    Export CAD
+                </button>
+</div>
+</header>
+<!-- Workspace Canvas -->
+<div class="flex-1 overflow-y-auto p-margin-desktop grid grid-cols-12 gap-gutter relative">
+<!-- Main Content Area -->
+<div class="col-span-12 lg:col-span-9 flex flex-col gap-gutter">
+<!-- Status Breadcrumbs -->
+<div class="flex items-center gap-3 font-label-caps text-label-caps text-on-surface-variant bg-surface-container-low px-4 py-2 rounded-sm border border-outline-variant w-fit">
+<span class="text-primary">Design Complete</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary">Material Selection</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-on-surface font-bold border-b border-primary">Manufacturing Prep</span>
+</div>
+<!-- Panel Optimization View -->
+<section class="bg-surface border border-outline-variant rounded-sm overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1">Panel Optimization</h2>
+<p class="font-technical-data text-technical-data text-on-surface-variant">Standard Board: 2440x1220x18mm | Birch Plywood</p>
+</div>
+<div class="flex gap-4 font-technical-data text-technical-data">
+<div class="flex flex-col items-end">
+<span class="text-on-surface-variant">Yield</span>
+<span class="text-primary font-bold">87.4%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-on-surface-variant">Boards Req.</span>
+<span class="text-on-surface">3</span>
+</div>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest flex justify-center items-center relative overflow-hidden min-h-[400px]">
+<!-- Blueprint Grid Background for Canvas -->
+<div class="absolute inset-0 bg-[radial-gradient(theme('colors.primary')_0.5px,transparent_0.5px)] [background-size:16px_16px] opacity-10"></div>
+<!-- Simulated Board SVG -->
+<svg class="w-full max-w-[800px] h-auto drop-shadow-md z-10" style="background-color: theme('colors.secondary-fixed-dim'); border: 2px solid theme('colors.secondary');" viewbox="0 0 2440 1220">
+<!-- Piece 1 -->
+<rect fill="theme('colors.surface')" height="600" stroke="theme('colors.primary')" stroke-dasharray="8 4" stroke-width="4" width="800" x="10" y="10"></rect>
+<text fill="theme('colors.primary')" font-family="JetBrains Mono" font-size="40" text-anchor="middle" x="410" y="310">TOP_PANEL_A</text>
+<!-- Piece 2 -->
+<rect fill="theme('colors.surface')" height="1200" stroke="theme('colors.primary')" stroke-dasharray="8 4" stroke-width="4" width="600" x="820" y="10"></rect>
+<text fill="theme('colors.primary')" font-family="JetBrains Mono" font-size="40" text-anchor="middle" transform="rotate(-90 1120,610)" x="1120" y="610">SIDE_L</text>
+<!-- Piece 3 -->
+<rect fill="theme('colors.surface')" height="1200" stroke="theme('colors.primary')" stroke-dasharray="8 4" stroke-width="4" width="600" x="1430" y="10"></rect>
+<text fill="theme('colors.primary')" font-family="JetBrains Mono" font-size="40" text-anchor="middle" transform="rotate(-90 1730,610)" x="1730" y="610">SIDE_R</text>
+<!-- Piece 4 -->
+<rect fill="theme('colors.surface')" height="400" stroke="theme('colors.primary')" stroke-dasharray="8 4" stroke-width="4" width="800" x="10" y="620"></rect>
+<text fill="theme('colors.primary')" font-family="JetBrains Mono" font-size="40" text-anchor="middle" x="410" y="820">BOTTOM_BASE</text>
+<!-- Waste indicator -->
+<rect fill="theme('colors.error-container')" height="180" opacity="0.3" width="800" x="10" y="1030"></rect>
+<rect fill="theme('colors.error-container')" height="1200" opacity="0.3" width="390" x="2040" y="10"></rect>
+</svg>
+</div>
+</section>
+<!-- Cutting List Table -->
+<section class="bg-surface border border-outline-variant rounded-sm flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Cutting List</h2>
+<div class="flex gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="bg-surface-container-highest border-b border-outline-variant focus:border-primary focus:ring-0 focus:outline-none pl-9 pr-4 py-1.5 font-technical-data text-technical-data text-on-surface w-48 rounded-t-sm transition-colors" placeholder="Search parts..." type="text"/>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left technical-table border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+<th class="px-6 py-3 w-16">ID</th>
+<th class="px-6 py-3">Part Name</th>
+<th class="px-6 py-3 text-right">Length <span class="lowercase text-[10px] ml-1">(mm)</span></th>
+<th class="px-6 py-3 text-right">Width <span class="lowercase text-[10px] ml-1">(mm)</span></th>
+<th class="px-6 py-3 text-right">Thick <span class="lowercase text-[10px] ml-1">(mm)</span></th>
+<th class="px-6 py-3 text-center">Qty</th>
+<th class="px-6 py-3">Material</th>
+<th class="px-6 py-3 text-center">Status</th>
+</tr>
+</thead>
+<tbody class="font-technical-data text-technical-data text-on-surface bg-surface">
+<tr class="hover:bg-surface-container-low transition-colors cursor-default relative group">
+<td class="px-6 py-4 text-on-surface-variant">01</td>
+<td class="px-6 py-4 font-bold">TOP_PANEL_A</td>
+<td class="px-6 py-4 text-right">800.0</td>
+<td class="px-6 py-4 text-right">600.0</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">18.0</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4">Birch Plywood</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-default">
+<td class="px-6 py-4 text-on-surface-variant">02</td>
+<td class="px-6 py-4 font-bold">SIDE_L</td>
+<td class="px-6 py-4 text-right">1200.0</td>
+<td class="px-6 py-4 text-right">600.0</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">18.0</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4">Birch Plywood</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-default">
+<td class="px-6 py-4 text-on-surface-variant">03</td>
+<td class="px-6 py-4 font-bold">SIDE_R</td>
+<td class="px-6 py-4 text-right">1200.0</td>
+<td class="px-6 py-4 text-right">600.0</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">18.0</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4">Birch Plywood</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-default">
+<td class="px-6 py-4 text-on-surface-variant">04</td>
+<td class="px-6 py-4 font-bold">BOTTOM_BASE</td>
+<td class="px-6 py-4 text-right">800.0</td>
+<td class="px-6 py-4 text-right">400.0</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">18.0</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4">Birch Plywood</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-default">
+<td class="px-6 py-4 text-on-surface-variant">05</td>
+<td class="px-6 py-4 font-bold">SHELF_INT</td>
+<td class="px-6 py-4 text-right">764.0</td>
+<td class="px-6 py-4 text-right">380.0</td>
+<td class="px-6 py-4 text-right text-on-surface-variant">18.0</td>
+<td class="px-6 py-4 text-center">2</td>
+<td class="px-6 py-4">Birch Plywood</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline-variant text-[18px]">pending</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Sidebar Context Panel (Fixed 3 columns) -->
+<div class="col-span-12 lg:col-span-3 flex flex-col gap-gutter">
+<!-- Action Card -->
+<div class="bg-surface border border-outline-variant rounded-sm p-6 flex flex-col gap-4">
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Finalize Pack</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mb-2">Review optimization and costs before generating the manufacturing PDF.</p>
+<button class="w-full bg-secondary text-on-secondary py-3 px-4 rounded font-label-caps text-label-caps flex items-center justify-center gap-2 hover:bg-secondary/90 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                        Export PDF Technical Pack
+                    </button>
+<button class="w-full border border-primary text-primary py-3 px-4 rounded font-label-caps text-label-caps flex items-center justify-center gap-2 hover:bg-primary-container/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+                        Send to CNC
+                    </button>
+</div>
+<!-- Cost Estimation Card -->
+<div class="bg-surface border border-outline-variant rounded-sm flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface-container-low flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">calculate</span>
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Estimated Costs</h3>
+</div>
+<div class="p-6 flex flex-col gap-4 font-technical-data text-technical-data">
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant border-dashed">
+<span class="text-on-surface-variant">Materials (3 Boards)</span>
+<span class="text-on-surface font-bold">$245.00</span>
+</div>
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant border-dashed">
+<span class="text-on-surface-variant">Hardware (Screws, Hinges)</span>
+<span class="text-on-surface font-bold">$32.50</span>
+</div>
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant border-dashed">
+<span class="text-on-surface-variant">Labor (CNC + Assembly)</span>
+<span class="text-on-surface font-bold">$180.00</span>
+</div>
+<div class="flex justify-between items-center pt-2 mt-2">
+<span class="font-label-caps text-label-caps text-on-surface tracking-widest uppercase">Total Estimate</span>
+<span class="text-primary font-bold text-lg">$457.50</span>
+</div>
+</div>
+</div>
+<!-- Neftya Autopilot Suggestion (Glassmorphic) -->
+<div class="relative overflow-hidden rounded-sm p-[1px] mt-4">
+<!-- Glow effect -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary via-primary-container to-secondary-fixed opacity-50"></div>
+<div class="relative bg-surface/80 backdrop-blur-md border border-white/20 p-5 rounded-sm h-full flex flex-col gap-3">
+<div class="flex items-center gap-2 text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+<span class="font-label-caps text-label-caps">Neftya Autopilot</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface text-sm">Rotating SIDE_L and SIDE_R by 90 degrees could improve yield to <strong>89.2%</strong> and reduce required cuts by 2. Recalculate nesting?</p>
+<button class="self-start text-xs font-technical-data text-primary underline hover:text-primary/80 transition-colors mt-2">Apply Optimization</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -48,7 +48,7 @@ export function ProjectActions({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Input
-        className="max-w-xs font-display text-lg"
+        className="max-w-xs font-sans text-lg"
         value={draft ?? name}
         aria-label={t('projects.name')}
         onChange={(event) => setDraft(event.target.value)}
@@ -66,7 +66,7 @@ export function ProjectActions({
       />
 
       {rename.isPending && (
-        <span className="text-sm text-muted">{t('state.saving')}</span>
+        <span className="text-sm text-ink-variant">{t('state.saving')}</span>
       )}
       {rename.isError && (
         <span className="text-sm text-danger">
@@ -89,7 +89,7 @@ export function ProjectActions({
           </button>
           <button
             type="button"
-            className="rounded-md border border-line-strong px-3 py-1"
+            className="rounded-md border border-outline-variant px-3 py-1"
             onClick={() => setConfirming(false)}
           >
             {t('action.cancel')}

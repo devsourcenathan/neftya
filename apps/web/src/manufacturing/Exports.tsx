@@ -26,7 +26,7 @@ export function Exports({ projectId }: { projectId: string }) {
 
   if (exports.isPending || exports.isError) return null;
   if (exports.data.length === 0) {
-    return <p className="text-sm text-muted">{t('exports.none')}</p>;
+    return <p className="text-sm text-ink-variant">{t('exports.none')}</p>;
   }
 
   const dates = new Intl.DateTimeFormat(i18n.language, {
@@ -41,7 +41,7 @@ export function Exports({ projectId }: { projectId: string }) {
           <span className="tabular-nums">
             {dates.format(new Date(record.created_at))}
           </span>
-          <span className="uppercase text-muted">{record.kind}</span>
+          <span className="uppercase text-ink-variant">{record.kind}</span>
           {record.storage_object_id ? (
             <span className="text-success">{t('exports.stored')}</span>
           ) : (

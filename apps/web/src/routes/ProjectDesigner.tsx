@@ -35,7 +35,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
   });
 
   if (project.isPending) {
-    return <p className="p-6 text-sm text-muted">{t('state.loading')}</p>;
+    return <p className="p-6 text-sm text-ink-variant">{t('state.loading')}</p>;
   }
 
   if (project.isError) {
@@ -58,7 +58,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
         <Link
           to="/projects/$projectId/manufacturing"
           params={{ projectId }}
-          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-line/60 hover:text-ink"
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-ink-variant transition-colors hover:bg-surface-low hover:text-ink"
         >
           <ToolsIcon />
           {t('manufacturing.open')}
@@ -66,7 +66,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
         <Link
           to="/projects/$projectId/plans"
           params={{ projectId }}
-          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-line/60 hover:text-ink"
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-ink-variant transition-colors hover:bg-surface-low hover:text-ink"
         >
           <PlanIcon />
           {t('plans.open')}

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neftya Designer - AI Inspiration &amp; Design Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#e6c183",
+                      "surface-container": "#eceef0",
+                      "inverse-primary": "#b6c7eb",
+                      "surface-bright": "#f7f9fb",
+                      "tertiary": "#06172a",
+                      "on-secondary-container": "#785c29",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-tertiary-fixed": "#0b1c30",
+                      "surface-container-high": "#e6e8ea",
+                      "on-tertiary-fixed-variant": "#38485d",
+                      "secondary-container": "#fdd798",
+                      "tertiary-fixed-dim": "#b7c8e1",
+                      "on-primary-container": "#8293b5",
+                      "primary": "#031632",
+                      "outline": "#75777e",
+                      "inverse-surface": "#2d3133",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed-variant": "#374765",
+                      "on-secondary-fixed-variant": "#5b4311",
+                      "on-primary-fixed": "#081b38",
+                      "on-background": "#191c1e",
+                      "surface-tint": "#4e5f7e",
+                      "primary-container": "#1a2b48",
+                      "primary-fixed": "#d7e2ff",
+                      "secondary": "#755a26",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d8dadc",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-surface-variant": "#44474d",
+                      "on-surface": "#191c1e",
+                      "tertiary-container": "#1c2c40",
+                      "primary-fixed-dim": "#b6c7eb",
+                      "secondary-fixed": "#ffdea8",
+                      "surface-container-low": "#f2f4f6",
+                      "outline-variant": "#c5c6ce",
+                      "tertiary-fixed": "#d3e4fe",
+                      "on-tertiary": "#ffffff",
+                      "background": "#f7f9fb",
+                      "surface-variant": "#e0e3e5",
+                      "on-tertiary-container": "#8393ac",
+                      "error": "#ba1a1a",
+                      "surface": "#f7f9fb",
+                      "on-primary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#271900"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "max-width": "1440px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "technical-data": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "technical-data": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .dot-grid {
+            background-image: radial-gradient(circle at 1px 1px, #e0e3e5 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .ai-glow {
+            box-shadow: 0 0 32px 0 rgba(3, 22, 50, 0.15), 0 0 16px 0 rgba(230, 193, 131, 0.1);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+      </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col md:flex-row dot-grid">
+<!-- SideNavBar (Hidden on Mobile, Visible on Desktop) -->
+<nav class="hidden md:flex flex-col h-full py-margin-desktop bg-surface border-r border-outline-variant fixed left-0 top-0 w-[280px] z-50">
+<div class="px-gutter mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Neftya</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Professional CAD</p>
+</div>
+<button class="mx-gutter mb-8 bg-primary text-on-primary font-label-caps text-label-caps py-3 px-4 rounded-DEFAULT flex items-center justify-center gap-2 hover:bg-tertiary transition-colors">
+<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'FILL' 0;">add</span>
+            New Design
+        </button>
+<ul class="flex-grow flex flex-col gap-1 px-4">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open" style="font-variation-settings: 'FILL' 0;">folder_open</span>
+<span class="font-label-caps text-label-caps">Projects</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-primary font-bold border-r-2 border-primary bg-surface-container-high hover:bg-surface-container transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-caps text-label-caps">AI Assistant</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="architecture" style="font-variation-settings: 'FILL' 0;">architecture</span>
+<span class="font-label-caps text-label-caps">Design</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="import_export" style="font-variation-settings: 'FILL' 0;">import_export</span>
+<span class="font-label-caps text-label-caps">Exports</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto px-4 border-t border-outline-variant pt-4">
+<ul class="flex flex-col gap-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 md:ml-[280px]">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-margin-desktop w-full h-16 bg-surface-bright border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-black text-primary md:hidden">Neftya Designer</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-all cursor-pointer active:opacity-70" href="#">Dashboard</a>
+<a class="font-label-caps text-label-caps text-primary border-b-2 border-primary pb-1 cursor-pointer active:opacity-70" href="#">Workspace</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-all cursor-pointer active:opacity-70" href="#">Technical</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 border border-primary text-primary font-label-caps text-label-caps px-4 py-2 rounded-DEFAULT hover:bg-surface-container transition-colors">
+                    Export CAD
+                </button>
+<button class="hidden md:flex items-center gap-2 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-4 py-2 rounded-DEFAULT hover:bg-secondary-fixed transition-colors">
+                    Share
+                </button>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<div class="max-w-max-width mx-auto">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-technical-data font-technical-data text-on-surface-variant mb-6">
+<span class="text-primary">Workspace</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+<span class="text-primary">AI Analysis</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+<span>Inspiration</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter h-full min-h-[800px]">
+<!-- Left: Upload/Inspiration Area (3 cols) -->
+<div class="lg:col-span-3 flex flex-col gap-4">
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col items-center justify-center h-64 border-dashed cursor-pointer hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2" data-icon="upload_file" style="font-variation-settings: 'FILL' 0;">upload_file</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Drop Reference Image</span>
+<span class="text-technical-data font-technical-data text-outline mt-1">JPG, PNG (Max 5MB)</span>
+</div>
+<div class="flex-1 border border-outline-variant rounded-lg overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="A highly detailed professional product photograph of a modern minimalist wooden chair. The chair features clean, straight lines with a light oak finish, set against a stark, high-key white studio background. The lighting is soft and diffused, highlighting the grain of the wood without creating harsh shadows. The aesthetic is clean, Scandinavian-inspired, and precise, aligning with a professional CAD design environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJm3MiDoiuBDU--2WwQM2CJR2ZYcBgcoIhjnI8nQrvTc8iQ5NFA-19zpHAgFnkc_QW6tO90Or5jCBbwIBQuMrtm8yiA9X9Zq4YH3SZA0_Ej6dyLzXsikvWidee5M-e8gh4xKGQzUcOFxRVCjcgLhjwXEzQm1wpo772qoEWPcP9kAPskTOhkcj-0ETM5JSTW08-0Yp4fOg5PLzqAG357-p5W-5_o0qbpIw0ZIHqDhKyyzXTlm-tGQFJrg"/>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-on-primary font-technical-data text-technical-data">Source: User Upload</span>
+</div>
+</div>
+</div>
+<!-- Center: Analysis Results (6 cols) -->
+<div class="lg:col-span-6 flex flex-col gap-4">
+<div class="glass-panel ai-glow border border-secondary-fixed-dim rounded-lg p-6 flex flex-col h-full">
+<div class="flex items-center gap-3 mb-6 border-b border-outline-variant pb-4">
+<span class="material-symbols-outlined text-secondary-fixed-dim" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h2 class="font-headline-md text-headline-md text-primary">Analysis Results</h2>
+<span class="ml-auto bg-surface-container text-on-surface-variant px-2 py-1 rounded-sm text-technical-data font-technical-data">CONFIDENCE: 94%</span>
+</div>
+<div class="grid grid-cols-2 gap-x-8 gap-y-6 mb-8 flex-grow">
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">IDENTIFIED TYPE</span>
+<span class="font-body-lg text-body-lg text-primary font-semibold">Lounge Chair, Minimalist</span>
+</div>
+<div>
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-1">PRIMARY MATERIAL</span>
+<span class="font-body-lg text-body-lg text-primary font-semibold">White Oak (Solid)</span>
+</div>
+<div class="col-span-2 border-t border-outline-variant pt-4 mt-2">
+<span class="block font-label-caps text-label-caps text-on-surface-variant mb-4">ESTIMATED DIMENSIONS</span>
+<div class="grid grid-cols-3 gap-4">
+<div class="bg-surface-container-lowest border border-outline-variant p-3 rounded-sm flex flex-col">
+<span class="text-outline text-[10px] uppercase tracking-wider mb-1">Height</span>
+<div class="flex items-baseline gap-1">
+<span class="font-technical-data text-technical-data text-primary">850</span>
+<span class="font-technical-data text-[12px] text-on-surface-variant">mm</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-3 rounded-sm flex flex-col">
+<span class="text-outline text-[10px] uppercase tracking-wider mb-1">Width</span>
+<div class="flex items-baseline gap-1">
+<span class="font-technical-data text-technical-data text-primary">620</span>
+<span class="font-technical-data text-[12px] text-on-surface-variant">mm</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-3 rounded-sm flex flex-col">
+<span class="text-outline text-[10px] uppercase tracking-wider mb-1">Depth</span>
+<div class="flex items-baseline gap-1">
+<span class="font-technical-data text-technical-data text-primary">710</span>
+<span class="font-technical-data text-[12px] text-on-surface-variant">mm</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex gap-4 mt-auto pt-6 border-t border-outline-variant">
+<button class="flex-1 bg-primary text-on-primary font-label-caps text-label-caps py-3 rounded-DEFAULT hover:bg-tertiary transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="architecture" style="font-variation-settings: 'FILL' 0;">architecture</span>
+                                    Convert to Design
+                                </button>
+<button class="flex-1 border border-primary text-primary font-label-caps text-label-caps py-3 rounded-DEFAULT hover:bg-surface-container transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="straighten" style="font-variation-settings: 'FILL' 0;">straighten</span>
+                                    Refine Dimensions
+                                </button>
+</div>
+</div>
+</div>
+<!-- Right: AI Chat Panel (3 cols) -->
+<div class="lg:col-span-3 flex flex-col border border-outline-variant rounded-lg bg-surface h-full">
+<div class="p-4 border-b border-outline-variant flex items-center gap-2 bg-surface-container-low">
+<div class="w-2 h-2 rounded-full bg-secondary-fixed-dim animate-pulse"></div>
+<h3 class="font-label-caps text-label-caps text-primary">Neftya Assistant</h3>
+</div>
+<div class="flex-1 p-4 overflow-y-auto flex flex-col gap-4">
+<!-- AI Message -->
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-secondary-fixed-dim mt-1" data-icon="smart_toy" style="font-variation-settings: 'FILL' 0;">smart_toy</span>
+<div class="bg-surface-container p-3 rounded-lg rounded-tl-none">
+<p class="font-body-md text-[14px] text-on-surface mb-2">Based on the reference image, I suggest using mortise and tenon joints for the main frame to ensure structural integrity without visible hardware.</p>
+<p class="font-body-md text-[14px] text-on-surface">Would you like me to generate a joinery detail schematic?</p>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-3 flex-row-reverse">
+<span class="material-symbols-outlined text-primary mt-1" data-icon="person" style="font-variation-settings: 'FILL' 0;">person</span>
+<div class="bg-primary-container p-3 rounded-lg rounded-tr-none text-on-primary-container">
+<p class="font-body-md text-[14px]">Yes, specifically for the armrest connection to the back leg.</p>
+</div>
+</div>
+</div>
+<div class="p-3 border-t border-outline-variant bg-surface-container-low">
+<div class="flex items-center gap-2 bg-surface border border-outline-variant rounded-DEFAULT px-3 py-2 focus-within:border-primary transition-colors">
+<input class="flex-1 bg-transparent border-none p-0 focus:ring-0 text-body-md font-body-md text-on-surface placeholder:text-outline text-[14px]" placeholder="Ask for advice..." type="text"/>
+<button class="text-primary hover:text-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="send" style="font-variation-settings: 'FILL' 0;">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -39,7 +39,12 @@
     "compartments_one": "{{count}} bay",
     "compartments_other": "{{count}} bays",
     "nameHint": "Leave empty to reuse the template name.",
-    "namePlaceholder": "Living room bookcase"
+    "namePlaceholder": "Living room bookcase",
+    "subtitle": "Your manufacturing drafts and assemblies in progress.",
+    "dimensions": "Size (mm)",
+    "updated": "Updated",
+    "withDoors": "Closed",
+    "openCarcass": "Open"
   },
   "presets": {
     "title": "Templates",
@@ -49,7 +54,9 @@
     "tvUnit": "TV unit",
     "sideboard": "Sideboard",
     "details_one": "{{compartments}} bay · {{doors}} door",
-    "details_other": "{{compartments}} bays · {{doors}} doors"
+    "details_other": "{{compartments}} bays · {{doors}} doors",
+    "contents": "Bays × doors",
+    "create": "Start from this template"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -170,7 +177,12 @@
     "badPrice": "Price not understood.",
     "priceHelp": "Prices are entered once and remembered for your organisation. Neftya invents no rates: a wrong quote is worse than no quote.",
     "panelLine_one": "{{count}} sheet of {{material}} {{thickness}} mm, {{length}} × {{width}}",
-    "panelLine_other": "{{count}} sheets of {{material}} {{thickness}} mm, {{length}} × {{width}}"
+    "panelLine_other": "{{count}} sheets of {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "yield": "Yield",
+    "board": "Board",
+    "trim": "Trim",
+    "panelsUsed_one": "{{count}} board",
+    "panelsUsed_other": "{{count}} boards"
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",
@@ -266,6 +278,12 @@
     "footer": "Neftya — a Sekuu product."
   },
   "nav": {
-    "projects": "Projects"
+    "projects": "Projects",
+    "tagline": "Technical design"
+  },
+  "pipeline": {
+    "design": "Design",
+    "materials": "Drawings",
+    "manufacturing": "Manufacturing"
   }
 }

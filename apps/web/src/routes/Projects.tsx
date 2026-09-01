@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client.js';
 import { createProject, listProjects, useApi } from '../api/projects.js';
 import { presets } from '../designer/model.js';
-import { usePreferences } from '../preferences/PreferencesContext.js';
 import {
   Badge,
   Card,
+  DataPoint,
   EmptyState,
   Field,
   Input,
-  SectionTitle,
   SkeletonCards,
 } from '../ui/index.js';
+import { PlusIcon } from '../ui/icons.js';
 
 /**
  * L'accueil : les projets de l'organisation, et la bibliothèque de modèles.
@@ -25,7 +25,6 @@ import {
  */
 export function Projects() {
   const { t, i18n } = useTranslation();
-  const { format } = usePreferences();
   const api = useApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -47,18 +46,18 @@ export function Projects() {
   const dates = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' });
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-12 px-5 py-8">
-      <section>
-        <SectionTitle
-          hint={
-            projects.data && projects.data.length > 0
-              ? t('projects.count', { count: projects.data.length })
-              : undefined
-          }
-        >
-          {t('projects.title')}
-        </SectionTitle>
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-12 px-4 pt-20 pb-12 lg:px-margin-desktop lg:pt-margin-desktop">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-headline-lg text-primary">{t('projects.title')}</h1>
+          <p className="mt-2 text-body-lg text-ink-variant">{t('projects.subtitle')}</p>
+        </div>
+        {projects.data && projects.data.length > 0 && (
+          <Badge>{t('projects.count', { count: projects.data.length })}</Badge>
+        )}
+      </header>
 
+      <section>
         {/* Une esquisse de la bonne forme : la page ne saute pas quand les projets se
             posent, et l'attente ne ressemble pas à une panne. */}
         {projects.isPending && <SkeletonCards />}
@@ -79,13 +78,13 @@ export function Projects() {
         )}
 
         {projects.data && projects.data.length > 0 && (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-gutter sm:grid-cols-2 xl:grid-cols-3">
             {projects.data.map((project) => (
               <li key={project.id}>
-                <Card className="h-full transition-colors hover:border-line-strong">
+                <Card className="h-full transition-colors hover:border-primary/40">
                   <button
                     type="button"
-                    className="flex h-full w-full flex-col gap-2 p-4 text-left"
+                    className="flex h-full w-full flex-col p-6 text-left"
                     onClick={() =>
                       void navigate({
                         to: '/projects/$projectId',
@@ -93,27 +92,41 @@ export function Projects() {
                       })
                     }
                   >
-                    <span className="font-display text-lg text-ink">
+                    <Badge
+                      tone={
+                        project.model.compartments.some((c) => c.doors > 0)
+                          ? 'accent'
+                          : 'neutral'
+                      }
+                    >
+                      {t(
+                        project.model.compartments.some((c) => c.doors > 0)
+                          ? 'projects.withDoors'
+                          : 'projects.openCarcass',
+                      )}
+                    </Badge>
+
+                    <span className="mt-3 text-headline-md text-ink">
                       {project.name}
                     </span>
-
-                    <span className="text-sm tabular-nums text-muted">
-                      {format(project.model.dimensions.widthMm)} ×{' '}
-                      {format(project.model.dimensions.heightMm)} ×{' '}
-                      {format(project.model.dimensions.depthMm)}
+                    <span className="mt-1 text-sm text-ink-variant">
+                      {t('projects.compartments', {
+                        count: project.model.compartments.length,
+                      })}{' '}
+                      · {t(`material.${project.model.material}`)}
                     </span>
 
-                    <span className="mt-auto flex items-center gap-2 pt-2">
-                      <Badge>
-                        {t('projects.compartments', {
-                          count: project.model.compartments.length,
-                        })}
-                      </Badge>
-                      {/* La date de dernière modification : c'est elle qu'on cherche pour
-                          retrouver le projet d'hier. */}
-                      <span className="text-xs text-muted">
-                        {dates.format(new Date(project.updated_at))}
-                      </span>
+                    {/* Le motif de carte du système : un filet, puis les données en deux
+                        colonnes, en chasse fixe. On compare deux projets sans les lire. */}
+                    <span className="mt-auto grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+                      <DataPoint
+                        label={t('projects.dimensions')}
+                        value={`${project.model.dimensions.widthMm} × ${project.model.dimensions.heightMm}`}
+                      />
+                      <DataPoint
+                        label={t('projects.updated')}
+                        value={dates.format(new Date(project.updated_at))}
+                      />
                     </span>
                   </button>
                 </Card>
@@ -124,9 +137,14 @@ export function Projects() {
       </section>
 
       <section>
-        <SectionTitle hint={t('presets.help')}>{t('presets.title')}</SectionTitle>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-3">
+          <div>
+            <h2 className="text-headline-md text-ink">{t('presets.title')}</h2>
+            <p className="mt-1 text-sm text-ink-variant">{t('presets.help')}</p>
+          </div>
+        </div>
 
-        <div className="mb-4 max-w-sm">
+        <div className="mb-5 max-w-sm">
           <Field label={t('projects.name')} hint={t('projects.nameHint')}>
             <Input
               value={name}
@@ -136,13 +154,13 @@ export function Projects() {
           </Field>
         </div>
 
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid gap-gutter sm:grid-cols-2 xl:grid-cols-4">
           {presets().map((preset) => (
             <li key={preset.key}>
               <Card className="h-full transition-colors hover:border-accent">
                 <button
                   type="button"
-                  className="flex h-full w-full flex-col gap-1 p-4 text-left disabled:opacity-50"
+                  className="flex h-full w-full flex-col p-6 text-left disabled:opacity-50"
                   disabled={create.isPending}
                   onClick={() =>
                     create.mutate({
@@ -154,27 +172,27 @@ export function Projects() {
                     })
                   }
                 >
-                  <span className="font-display text-base text-ink">
+                  <span className="text-headline-md text-ink">
                     {t(`presets.${preset.key}`)}
                   </span>
-                  <span className="text-sm tabular-nums text-muted">
-                    {format(preset.model.dimensions.widthMm)} ×{' '}
-                    {format(preset.model.dimensions.heightMm)}
+
+                  <span className="mt-auto grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+                    <DataPoint
+                      label={t('projects.dimensions')}
+                      value={`${preset.model.dimensions.widthMm} × ${preset.model.dimensions.heightMm}`}
+                    />
+                    <DataPoint
+                      label={t('presets.contents')}
+                      value={`${preset.model.compartments.length} × ${preset.model.compartments.reduce(
+                        (total, compartment) => total + compartment.doors,
+                        0,
+                      )}p`}
+                    />
                   </span>
-                  <span className="mt-2 text-xs text-muted">
-                    {t('presets.details', {
-                      // `count` décide de la forme du pluriel : sans lui, i18next ne
-                      // choisit ni `_one` ni `_other` et la clé ne se résout pas.
-                      count: preset.model.compartments.reduce(
-                        (total, compartment) => total + compartment.doors,
-                        0,
-                      ),
-                      compartments: preset.model.compartments.length,
-                      doors: preset.model.compartments.reduce(
-                        (total, compartment) => total + compartment.doors,
-                        0,
-                      ),
-                    })}
+
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
+                    <PlusIcon />
+                    {t('presets.create')}
                   </span>
                 </button>
               </Card>

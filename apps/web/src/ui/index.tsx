@@ -1,20 +1,29 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
 /**
- * La trousse d'interface.
+ * La trousse d'interface, réglée sur le Neftya Industrial Design System.
  *
- * Six composants, pas trente : ce sont ceux qui reviennent partout, et les avoir en un
- * seul endroit évite qu'un bouton d'un écran ait deux pixels de plus que celui d'à côté.
- * Chaque écran qui invente sa propre bordure ajoute une variante que personne ne maintient.
+ * Trois principes du système, et tout en découle :
+ *
+ *  - **des filets, pas des ombres** — un panneau se délimite par un trait d'un pixel ;
+ *  - **un arrondi de 4 px** — présent, discret, « machiné » ;
+ *  - **l'or ne sert qu'à ce qui est actif ou finalise** — un accent distribué ne désigne
+ *    plus rien.
+ *
+ * @see stitch_neftya_furniture_design_platform/neftya_industrial_design_system/DESIGN.md
  */
 
-type ButtonTone = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonTone = 'primary' | 'secondary' | 'ghost' | 'action' | 'danger';
 
 const TONES: Record<ButtonTone, string> = {
-  primary: 'bg-ink text-paper hover:bg-ink/90',
-  secondary: 'border border-line-strong bg-surface text-ink hover:border-ink/40',
-  ghost: 'text-muted hover:bg-line/60 hover:text-ink',
-  danger: 'border border-danger/30 text-danger hover:bg-danger/5',
+  /** Bleu plein : l'action principale, celle qui fait avancer. */
+  primary: 'bg-primary text-on-primary hover:bg-primary-container',
+  /** Fantôme cerné : présent sans réclamer l'attention. */
+  secondary: 'border border-primary/25 text-primary hover:border-primary/60',
+  ghost: 'text-ink-variant hover:bg-surface-low hover:text-ink',
+  /** Or : « finaliser », « exporter ». Réservé, sous peine de ne plus rien dire. */
+  action: 'bg-accent-container text-on-accent-container hover:brightness-95',
+  danger: 'border border-danger/30 text-danger hover:bg-danger-container/40',
 };
 
 export function Button({
@@ -25,12 +34,13 @@ export function Button({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${TONES[tone]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${TONES[tone]} ${className}`}
       {...props}
     />
   );
 }
 
+/** Un panneau. Délimité par un filet, jamais par une ombre. */
 export function Card({
   children,
   className = '',
@@ -39,15 +49,18 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div
-      className={`rounded-panel border border-line bg-surface shadow-[0_1px_2px_rgba(28,25,23,0.04)] ${className}`}
-    >
+    <div className={`rounded border border-hairline bg-surface ${className}`}>
       {children}
     </div>
   );
 }
 
-/** Le titre d'un bloc. Toujours le même : un écran qui varie ses titres se lit mal. */
+/**
+ * Le titre d'un bloc, en capitales espacées.
+ *
+ * C'est la convention des documents techniques, et elle donne au panneau latéral une
+ * hiérarchie lisible sans recourir à des tailles de police différentes.
+ */
 export function SectionTitle({
   children,
   hint,
@@ -56,14 +69,13 @@ export function SectionTitle({
   hint?: ReactNode;
 }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-4">
-      <h2 className="font-display text-lg text-ink">{children}</h2>
-      {hint && <span className="text-sm text-muted">{hint}</span>}
+    <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-hairline pb-2">
+      <h2 className="label-caps text-ink-variant">{children}</h2>
+      {hint && <span className="technical text-xs text-outline">{hint}</span>}
     </div>
   );
 }
 
-/** Le libellé d'un réglage, avec son explication sous le champ plutôt qu'en infobulle. */
 export function Field({
   label,
   hint,
@@ -77,32 +89,32 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium text-ink">{label}</span>
+      <span className="label-caps text-ink-variant">{label}</span>
       {children}
-      {hint && <span className="text-xs text-muted">{hint}</span>}
+      {hint && <span className="text-xs text-outline">{hint}</span>}
       {error && <span className="text-xs text-danger">{error}</span>}
     </label>
   );
 }
 
+/**
+ * Un champ de saisie de données, comme dans un logiciel de CAO.
+ *
+ * Aplat gris clair, **filet inférieur seul au repos**, trait bleu complet à la saisie :
+ * l'œil suit une colonne de champs sans être arrêté par quatre bordures par ligne.
+ */
 export function Input({
   className = '',
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm text-ink transition-colors placeholder:text-muted/70 focus:border-accent focus:outline-none ${className}`}
+      className={`w-full rounded-t border-b border-outline-variant bg-surface-low px-3 py-2 text-sm text-ink transition-colors placeholder:text-outline focus:border-primary focus:bg-surface focus:outline-none ${className}`}
       {...props}
     />
   );
 }
 
-/**
- * Un écran vide dit quoi faire.
- *
- * « Aucun projet » laisse l'utilisateur devant une page blanche ; « partez d'un modèle »
- * lui donne son prochain geste. C'est la différence entre une absence et une impasse.
- */
 export function EmptyState({
   title,
   description,
@@ -113,15 +125,15 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <Card className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <p className="font-display text-lg text-ink">{title}</p>
-      <p className="max-w-md text-sm text-muted">{description}</p>
-      {action && <div className="mt-2">{action}</div>}
+    <Card className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <p className="text-headline-md text-ink">{title}</p>
+      <p className="max-w-md text-sm text-ink-variant">{description}</p>
+      {action && <div className="mt-3">{action}</div>}
     </Card>
   );
 }
 
-/** Une pastille d'état : un avertissement, un compte, une devise. */
+/** Une pastille d'état, dans l'esprit « Draft / Optimized / Ready to Cut » des maquettes. */
 export function Badge({
   children,
   tone = 'neutral',
@@ -130,15 +142,15 @@ export function Badge({
   tone?: 'neutral' | 'accent' | 'warning' | 'success';
 }) {
   const tones = {
-    neutral: 'bg-line/70 text-muted',
-    accent: 'bg-accent-soft text-accent',
-    warning: 'bg-amber-50 text-amber-800',
-    success: 'bg-green-50 text-success',
+    neutral: 'bg-surface-high text-ink-variant',
+    accent: 'bg-accent-container text-on-accent-container',
+    warning: 'bg-accent-container text-on-accent-container',
+    success: 'bg-success/10 text-success',
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}
+      className={`label-caps inline-flex items-center gap-1 rounded px-2 py-1 ${tones[tone]}`}
     >
       {children}
     </span>
@@ -146,16 +158,24 @@ export function Badge({
 }
 
 /**
- * Une esquisse de contenu pendant le chargement.
+ * Une donnée technique : son libellé en capitales, sa valeur en chasse fixe.
  *
- * « Chargement… » ne dit rien de ce qui arrive ; une esquisse de la bonne forme évite que
- * la page saute quand le contenu se pose. C'est aussi ce qui distingue une attente d'une
- * panne aux yeux de qui regarde.
+ * C'est le motif des cartes du système — une grille de deux colonnes sous un filet — et
+ * c'est ce qui permet de comparer deux projets sans les lire.
  */
+export function DataPoint({ label, value }: { label: ReactNode; value: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="label-caps text-outline">{label}</span>
+      <span className="technical text-ink">{value}</span>
+    </div>
+  );
+}
+
 export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-line/70 ${className}`}
+      className={`animate-pulse rounded bg-surface-high ${className}`}
       aria-hidden="true"
     />
   );
@@ -164,13 +184,17 @@ export function Skeleton({ className = '' }: { className?: string }) {
 /** Un groupe de cartes en attente, de la forme de celles qui vont les remplacer. */
 export function SkeletonCards({ count = 3 }: { count?: number }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid gap-gutter sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: count }, (_, index) => (
         <li key={index}>
-          <Card className="flex flex-col gap-3 p-4">
-            <Skeleton className="h-5 w-2/3" />
+          <Card className="flex flex-col gap-3 p-6">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
+            <div className="mt-2 grid grid-cols-2 gap-3 border-t border-hairline pt-3">
+              <Skeleton className="h-8" />
+              <Skeleton className="h-8" />
+            </div>
           </Card>
         </li>
       ))}
@@ -178,12 +202,7 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
   );
 }
 
-/**
- * Un sélecteur segmenté : deux ou trois choix exclusifs, tous visibles.
- *
- * Une liste déroulante cacherait les options derrière un clic ; à trois choix, les montrer
- * coûte moins de place que la flèche qui les cacherait.
- */
+/** Deux ou trois choix exclusifs, tous visibles. */
 export function SegmentedControl<T extends string>({
   value,
   options,
@@ -197,7 +216,7 @@ export function SegmentedControl<T extends string>({
 }) {
   return (
     <div
-      className={`inline-flex rounded-md border border-line-strong bg-surface p-0.5 ${className}`}
+      className={`inline-flex rounded border border-hairline bg-surface p-0.5 ${className}`}
       role="tablist"
     >
       {options.map((option) => (
@@ -207,13 +226,57 @@ export function SegmentedControl<T extends string>({
           role="tab"
           aria-selected={option.value === value}
           onClick={() => onChange(option.value)}
-          className={`inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-            option.value === value ? 'bg-ink text-paper' : 'text-muted hover:text-ink'
+          className={`label-caps inline-flex items-center gap-1.5 rounded px-3 py-2 transition-colors ${
+            option.value === value
+              ? 'bg-primary text-on-primary'
+              : 'text-ink-variant hover:bg-surface-low'
           }`}
         >
           {option.label}
         </button>
       ))}
     </div>
+  );
+}
+
+/**
+ * Le fil d'étapes — « Conception → Matériaux → Fabrication ».
+ *
+ * Le système l'appelle une *pipeline* : elle dit où l'on en est dans un processus, pas où
+ * l'on est dans une arborescence. Les étapes franchies restent lisibles, celle en cours est
+ * en bleu, les suivantes s'effacent.
+ */
+export function Pipeline({
+  steps,
+  current,
+}: {
+  steps: readonly { key: string; label: ReactNode }[];
+  current: string;
+}) {
+  const index = steps.findIndex((step) => step.key === current);
+
+  return (
+    <ol className="flex flex-wrap items-center gap-2">
+      {steps.map((step, position) => (
+        <li key={step.key} className="flex items-center gap-2">
+          <span
+            className={`label-caps ${
+              position < index
+                ? 'text-ink-variant'
+                : position === index
+                  ? 'text-primary'
+                  : 'text-outline-variant'
+            }`}
+          >
+            {step.label}
+          </span>
+          {position < steps.length - 1 && (
+            <span aria-hidden="true" className="text-outline-variant">
+              ›
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
   );
 }
