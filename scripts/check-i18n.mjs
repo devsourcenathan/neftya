@@ -64,6 +64,21 @@ for (const a of LOCALES) {
 
 const reference = bundles[LOCALES[0]];
 
+/**
+ * Les suffixes de pluriel d'i18next.
+ *
+ * `t('x.panelLine', { count })` se résout en `panelLine_one` ou `panelLine_other` : la
+ * clé nue n'existe pas dans le fichier, et la chercher telle quelle signalerait à tort
+ * toute chaîne accordée en nombre. C'est précisément ce qui a fait écrire « 3 panneau ».
+ */
+const PLURAL_SUFFIXES = ['_zero', '_one', '_two', '_few', '_many', '_other'];
+
+function known(key) {
+  return (
+    reference.has(key) || PLURAL_SUFFIXES.some((suffix) => reference.has(key + suffix))
+  );
+}
+
 const files = walk(SRC).filter(
   (file) => ['.ts', '.tsx'].includes(extname(file)) && !file.endsWith('i18n.ts'),
 );
@@ -107,7 +122,7 @@ for (const file of files) {
   }
 
   for (const match of source.matchAll(literalKey)) {
-    if (!reference.has(match[1])) {
+    if (!known(match[1])) {
       problems.push(
         `${file}:${lineOf(source, match.index)} : clé inconnue « ${match[1]} »`,
       );

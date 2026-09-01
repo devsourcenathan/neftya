@@ -71,6 +71,11 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       callback(null, allowedOrigins.includes(origin));
     },
     credentials: true,
+    // À défaut, la bibliothèque n'annonce que GET, HEAD et POST : un `PUT` de réglages ou
+    // un `DELETE` de projet étaient refusés par le navigateur au préflight, sans jamais
+    // atteindre l'API. La liste suit donc les verbes réellement servis.
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['authorization', 'content-type', 'accept'],
   });
 
   // Vivant : le processus répond. N'interroge rien — une sonde de vie qui dépend de la

@@ -7,7 +7,7 @@ import type {
   ParsedFurnitureInput,
 } from '@neftya/engine';
 import type { Money } from '@neftya/units';
-import type { ApiClient } from './client.js';
+import type { ApiClient, FileClient } from './client.js';
 
 /**
  * Les ressources de l'API, typées depuis les contrats — jamais retapées à la main.
@@ -98,12 +98,41 @@ export const savePrice = (
   body: { reference: string; amountMinor: number; currency: string },
 ) => api<{ reference: string }>('/v1/prices', { method: 'PUT', body });
 
+/** Un nom de fichier sans accent ni espace : il traverse des systèmes qui n'aiment ni l'un ni l'autre. */
+export function fileNameOf(projectName: string, suffix: string): string {
+  const ascii = projectName
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/gu, '')
+    .replace(/[^A-Za-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+    .toLowerCase();
+
+  return `${ascii || 'projet'}${suffix}`;
+}
+
+export const downloadCutList = (files: FileClient, id: string, name: string) =>
+  files(`/v1/projects/${id}/cut-list.csv`, fileNameOf(name, '.csv'));
+
+export const downloadCutPlan = (files: FileClient, id: string, name: string) =>
+  files(`/v1/projects/${id}/cut-plan.pdf`, fileNameOf(name, '-decoupe.pdf'));
+
+export const downloadPlans = (files: FileClient, id: string, name: string) =>
+  files(`/v1/projects/${id}/plans.pdf`, fileNameOf(name, '-plans.pdf'));
+
 const ApiContext = createContext<ApiClient | null>(null);
+const FileContext = createContext<FileClient | null>(null);
 
 export const ApiProvider = ApiContext.Provider;
+export const FileProvider = FileContext.Provider;
 
 export function useApi(): ApiClient {
   const api = useContext(ApiContext);
   if (!api) throw new Error('useApi hors de ApiProvider.');
   return api;
+}
+
+export function useFiles(): FileClient {
+  const files = useContext(FileContext);
+  if (!files) throw new Error('useFiles hors de FileProvider.');
+  return files;
 }

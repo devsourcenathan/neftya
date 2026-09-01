@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { ApiProvider, getSettings, useApi } from './api/projects.js';
-import { createApiClient } from './api/client.js';
+import { ApiProvider, FileProvider, getSettings, useApi } from './api/projects.js';
+import { createApiClient, createFileClient } from './api/client.js';
 import { PreferencesProvider } from './preferences/PreferencesContext.js';
 import { SessionProvider, useSession } from './sekuu/SessionContext.js';
 import { redirectToPortal } from './sekuu/session.js';
@@ -47,6 +47,7 @@ function Authenticated() {
   const { state, choose, token } = useSession();
 
   const api = useMemo(() => createApiClient(token), [token]);
+  const files = useMemo(() => createFileClient(token), [token]);
 
   if (state.status === 'loading') {
     return <Centered>{t('state.loading')}</Centered>;
@@ -99,7 +100,9 @@ function Authenticated() {
 
   return (
     <ApiProvider value={api}>
-      <WithSettings language={state.session.language} />
+      <FileProvider value={files}>
+        <WithSettings language={state.session.language} />
+      </FileProvider>
     </ApiProvider>
   );
 }

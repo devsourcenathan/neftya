@@ -9,7 +9,8 @@ import {
   type ViewName,
 } from '@neftya/drawing';
 import { ApiRequestError } from '../api/client.js';
-import { getProject, useApi } from '../api/projects.js';
+import { downloadPlans, getProject, useApi, useFiles } from '../api/projects.js';
+import { DownloadButton } from '../components/DownloadButton.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 
 /**
@@ -29,6 +30,7 @@ export function Plans({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const { format } = usePreferences();
   const api = useApi();
+  const files = useFiles();
   const [view, setView] = useState<ViewName>('front');
 
   const project = useQuery({
@@ -77,12 +79,12 @@ export function Plans({ projectId }: { projectId: string }) {
           </button>
         ))}
 
-        <a
-          className="ml-auto rounded border border-stone-300 px-3 py-1 text-sm hover:border-emerald-700"
-          href={`${import.meta.env['VITE_API_URL'] ?? ''}/v1/projects/${projectId}/plans.pdf`}
-        >
-          {t('plans.download')}
-        </a>
+        <div className="ml-auto">
+          <DownloadButton
+            label={t('plans.download')}
+            download={() => downloadPlans(files, projectId, project.data.name)}
+          />
+        </div>
       </div>
 
       {current && (

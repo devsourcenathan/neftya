@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Manufacturing } from './manufacturing/Manufacturing.js';
 import { Plans } from './plans/Plans.js';
+import { Settings } from './settings/Settings.js';
 import { ProjectDesigner } from './routes/ProjectDesigner.js';
 import { Projects } from './routes/Projects.js';
 
@@ -32,6 +33,9 @@ function Shell() {
           {t('app.name')}
         </Link>
         <span className="text-sm text-stone-500">{t('app.tagline')}</span>
+        <Link to="/settings" className="ml-auto text-sm text-emerald-700 underline">
+          {t('settings.title')}
+        </Link>
       </header>
 
       <main className="min-h-0 flex-1 overflow-auto">
@@ -74,8 +78,15 @@ const plansRoute = createRoute({
   },
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: Settings,
+});
+
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
+    settingsRoute,
     projectsRoute,
     designerRoute,
     manufacturingRoute,

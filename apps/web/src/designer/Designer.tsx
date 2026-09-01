@@ -9,6 +9,12 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { build, cutList, type ParsedFurnitureInput } from '@neftya/engine';
+import {
+  technicalDrawing,
+  technicalViewSvg,
+  VIEWS,
+  type ViewName,
+} from '@neftya/drawing';
 import { UNIT_SYSTEMS } from '@neftya/units';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 import { Controls } from './Controls.js';
@@ -47,15 +53,24 @@ export interface DesignerProps {
 
 export function Designer({ initialModel, onSave, saving = false }: DesignerProps) {
   const { t } = useTranslation();
-  const { unitSystem, setUnitSystem } = usePreferences();
+  const { unitSystem, setUnitSystem, format } = usePreferences();
 
   const [model, dispatch] = useReducer(reduce, initialModel);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [explode, setExplode] = useState(0);
+  const [mode, setMode] = useState<'3d' | '2d'>('3d');
+  const [view, setView] = useState<ViewName>('front');
 
   const deferredModel = useDeferredValue(model);
   const furniture = useMemo(() => build(deferredModel), [deferredModel]);
   const rows = useMemo(() => cutList(furniture), [furniture]);
+
+  // Les vues cotées ne sont calculées que si on les regarde : coter six vues à chaque
+  // glissement de curseur coûterait pour rien tant qu'on est en 3D.
+  const drawing = useMemo(
+    () => (mode === '2d' ? technicalDrawing(furniture, { label: format }) : null),
+    [mode, furniture, format],
+  );
 
   const act = useCallback((action: DesignerAction) => dispatch(action), []);
 
@@ -66,23 +81,74 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
       </aside>
 
       <section className="order-1 flex min-h-[50vh] flex-col gap-2 lg:order-2">
+        <div className="flex items-center gap-2">
+          {/* La 3D montre le meuble, la 2D le mesure. Les deux sont des vues du même
+              modèle, calculées par le même moteur : basculer ne recharge rien. */}
+          {(['3d', '2d'] as const).map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              onClick={() => setMode(candidate)}
+              className={`rounded border px-3 py-1 text-sm ${
+                candidate === mode
+                  ? 'border-emerald-700 bg-emerald-700 text-white'
+                  : 'border-stone-300 hover:border-emerald-700'
+              }`}
+            >
+              {t(`designer.mode.${candidate}`)}
+            </button>
+          ))}
+
+          {mode === '2d' && (
+            <select
+              className="ml-2 rounded border border-stone-300 px-2 py-1 text-sm"
+              value={view}
+              aria-label={t('plans.view')}
+              onChange={(event) => setView(event.target.value as ViewName)}
+            >
+              {VIEWS.map((name) => (
+                <option key={name} value={name}>
+                  {t(`plans.views.${name}`)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div className="flex-1 overflow-hidden rounded-lg border border-stone-200">
-          <Suspense
-            fallback={
-              <p className="p-4 text-sm text-stone-500">{t('state.loading')}</p>
-            }
-          >
-            <Scene
-              furniture={furniture}
-              selectedPartId={selectedPartId}
-              onSelect={setSelectedPartId}
-              explode={explode}
+          {mode === '3d' ? (
+            <Suspense
+              fallback={
+                <p className="p-4 text-sm text-stone-500">{t('state.loading')}</p>
+              }
+            >
+              <Scene
+                furniture={furniture}
+                selectedPartId={selectedPartId}
+                onSelect={setSelectedPartId}
+                explode={explode}
+              />
+            </Suspense>
+          ) : (
+            <div
+              className="h-full overflow-auto bg-white p-2"
+              role="img"
+              aria-label={t(`plans.views.${view}`)}
+              // Le SVG vient de `@neftya/drawing`, qui échappe ce qu'il insère.
+              dangerouslySetInnerHTML={{
+                __html: technicalViewSvg(
+                  drawing?.views.find((candidate) => candidate.view === view) ??
+                    (drawing?.views[0] as NonNullable<typeof drawing>['views'][number]),
+                ),
+              }}
             />
-          </Suspense>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <label className="flex items-center gap-2">
+          <label
+            className={`flex items-center gap-2 ${mode === '3d' ? '' : 'opacity-40'}`}
+          >
             {t('designer.explode')}
             <input
               type="range"
@@ -90,6 +156,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
               max={1}
               step={0.01}
               value={explode}
+              disabled={mode !== '3d'}
               onChange={(event) => setExplode(Number(event.target.value))}
               aria-label={t('designer.explode')}
             />

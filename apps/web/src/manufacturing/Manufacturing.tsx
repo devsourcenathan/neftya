@@ -4,7 +4,17 @@ import { cutPlanSvg } from '@neftya/drawing';
 import type { NestedPanel } from '@neftya/engine';
 import { formatMoney, type Money } from '@neftya/units';
 import { ApiRequestError } from '../api/client.js';
-import { createExport, getManufacturing, useApi } from '../api/projects.js';
+import {
+  createExport,
+  downloadCutList,
+  downloadCutPlan,
+  getManufacturing,
+  useApi,
+  useFiles,
+} from '../api/projects.js';
+import { DownloadButton } from '../components/DownloadButton.js';
+import { Exports } from './Exports.js';
+import { PriceEditor } from './PriceEditor.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 
 /**
@@ -20,6 +30,7 @@ export function Manufacturing({ projectId }: { projectId: string }) {
   const { t, i18n } = useTranslation();
   const { format } = usePreferences();
   const api = useApi();
+  const files = useFiles();
   const queryClient = useQueryClient();
 
   const plan = useQuery({
@@ -80,12 +91,16 @@ export function Manufacturing({ projectId }: { projectId: string }) {
         </ul>
 
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <a
-            className="rounded border border-stone-300 px-3 py-1 hover:border-emerald-700"
-            href={`${import.meta.env['VITE_API_URL'] ?? ''}/v1/projects/${projectId}/cut-list.csv`}
-          >
-            {t('manufacturing.downloadCsv')}
-          </a>
+          {/* Des boutons, pas des liens : un lien de navigateur ne porte pas le jeton, et
+              l'API rendrait un 401 à la place du fichier. */}
+          <DownloadButton
+            label={t('manufacturing.downloadCsv')}
+            download={() => downloadCutList(files, projectId, data.project.name)}
+          />
+          <DownloadButton
+            label={t('manufacturing.downloadCutPlan')}
+            download={() => downloadCutPlan(files, projectId, data.project.name)}
+          />
           <button
             type="button"
             className="rounded bg-emerald-700 px-3 py-1 text-white disabled:opacity-50"
@@ -103,6 +118,11 @@ export function Manufacturing({ projectId }: { projectId: string }) {
       </section>
 
       <section>
+        <h2 className="mb-3 text-lg font-semibold">{t('exports.title')}</h2>
+        <Exports projectId={projectId} />
+      </section>
+
+      <section>
         <h2 className="mb-3 text-lg font-semibold">{t('manufacturing.materials')}</h2>
         <ul className="flex flex-col gap-1 text-sm">
           {data.bill.panels.map((line, index) => (
@@ -117,8 +137,13 @@ export function Manufacturing({ projectId }: { projectId: string }) {
             </li>
           ))}
           <li>
+            {/* Le séparateur décimal vient de la locale, jamais d'un `toFixed` : « 18.37 »
+                est faux en français, et I18N.md §8 l'interdit. */}
             {t('manufacturing.edgeBanding', {
-              metres: (data.bill.edgeBandingMm / 1000).toFixed(2),
+              metres: new Intl.NumberFormat(i18n.language, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(data.bill.edgeBandingMm / 1000),
             })}
           </li>
           {data.bill.accessories.map((line) => (
@@ -157,30 +182,15 @@ export function Manufacturing({ projectId }: { projectId: string }) {
         <section>
           <h2 className="mb-3 text-lg font-semibold">{t('manufacturing.quotation')}</h2>
 
-          <table className="w-full max-w-2xl text-sm">
-            <thead>
-              <tr className="text-left text-stone-500">
-                <th className="py-1">{t('manufacturing.item')}</th>
-                <th className="py-1 text-right">{t('manufacturing.quantity')}</th>
-                <th className="py-1 text-right">{t('manufacturing.unitPrice')}</th>
-                <th className="py-1 text-right">{t('manufacturing.lineTotal')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.quotation.lines.map((line) => (
-                <tr key={line.reference} className="border-t border-stone-100">
-                  <td className="py-1 font-mono text-xs">{line.reference}</td>
-                  <td className="py-1 text-right tabular-nums">{line.quantity}</td>
-                  <td className="py-1 text-right tabular-nums">
-                    {line.unitPrice ? money(line.unitPrice, i18n.language) : '—'}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
-                    {line.total ? money(line.total, i18n.language) : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p className="mb-3 max-w-2xl text-sm text-stone-500">
+            {t('manufacturing.priceHelp')}
+          </p>
+
+          <PriceEditor
+            lines={data.quotation.lines}
+            currency={data.quotation.currency}
+            projectId={projectId}
+          />
 
           <p className="mt-3 text-sm">
             {data.quotation.total

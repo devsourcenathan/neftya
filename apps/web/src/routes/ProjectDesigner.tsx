@@ -5,6 +5,7 @@ import type { ParsedFurnitureInput } from '@neftya/engine';
 import { ApiRequestError } from '../api/client.js';
 import { getProject, updateProject, useApi } from '../api/projects.js';
 import { Designer } from '../designer/Designer.js';
+import { ProjectActions } from '../projects/ProjectActions.js';
 
 /**
  * Un projet ouvert dans le mode conception.
@@ -52,7 +53,7 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
   return (
     <div className="flex h-full flex-col gap-3 p-4">
       <header className="flex items-baseline justify-between gap-4">
-        <h1 className="text-lg font-semibold">{project.data.name}</h1>
+        <ProjectActions projectId={projectId} name={project.data.name} />
         <Link
           to="/projects/$projectId/manufacturing"
           params={{ projectId }}

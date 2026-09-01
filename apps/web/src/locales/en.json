@@ -5,7 +5,8 @@
   },
   "action": {
     "save": "Save",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "cancel": "Cancel"
   },
   "auth": {
     "required": "Sign in to Sekuu to use Neftya.",
@@ -16,13 +17,18 @@
   "state": {
     "loading": "Loading…",
     "error": "Something went wrong.",
-    "saved": "Saved"
+    "saved": "Saved",
+    "preparing": "Preparing…",
+    "downloadFailed": "Download failed.",
+    "saving": "Saving…"
   },
   "projects": {
     "title": "Your projects",
     "empty": "No projects yet. Start from a template below.",
     "name": "Project name",
-    "notFound": "This project cannot be found."
+    "notFound": "This project cannot be found.",
+    "delete": "Delete",
+    "confirmDelete": "Delete this project? This is permanent."
   },
   "presets": {
     "title": "Templates",
@@ -51,6 +57,10 @@
       "widthMm": "Width",
       "heightMm": "Height",
       "depthMm": "Depth"
+    },
+    "mode": {
+      "3d": "3D",
+      "2d": "2D dimensioned"
     }
   },
   "units": {
@@ -110,7 +120,6 @@
     "open": "Manufacturing pack",
     "cutPlan": "Cut plan",
     "panel": "{{material}} {{thickness}} mm — {{length}} × {{width}} — {{utilisation}} % used",
-    "panelLine": "{{count}} sheet of {{material}} {{thickness}} mm, {{length}} × {{width}}",
     "unplaced": "No sheet can hold: {{parts}}. Make the unit smaller or pick another sheet size.",
     "materials": "Materials list",
     "edgeBanding": "Edge banding: {{metres}} m",
@@ -127,7 +136,15 @@
     "freeze": "Freeze an export",
     "freezing": "Exporting…",
     "frozen": "Export frozen",
-    "dimensionsIn": "Dimensions shown in your unit system, for example {{example}}."
+    "dimensionsIn": "Dimensions shown in your unit system, for example {{example}}.",
+    "downloadCutPlan": "Download cut plan (PDF)",
+    "panelPrice": "{{material}} sheet, {{thickness}} mm",
+    "edgeBandingPrice": "Edge banding",
+    "enterPrice": "to enter",
+    "badPrice": "Price not understood.",
+    "priceHelp": "Prices are entered once and remembered for your organisation. Neftya invents no rates: a wrong quote is worse than no quote.",
+    "panelLine_one": "{{count}} sheet of {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "panelLine_other": "{{count}} sheets of {{material}} {{thickness}} mm, {{length}} × {{width}}"
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",
@@ -158,6 +175,40 @@
       "bottom": "Bottom",
       "left": "Left",
       "right": "Right"
-    }
+    },
+    "view": "View"
+  },
+  "unit": {
+    "panel": "sheet",
+    "panel_other": "sheets",
+    "metre": "m",
+    "piece": "ea"
+  },
+  "exports": {
+    "title": "Frozen exports",
+    "none": "No frozen export for this project.",
+    "stored": "stored in Sekuu Storage",
+    "notStored": "not stored — kept here"
+  },
+  "settings": {
+    "title": "Settings",
+    "country": "Country",
+    "currency": "Currency",
+    "unitSystem": "Default unit system",
+    "followPlatform": "Follow the platform",
+    "paperFrom": "Exports will print on {{paper}}.",
+    "currencyHelp": "Used for quotes. XOF and XAF have no decimals.",
+    "unitSystemHelp": "Starting value for the organisation. Anyone can switch their own display."
+  },
+  "country": {
+    "CM": "Cameroon",
+    "CI": "Côte d’Ivoire",
+    "SN": "Senegal",
+    "GA": "Gabon",
+    "CD": "Congo (DRC)",
+    "FR": "France",
+    "BE": "Belgium",
+    "CA": "Canada",
+    "US": "United States"
   }
 }

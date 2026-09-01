@@ -22,16 +22,19 @@ afterAll(async () => {
   await harness.close();
 });
 
-const preflight = (origin: string) =>
+const preflight = (origin: string, method = 'GET') =>
   harness.app.inject({
     method: 'OPTIONS',
     url: '/v1/projects',
     headers: {
       origin,
-      'access-control-request-method': 'GET',
+      'access-control-request-method': method,
       'access-control-request-headers': 'authorization',
     },
   });
+
+/** Les verbes réellement servis par l'API. */
+const VERBS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 describe('origines', () => {
   it('laisse passer une origine de la liste', async () => {
@@ -41,6 +44,25 @@ describe('origines', () => {
       'http://localhost:5173',
     );
     expect(response.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it.each(VERBS)('annonce %s, que l’API sert vraiment', async (method) => {
+    // La bibliothèque n'annonce que GET, HEAD et POST par défaut. Un `PUT` de réglages et
+    // un `DELETE` de projet étaient refusés par le navigateur au préflight, sans jamais
+    // atteindre l'API — et le test d'origine, qui ne demandait que GET, ne le voyait pas.
+    const response = await preflight('http://localhost:5173', method);
+    const allowed = String(response.headers['access-control-allow-methods'] ?? '');
+
+    expect(allowed.split(',').map((verb) => verb.trim())).toContain(method);
+  });
+
+  it('annonce l’en-tête d’autorisation', async () => {
+    // Sans lui, le navigateur refuse d'envoyer le jeton, et toute route authentifiée
+    // devient inaccessible depuis l'interface.
+    const response = await preflight('http://localhost:5173', 'POST');
+    const allowed = String(response.headers['access-control-allow-headers'] ?? '');
+
+    expect(allowed.toLowerCase()).toContain('authorization');
   });
 
   it('ne répond aucun en-tête à une origine inconnue', async () => {

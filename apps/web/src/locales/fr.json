@@ -5,7 +5,8 @@
   },
   "action": {
     "save": "Enregistrer",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "cancel": "Annuler"
   },
   "auth": {
     "required": "Connectez-vous à Sekuu pour accéder à Neftya.",
@@ -16,13 +17,18 @@
   "state": {
     "loading": "Chargement…",
     "error": "Une erreur est survenue.",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "preparing": "Préparation…",
+    "downloadFailed": "Téléchargement impossible.",
+    "saving": "Enregistrement…"
   },
   "projects": {
     "title": "Vos projets",
     "empty": "Aucun projet pour l'instant. Partez d'un modèle ci-dessous.",
     "name": "Nom du projet",
-    "notFound": "Ce projet est introuvable."
+    "notFound": "Ce projet est introuvable.",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer ce projet ? C’est définitif."
   },
   "presets": {
     "title": "Modèles prédéfinis",
@@ -51,6 +57,10 @@
       "widthMm": "Largeur",
       "heightMm": "Hauteur",
       "depthMm": "Profondeur"
+    },
+    "mode": {
+      "3d": "3D",
+      "2d": "2D coté"
     }
   },
   "units": {
@@ -110,7 +120,6 @@
     "open": "Dossier de fabrication",
     "cutPlan": "Plan de découpe",
     "panel": "{{material}} {{thickness}} mm — {{length}} × {{width}} — {{utilisation}} % utilisés",
-    "panelLine": "{{count}} panneau de {{material}} {{thickness}} mm, {{length}} × {{width}}",
     "unplaced": "Aucun panneau ne peut recevoir : {{parts}}. Réduisez le meuble ou changez de format.",
     "materials": "Liste des matériaux",
     "edgeBanding": "Chant : {{metres}} m",
@@ -127,7 +136,15 @@
     "freeze": "Figer un export",
     "freezing": "Export en cours…",
     "frozen": "Export figé",
-    "dimensionsIn": "Cotes affichées dans votre système d'unités, par exemple {{example}}."
+    "dimensionsIn": "Cotes affichées dans votre système d'unités, par exemple {{example}}.",
+    "downloadCutPlan": "Télécharger le plan de découpe (PDF)",
+    "panelPrice": "Panneau {{material}} {{thickness}} mm",
+    "edgeBandingPrice": "Chant",
+    "enterPrice": "à saisir",
+    "badPrice": "Prix non compris.",
+    "priceHelp": "Les prix sont saisis une fois et mémorisés pour votre organisation. Neftya n'invente aucun tarif : un devis chiffré faux est pire qu'un devis vide.",
+    "panelLine_one": "{{count}} panneau de {{material}} {{thickness}} mm, {{length}} × {{width}}",
+    "panelLine_other": "{{count}} panneaux de {{material}} {{thickness}} mm, {{length}} × {{width}}"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",
@@ -158,6 +175,40 @@
       "bottom": "Dessous",
       "left": "Gauche",
       "right": "Droite"
-    }
+    },
+    "view": "Vue"
+  },
+  "unit": {
+    "panel": "panneau",
+    "panel_other": "panneaux",
+    "metre": "m",
+    "piece": "u"
+  },
+  "exports": {
+    "title": "Exports figés",
+    "none": "Aucun export figé pour ce projet.",
+    "stored": "déposé chez Sekuu Storage",
+    "notStored": "non déposé — conservé ici"
+  },
+  "settings": {
+    "title": "Réglages",
+    "country": "Pays",
+    "currency": "Devise",
+    "unitSystem": "Système d’unités par défaut",
+    "followPlatform": "Suivre la plateforme",
+    "paperFrom": "Les exports seront imprimés au format {{paper}}.",
+    "currencyHelp": "Sert aux devis. XOF et XAF n’ont pas de décimale.",
+    "unitSystemHelp": "Valeur de départ pour l’organisation. Chacun peut basculer son propre affichage."
+  },
+  "country": {
+    "CM": "Cameroun",
+    "CI": "Côte d’Ivoire",
+    "SN": "Sénégal",
+    "GA": "Gabon",
+    "CD": "Congo (RDC)",
+    "FR": "France",
+    "BE": "Belgique",
+    "CA": "Canada",
+    "US": "États-Unis"
   }
 }
