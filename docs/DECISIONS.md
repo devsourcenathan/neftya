@@ -1381,3 +1381,39 @@ collègue.
 **Sous `lg`, la barre est horizontale et le repli n'a pas cours** — même règle que pour les
 panneaux, et pour la même raison : un état hérité d'un grand écran ne doit pas mutiler la
 navigation d'un téléphone.
+
+---
+
+## 2026-09-01 — Les noms de modèles sont de la donnée traduite
+
+**Décision.** Un nom de modèle est un objet `{ fr, en, … }` stocké en `jsonb`, résolu à la
+langue du jeton, avec **repli sur le français** — la langue de référence, rendue obligatoire
+par une contrainte de la base.
+
+**Motif.** Une organisation qui crée son propre modèle lui donne un nom qu'aucun fichier de
+locale ne connaîtra jamais. Il ne peut donc pas passer par `t()`, et il doit vivre avec la
+donnée. C'est le §6 d'I18N.md, resté sans implémentation depuis la phase 3.
+
+**Le repli affiche l'autre langue, jamais une clé.** Un menuisier anglophone qui lit
+« Établi d'atelier » comprend ; il ne comprendrait pas `template.42.name`. Le repli se
+déclenche aussi sur une chaîne **blanche** : un champ laissé vide n'est pas une traduction.
+
+---
+
+## 2026-09-01 — Le catalogue du produit vit dans le code, les modèles d'organisation en base
+
+**Décision.** Les quatre modèles livrés avec Neftya sont des constantes TypeScript ; la
+table `templates` ne porte que ce qu'une organisation crée. `GET /v1/templates` rend les
+deux dans **une seule liste**, avec la même forme.
+
+**Pourquoi pas en base.** Semer le catalogue obligerait à une migration de données à chaque
+modèle ajouté au produit, et laisserait une base de production diverger d'une base de
+développement sans que rien ne le signale. Dans le code, il est versionné, testé — un test
+vérifie que chacun produit un meuble constructible — et identique partout.
+
+**Pourquoi la même forme des deux côtés.** Un client qui devrait fusionner deux sources
+finirait par les afficher différemment. Le catalogue porte donc des noms `{ fr, en }` comme
+n'importe quel modèle d'organisation, et une seule fonction les résout.
+
+**Ce qui n'a pas été fait :** renommer un modèle existant. Le supprimer et le recréer suffit
+pour l'instant, et une route de plus sans besoin établi est une route de plus à maintenir.

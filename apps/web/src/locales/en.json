@@ -56,7 +56,9 @@
     "details_one": "{{compartments}} bay · {{doors}} door",
     "details_other": "{{compartments}} bays · {{doors}} doors",
     "contents": "Bays × doors",
-    "create": "Start from this template"
+    "create": "Start from this template",
+    "mine": "Yours",
+    "delete": "Delete template"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -305,5 +307,12 @@
     "expand": "Open {{panel}}",
     "collapse": "Collapse {{panel}}",
     "lastOpen": "The last open panel cannot be collapsed."
+  },
+  "templates": {
+    "saveAs": "Save as template",
+    "nameFr": "Name (French)",
+    "nameFrHint": "Required: it is the reference language, the one used as fallback.",
+    "nameEn": "Name (English)",
+    "nameEnHint": "Optional. Without a translation, the French name is shown everywhere."
   }
 }

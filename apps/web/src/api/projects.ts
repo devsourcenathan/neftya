@@ -88,6 +88,34 @@ export interface ManufacturingResource {
   };
 }
 
+/**
+ * Un modèle, du catalogue ou de l'organisation.
+ *
+ * Les deux arrivent dans une seule liste, avec la même forme : `name` est **déjà résolu**
+ * à la langue du jeton par le serveur, `name_translations` porte les traductions brutes
+ * pour qui veut les modifier.
+ *
+ * @see docs/I18N.md §6
+ */
+export interface TemplateResource {
+  id: string;
+  source: 'catalogue' | 'organization';
+  name: string;
+  name_translations: Record<string, string>;
+  model: ParsedFurnitureInput;
+}
+
+export const listTemplates = (api: ApiClient) =>
+  api<TemplateResource[]>('/v1/templates');
+
+export const createTemplate = (
+  api: ApiClient,
+  body: { name: Record<string, string>; model: unknown },
+) => api<TemplateResource>('/v1/templates', { method: 'POST', body });
+
+export const deleteTemplate = (api: ApiClient, id: string) =>
+  api<void>(`/v1/templates/${id}`, { method: 'DELETE' });
+
 export interface ExportResource {
   id: string;
   kind: 'pdf' | 'csv';

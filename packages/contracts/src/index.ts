@@ -9,4 +9,5 @@
  * @see docs/ENGINEERING.md §4
  */
 export * from './envelope.js';
+export * from './localised.js';
 export type { Millimetres } from '@neftya/engine';

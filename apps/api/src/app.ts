@@ -10,6 +10,8 @@ import { ProjectRepository } from './projects/repository.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { SettingsRepository } from './settings/repository.js';
 import { registerSettingsRoutes } from './settings/routes.js';
+import { TemplateRepository } from './templates/repository.js';
+import { registerTemplateRoutes } from './templates/routes.js';
 import {
   jsonSink,
   logFailure,
@@ -102,6 +104,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     const manufacturing = new ManufacturingRepository(dependencies.db);
 
     registerProjectRoutes(authenticated, projects);
+    registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
     registerSettingsRoutes(authenticated, settings);
     registerManufacturingRoutes(authenticated, {
       projects,

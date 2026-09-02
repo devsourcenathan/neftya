@@ -1,5 +1,6 @@
 import type { ColumnType } from 'kysely';
 import type { ParsedFurnitureInput } from '@neftya/engine';
+import type { LocalisedName } from '@neftya/contracts';
 
 /**
  * Le schéma, tel que Kysely le voit.
@@ -87,9 +88,31 @@ export interface ProjectExportsTable {
   created_at: CreatedAt;
 }
 
+/**
+ * Les modèles créés par une organisation.
+ *
+ * Le catalogue livré avec Neftya n'est **pas** ici : il vit dans le code, versionné et
+ * identique partout. Mélanger les deux obligerait à une migration de données à chaque
+ * modèle ajouté au produit, et laisserait un environnement diverger d'un autre.
+ *
+ * @see docs/I18N.md §6
+ */
+export interface TemplatesTable {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  /** `{ fr: …, en: … }`. Le français est garanti par une contrainte de la base. */
+  name: LocalisedName;
+  model: ParsedFurnitureInput;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+  deleted_at: DeletedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
   material_prices: MaterialPricesTable;
   project_exports: ProjectExportsTable;
+  templates: TemplatesTable;
 }

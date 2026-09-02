@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client.js';
 import { getProject, updateProject, useApi } from '../api/projects.js';
 import { Designer } from '../designer/Designer.js';
 import { ProjectActions } from '../projects/ProjectActions.js';
+import { SaveAsTemplate } from '../projects/SaveAsTemplate.js';
 import { PlanIcon, ToolsIcon } from '../ui/icons.js';
 
 /**
@@ -71,6 +72,10 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
           <PlanIcon />
           {t('plans.open')}
         </Link>
+
+        {/* Enregistrer ce meuble comme modèle : c'est ici qu'on sait ce qu'il vaut, pas
+            dans la liste des projets. */}
+        <SaveAsTemplate model={project.data.model} suggestion={project.data.name} />
         {save.isSuccess && !save.isPending && (
           <span className="text-sm text-success">{t('state.saved')}</span>
         )}

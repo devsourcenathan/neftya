@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { build } from '@neftya/engine';
 import { formatLength, parseLength } from '@neftya/units';
-import { LIMITS, defaultModel, presets, reduce } from './model.js';
+import { LIMITS, defaultModel, reduce } from './model.js';
 
 /**
  * Les modifications du modèle sont des fonctions pures : elles se testent sans navigateur,
@@ -70,21 +70,6 @@ describe('modifications du modèle', () => {
     reduce(before, { type: 'compartments', count: 1 });
 
     expect(JSON.stringify(before)).toBe(snapshot);
-  });
-});
-
-describe('modèles prédéfinis', () => {
-  it('se construisent tous sans cote négative ni pièce absurde', () => {
-    for (const preset of presets()) {
-      const furniture = build(preset.model);
-
-      expect(furniture.parts.length).toBeGreaterThan(0);
-      for (const part of furniture.parts) {
-        expect(part.lengthMm).toBeGreaterThan(0);
-        expect(part.widthMm).toBeGreaterThan(0);
-        expect(Number.isInteger(part.lengthMm)).toBe(true);
-      }
-    }
   });
 });
 

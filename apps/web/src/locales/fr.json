@@ -56,7 +56,9 @@
     "details_one": "{{compartments}} compartiment · {{doors}} vantail",
     "details_other": "{{compartments}} compartiments · {{doors}} vantaux",
     "contents": "Comp. × portes",
-    "create": "Partir de ce modèle"
+    "create": "Partir de ce modèle",
+    "mine": "À vous",
+    "delete": "Supprimer le modèle"
   },
   "designer": {
     "dimensions": "Dimensions",
@@ -305,5 +307,12 @@
     "expand": "Ouvrir {{panel}}",
     "collapse": "Replier {{panel}}",
     "lastOpen": "Le dernier panneau ouvert ne peut pas être replié."
+  },
+  "templates": {
+    "saveAs": "Enregistrer comme modèle",
+    "nameFr": "Nom (français)",
+    "nameFrHint": "Obligatoire : c’est la langue de référence, celle qui sert de repli.",
+    "nameEn": "Nom (anglais)",
+    "nameEnHint": "Facultatif. Sans traduction, le nom français s’affiche partout."
   }
 }

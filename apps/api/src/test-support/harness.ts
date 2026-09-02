@@ -54,6 +54,8 @@ export interface TokenOptions {
   expiresIn?: string;
   /** Omettre `org` reproduit le jeton d'avant `switch-organization`. */
   omitOrganization?: boolean;
+  /** La langue portée par le jeton, celle à laquelle les noms de donnée sont résolus. */
+  language?: string;
 }
 
 export interface HarnessOptions {
@@ -116,7 +118,7 @@ export async function createHarness(
       products: options.products ?? ['neftya'],
       limits: options.limits ?? {},
       sid: 'session-de-test',
-      lang: 'fr',
+      lang: options.language ?? 'fr',
     };
     if (!options.omitOrganization) {
       payload['org'] = options.organizationId ?? ORGANIZATION_A;
@@ -140,7 +142,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates`.execute(
         db,
       );
     },

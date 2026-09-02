@@ -3,10 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client.js';
-import { createProject, listProjects, useApi } from '../api/projects.js';
-import { presets } from '../designer/model.js';
+import {
+  createProject,
+  deleteTemplate,
+  listProjects,
+  listTemplates,
+  useApi,
+} from '../api/projects.js';
 import {
   Badge,
+  Button,
   Card,
   DataPoint,
   EmptyState,
@@ -14,7 +20,7 @@ import {
   Input,
   SkeletonCards,
 } from '../ui/index.js';
-import { PlusIcon } from '../ui/icons.js';
+import { PlusIcon, TrashIcon } from '../ui/icons.js';
 import type { ProjectStatus } from '../api/projects.js';
 
 /** « À revoir » passe en or : c'est le seul état qui demande une action. */
@@ -41,6 +47,20 @@ export function Projects() {
   const projects = useQuery({
     queryKey: ['projects'],
     queryFn: () => listProjects(api),
+  });
+
+  // Les modèles viennent du serveur : le catalogue du produit et ceux de l'organisation,
+  // dans une seule liste, avec leurs noms déjà résolus à la langue du jeton.
+  const templates = useQuery({
+    queryKey: ['templates'],
+    queryFn: () => listTemplates(api),
+  });
+
+  const removeTemplate = useMutation({
+    mutationFn: (id: string) => deleteTemplate(api, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['templates'] });
+    },
   });
 
   const create = useMutation({
@@ -154,47 +174,71 @@ export function Projects() {
           </Field>
         </div>
 
+        {templates.isPending && <SkeletonCards count={4} />}
+
         <ul className="grid gap-gutter sm:grid-cols-2 xl:grid-cols-4">
-          {presets().map((preset) => (
-            <li key={preset.key}>
+          {templates.data?.map((template) => (
+            <li key={template.id}>
               <Card className="h-full transition-colors hover:border-accent">
-                <button
-                  type="button"
-                  className="flex h-full w-full flex-col p-6 text-left disabled:opacity-50"
-                  disabled={create.isPending}
-                  onClick={() =>
-                    create.mutate({
-                      // Le nom du modèle sert de nom par défaut : un projet sans nom est
-                      // refusé par l'API, et l'utilisateur ne doit pas l'apprendre par une
-                      // erreur.
-                      name: name.trim() || t(`presets.${preset.key}`),
-                      model: preset.model,
-                    })
-                  }
-                >
-                  <span className="text-headline-md text-ink">
-                    {t(`presets.${preset.key}`)}
-                  </span>
+                <div className="flex h-full flex-col">
+                  <button
+                    type="button"
+                    className="flex flex-1 flex-col p-6 text-left disabled:opacity-50"
+                    disabled={create.isPending}
+                    onClick={() =>
+                      create.mutate({
+                        // Le nom du modèle sert de nom par défaut : un projet sans nom est
+                        // refusé par l'API, et l'utilisateur ne doit pas l'apprendre par une
+                        // erreur.
+                        name: name.trim() || template.name,
+                        model: template.model,
+                      })
+                    }
+                  >
+                    {template.source === 'organization' && (
+                      <Badge tone="accent">{t('presets.mine')}</Badge>
+                    )}
 
-                  <span className="mt-auto grid grid-cols-2 gap-4 border-t border-hairline pt-4">
-                    <DataPoint
-                      label={t('projects.dimensions')}
-                      value={`${preset.model.dimensions.widthMm} × ${preset.model.dimensions.heightMm}`}
-                    />
-                    <DataPoint
-                      label={t('presets.contents')}
-                      value={`${preset.model.compartments.length} × ${preset.model.compartments.reduce(
-                        (total, compartment) => total + compartment.doors,
-                        0,
-                      )}p`}
-                    />
-                  </span>
+                    <span className="mt-2 text-headline-md text-ink">
+                      {template.name}
+                    </span>
 
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
-                    <PlusIcon />
-                    {t('presets.create')}
-                  </span>
-                </button>
+                    <span className="mt-auto grid grid-cols-2 gap-4 border-t border-hairline pt-4">
+                      <DataPoint
+                        label={t('projects.dimensions')}
+                        value={`${template.model.dimensions.widthMm} × ${template.model.dimensions.heightMm}`}
+                      />
+                      <DataPoint
+                        label={t('presets.contents')}
+                        value={`${template.model.compartments.length} × ${template.model.compartments.reduce(
+                          (total, compartment) => total + compartment.doors,
+                          0,
+                        )}p`}
+                      />
+                    </span>
+
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
+                      <PlusIcon />
+                      {t('presets.create')}
+                    </span>
+                  </button>
+
+                  {/* Le catalogue appartient au produit : seul un modèle de l'organisation
+                      porte une suppression. */}
+                  {template.source === 'organization' && (
+                    <div className="border-t border-hairline px-4 py-2">
+                      <Button
+                        tone="ghost"
+                        className="px-2 py-1"
+                        disabled={removeTemplate.isPending}
+                        onClick={() => removeTemplate.mutate(template.id)}
+                      >
+                        <TrashIcon />
+                        {t('presets.delete')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </Card>
             </li>
           ))}

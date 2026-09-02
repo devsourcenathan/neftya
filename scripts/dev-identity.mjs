@@ -69,17 +69,21 @@ function options(query) {
   return {
     roles,
     products,
+    // La langue est portée par le jeton : c'est elle qui décide de l'interface **et** de
+    // la résolution des noms de modèles. La régler ici permet d'essayer l'anglais sans
+    // toucher à un compte de plateforme.
+    language: query.get('lang') ?? 'fr',
     limits: max === null ? {} : { neftya_projects_max: Number(max) },
   };
 }
 
-async function token({ withOrganization, roles, products, limits }) {
+async function token({ withOrganization, roles, products, limits, language }) {
   const payload = {
     roles,
     products,
     limits,
     sid: 'session-de-demonstration',
-    lang: 'fr',
+    lang: language ?? 'fr',
   };
 
   // Sans `org`, Neftya refuse — c'est le piège numéro un de l'intégration, et ce script
@@ -188,4 +192,8 @@ server.listen(PORT, () => {
   console.log(`  ${ISSUER}/token?roles=member        (ne peut pas supprimer)`);
   console.log(`  ${ISSUER}/token?products=autre      (403, pas abonné à Neftya)`);
   console.log(`  ${ISSUER}/token?projects_max=1      (409 au deuxième projet)`);
+  console.log('');
+  console.log('Pour essayer l’anglais :');
+  console.log(`  ${ISSUER}/token?lang=en`);
+  console.log(`  ${ISSUER}/api/v1/auth/refresh?lang=en   (l'interface entière)`);
 });
