@@ -1,4 +1,5 @@
 import type { Furniture } from './build.js';
+import type { Grain } from './parts.js';
 import type { MaterialKey } from './materials.js';
 import { PANEL_FORMATS_MM } from './materials.js';
 
@@ -12,7 +13,8 @@ import { PANEL_FORMATS_MM } from './materials.js';
  *    sait faire. Un placement libre serait plus dense et infaisable à l'atelier ;
  *  - **trait de scie réservé à chaque coupe**. Il n'entre jamais dans les cotes des pièces :
  *    une pièce mesure ce qu'elle doit mesurer une fois coupée ;
- *  - **rotation autorisée en V1**, le sens du fil étant modélisé mais non contraignant.
+ *  - **sens du fil**, quand le projet le demande : une pièce visible débitée dans un décor
+ *    bois ne se pivote pas, et le placement doit s'en passer.
  *
  * L'algorithme est un placement par bandes (*first-fit decreasing height*) : les bandes
  * horizontales sont exactement les premières coupes traversantes, et les coupes verticales
@@ -79,6 +81,13 @@ export interface NestingOptions {
   formats?: readonly PanelFormat[];
   kerfMm?: number;
   /**
+   * Contraindre le sens du fil.
+   *
+   * Par défaut, la valeur portée par le projet. La passer ici sert au comparatif — le même
+   * meuble placé avec et sans, pour montrer ce que la contrainte coûte en panneaux.
+   */
+  respectGrain?: boolean;
+  /**
    * Délignage : ce qu'on retire sur chaque rive avant de scier.
    *
    * Un panneau livré arrive avec des rives abîmées et rarement d'équerre. Placer les pièces
@@ -94,6 +103,15 @@ interface Item {
   shortMm: number;
   material: MaterialKey;
   thicknessMm: number;
+  /**
+   * Vrai quand la pièce ne peut pas être pivotée.
+   *
+   * Le fil d'un panneau du commerce court dans sa **longueur**, et les cotes de découpe
+   * sont normalisées la plus grande dimension d'abord : une pièce au fil `length` doit
+   * donc poser sa grande dimension le long du panneau, ce qui est exactement l'orientation
+   * non pivotée.
+   */
+  fixed: boolean;
 }
 
 interface Shelf {
@@ -112,6 +130,7 @@ export function nest(
   const kerfMm = options.kerfMm ?? furniture.parameters.kerfMm;
   const formats = options.formats ?? PANEL_FORMATS_MM.metric;
   const trimMm = options.trimMm ?? DEFAULT_TRIM_MM;
+  const respectGrain = options.respectGrain ?? furniture.input.respectGrain;
 
   // Une pièce par instance : la liste de découpe groupe, la scie ne groupe pas.
   const items: Item[] = furniture.parts.flatMap((part) =>
@@ -121,6 +140,7 @@ export function nest(
       shortMm: Math.min(part.lengthMm, part.widthMm),
       material: part.material,
       thicknessMm: part.thicknessMm,
+      fixed: respectGrain && grainFixes(part.grain),
     })),
   );
 
@@ -262,10 +282,15 @@ function place(
   return false;
 }
 
+/** Un fil `none` — une pièce cachée — se pivote librement. */
+function grainFixes(grain: Grain): boolean {
+  return grain !== 'none';
+}
+
 function orientations(
   item: Item,
 ): { sizeXMm: number; sizeYMm: number; rotated: boolean }[] {
-  if (item.longMm === item.shortMm) {
+  if (item.fixed || item.longMm === item.shortMm) {
     return [{ sizeXMm: item.longMm, sizeYMm: item.shortMm, rotated: false }];
   }
 
@@ -275,12 +300,18 @@ function orientations(
   ];
 }
 
-/** La pièce entre-t-elle dans le format, dans un sens ou dans l'autre ? */
+/**
+ * La pièce entre-t-elle dans le format ?
+ *
+ * Dans un sens ou dans l'autre — sauf si le fil lui interdit de pivoter, auquel cas le
+ * seul sens permis est celui du fil. Oublier la contrainte ici jugerait plaçable une pièce
+ * que le placement refuserait ensuite en silence.
+ */
 function fitsIn(item: Item, format: PanelFormat): boolean {
-  return (
-    (item.longMm <= format.lengthMm && item.shortMm <= format.widthMm) ||
-    (item.longMm <= format.widthMm && item.shortMm <= format.lengthMm)
-  );
+  const straight = item.longMm <= format.lengthMm && item.shortMm <= format.widthMm;
+  if (item.fixed) return straight;
+
+  return straight || (item.longMm <= format.widthMm && item.shortMm <= format.lengthMm);
 }
 
 /**
