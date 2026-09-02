@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { build } from './build.js';
 import type { FurnitureInput } from './input.js';
 import { nest } from './nesting.js';
+import { drilling } from './drilling.js';
 import { billOfMaterials } from './bill-of-materials.js';
 import { costLines } from './costing.js';
 import { assemblySteps } from './assembly.js';
@@ -19,7 +20,7 @@ const REFERENCE: FurnitureInput = {
 
 const furniture = build(REFERENCE);
 const nesting = nest(furniture);
-const bill = billOfMaterials(furniture, nesting);
+const bill = billOfMaterials(furniture, nesting, drilling(furniture));
 
 describe('liste des matériaux', () => {
   it('compte les panneaux documentés : un de 18 mm, un de 8 mm', () => {
@@ -57,7 +58,7 @@ describe('liste des matériaux', () => {
     });
     const result = nest(large);
     const thick = result.panels.filter((panel) => panel.thicknessMm === 18);
-    const bom = billOfMaterials(large, result);
+    const bom = billOfMaterials(large, result, drilling(large));
 
     expect(bom.panels.find((line) => line.thicknessMm === 18)?.quantity).toBe(
       thick.length,
@@ -72,10 +73,10 @@ describe('liste des matériaux', () => {
 
     // Deux côtés × 8 vis, une séparation × 8 tourillons, deux étagères × 4 taquets.
     expect(byKey['screw_4x50']).toBe(16);
-    expect(byKey['dowel_8']).toBe(8);
-    expect(byKey['shelf_support']).toBe(8);
-    // Aucun tiroir : la ligne n'existe pas, elle ne vaut pas zéro.
-    expect(byKey['drawer_slide_pair']).toBeUndefined();
+    expect(byKey['dowel_8x30']).toBe(8);
+    expect(byKey['shelf_support_5']).toBe(8);
+    // Aucun tiroir : aucune coulisse. La ligne n'existe pas, elle ne vaut pas zéro.
+    expect(Object.keys(byKey).some((key) => key.startsWith('slide_'))).toBe(false);
   });
 });
 

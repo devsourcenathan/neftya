@@ -156,8 +156,8 @@ describe('devis', () => {
       'panel:mdf:8',
       'edge_banding',
       'accessory:screw_4x50',
-      'accessory:dowel_8',
-      'accessory:shelf_support',
+      'accessory:dowel_8x30',
+      'accessory:shelf_support_5',
       'accessory:glue',
     ];
     for (const reference of references) await setPrice(reference, 100);
