@@ -8,6 +8,7 @@ import {
   createExport,
   downloadCutList,
   downloadCutPlan,
+  downloadDrilling,
   getManufacturing,
   useApi,
   useFiles,
@@ -15,6 +16,7 @@ import {
 import { DownloadButton } from '../components/DownloadButton.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
+import { accessoryLabel } from './accessory-label.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 import { DataPoint, Pipeline, SectionTitle } from '../ui/index.js';
 
@@ -131,6 +133,10 @@ export function Manufacturing({ projectId }: { projectId: string }) {
             label={t('manufacturing.downloadCutPlan')}
             download={() => downloadCutPlan(files, projectId, data.project.name)}
           />
+          <DownloadButton
+            label={t('manufacturing.downloadDrilling')}
+            download={() => downloadDrilling(files, projectId, data.project.name)}
+          />
           <button
             type="button"
             className="rounded bg-primary px-3 py-1 text-white disabled:opacity-50"
@@ -178,10 +184,41 @@ export function Manufacturing({ projectId }: { projectId: string }) {
           </li>
           {data.bill.accessories.map((line) => (
             <li key={line.key}>
-              {t(`accessory.${line.key}`)} × {line.quantity}
+              {accessoryLabel(t, line.key)} × {line.quantity}
             </li>
           ))}
         </ul>
+      </section>
+
+      <section>
+        <SectionTitle>{t('manufacturing.drilling')}</SectionTitle>
+
+        {/* Le DXF porte les positions ; cette table dit seulement **où il y a du travail**,
+            pour qu'on sache avant d'ouvrir le fichier si le meuble se perce ou non. */}
+        {data.drilling.parts.length === 0 ? (
+          <p className="text-sm text-ink-variant">{t('manufacturing.noDrilling')}</p>
+        ) : (
+          <ul className="flex flex-col gap-1 text-sm">
+            {data.drilling.parts.map((part) => (
+              <li key={`${part.partId}#${part.instanceIndex}`}>
+                <span className="technical">
+                  {part.partId} #{part.instanceIndex + 1}
+                </span>{' '}
+                <span className="text-ink-variant">
+                  {countByPurpose(part.holes)
+                    .map(([purpose, count]) => `${count} × ${t(`purpose.${purpose}`)}`)
+                    .join(' · ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {data.drilling.warnings.map((warning, index) => (
+          <p key={index} className="mt-2 text-sm text-danger">
+            {t(`warning.${warning.code}`, warning.details)}
+          </p>
+        ))}
       </section>
 
       <section>
@@ -267,4 +304,14 @@ function PanelDrawing({ panel }: { panel: NestedPanel }) {
 
 function money(amount: Money, locale: string): string {
   return formatMoney(amount, locale);
+}
+
+/** Les trous d'une pièce, groupés par ce qu'ils reçoivent. */
+function countByPurpose(holes: readonly { purpose: string }[]): [string, number][] {
+  const counts = new Map<string, number>();
+
+  for (const hole of holes)
+    counts.set(hole.purpose, (counts.get(hole.purpose) ?? 0) + 1);
+
+  return [...counts.entries()];
 }

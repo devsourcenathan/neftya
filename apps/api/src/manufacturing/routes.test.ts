@@ -103,6 +103,7 @@ describe('plan de fabrication', () => {
       `/v1/projects/${id}/cut-list.csv`,
       `/v1/projects/${id}/cut-plan.pdf`,
       `/v1/projects/${id}/plans.pdf`,
+      `/v1/projects/${id}/drilling.dxf`,
       `/v1/projects/${id}/exports`,
     ]) {
       const response = await harness.app.inject({
@@ -113,6 +114,77 @@ describe('plan de fabrication', () => {
 
       expect(response.statusCode).toBe(404);
     }
+  });
+});
+
+describe('plan de perçage', () => {
+  it('accompagne le plan de fabrication', async () => {
+    const id = await createProject();
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}/manufacturing`,
+      headers: await harness.authorization(),
+    });
+
+    const drilling = response.json().data.drilling;
+
+    // Deux étagères, un séparateur : des taquets et des tourillons, et la quincaillerie
+    // qui va avec — déduite des trous, jamais comptée à part.
+    expect(drilling.parts.length).toBeGreaterThan(0);
+    expect(drilling.hardware.map((line: { key: string }) => line.key).sort()).toEqual([
+      'dowel_8x30',
+      'shelf_support_5',
+    ]);
+  });
+
+  it('se télécharge en DXF, avec un nom de fichier sans accent', async () => {
+    const id = await createProject();
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}/drilling.dxf`,
+      headers: await harness.authorization(),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('dxf');
+    // Le nom traverse des systèmes qui n'aiment ni l'accent ni l'espace.
+    expect(response.headers['content-disposition']).toBe(
+      'attachment; filename="bibliotheque-percage.dxf"',
+    );
+    expect(response.body.startsWith('0\r\nSECTION')).toBe(true);
+    expect(response.body.trimEnd().endsWith('EOF')).toBe(true);
+  });
+
+  it('rend deux fois le même fichier', async () => {
+    const id = await createProject();
+    const fetch = async () =>
+      (
+        await harness.app.inject({
+          method: 'GET',
+          url: `/v1/projects/${id}/drilling.dxf`,
+          headers: await harness.authorization(),
+        })
+      ).body;
+
+    // Un export figé qui changerait d'octets d'un appel à l'autre ne serait plus un
+    // instantané.
+    expect(await fetch()).toBe(await fetch());
+  });
+
+  it('refuse le téléchargement à une organisation non abonnée', async () => {
+    const id = await createProject();
+
+    // Une route de fichier ajoutée sans passer par les mêmes contrôles que les autres est
+    // la fuite classique : elle sert le plan complet du meuble à qui n'a pas le produit.
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}/drilling.dxf`,
+      headers: await harness.authorization({ products: ['autre'] }),
+    });
+
+    expect(response.statusCode).toBe(403);
   });
 });
 

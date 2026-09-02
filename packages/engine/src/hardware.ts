@@ -26,10 +26,7 @@ export type SlideLengthMm = (typeof SLIDE_LENGTHS_MM)[number];
 
 /** Clé stable, jamais traduite, et sur laquelle s'accroche le prix saisi. */
 export type HardwareKey =
-  | 'hinge_35_110'
-  | 'dowel_8x30'
-  | 'shelf_support_5'
-  | `slide_ball_${SlideLengthMm}`;
+  'hinge_35_110' | 'dowel_8x30' | 'shelf_support_5' | `slide_ball_${SlideLengthMm}`;
 
 /**
  * La charnière à boîtier de 35, ouverture 110° — celle qu'on trouve partout.
@@ -95,7 +92,10 @@ export function hingesFor(leafHeightMm: number): number {
  *
  * Rendu en position **relative au bas du vantail**, en millimètres entiers.
  */
-export function hingePositionsMm(leafHeightMm: number, spec: HingeSpec = HINGE): number[] {
+export function hingePositionsMm(
+  leafHeightMm: number,
+  spec: HingeSpec = HINGE,
+): number[] {
   const count = hingesFor(leafHeightMm);
   const first = spec.endOffsetMm;
   const last = leafHeightMm - spec.endOffsetMm;
@@ -145,7 +145,8 @@ export const SLIDES: readonly SlideSpec[] = SLIDE_LENGTHS_MM.map(slide);
  */
 export function slideFor(usableDepthMm: number): SlideSpec | null {
   return (
-    [...SLIDES].reverse().find((candidate) => candidate.lengthMm <= usableDepthMm) ?? null
+    [...SLIDES].reverse().find((candidate) => candidate.lengthMm <= usableDepthMm) ??
+    null
   );
 }
 

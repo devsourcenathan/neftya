@@ -43,7 +43,9 @@ describe('charnières', () => {
     // calculée depuis les bornes exactes.
     for (const heightMm of [1201, 1801, 2401, 2403]) {
       const positions = hingePositionsMm(heightMm);
-      const gaps = positions.slice(1).map((value, index) => value - (positions[index] as number));
+      const gaps = positions
+        .slice(1)
+        .map((value, index) => value - (positions[index] as number));
 
       expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1);
       expect(positions.at(-1)).toBe(heightMm - HINGE.endOffsetMm);
@@ -91,7 +93,11 @@ describe('tourillons et taquets', () => {
   });
 
   it('ne traverse pas un panneau de 18', () => {
-    for (const depthMm of [DOWEL.holeDepthMm, SHELF_SUPPORT.holeDepthMm, HINGE.cupDepthMm]) {
+    for (const depthMm of [
+      DOWEL.holeDepthMm,
+      SHELF_SUPPORT.holeDepthMm,
+      HINGE.cupDepthMm,
+    ]) {
       expect(depthMm).toBeLessThan(18);
     }
   });

@@ -122,9 +122,7 @@ function locate(furniture: Furniture): Located[] {
         atMm[lengthAxis] = origin[lengthAxis] + along;
         atMm[widthAxis] = origin[widthAxis] + hole.yMm;
         atMm[through] =
-          hole.side === 'front'
-            ? origin[through]
-            : origin[through] + part.thicknessMm;
+          hole.side === 'front' ? origin[through] : origin[through] + part.thicknessMm;
       } else {
         // Un chant : `xMm` court le long du chant, `yMm` s'enfonce depuis la face `front`.
         const alongAxis = hole.side.startsWith('edge_x') ? widthAxis : lengthAxis;
@@ -138,7 +136,14 @@ function locate(furniture: Furniture): Located[] {
         atMm[through] = origin[through] + hole.yMm;
       }
 
-      return { partId: part.id, instanceIndex: drilled.instanceIndex, hole, part, instance, atMm };
+      return {
+        partId: part.id,
+        instanceIndex: drilled.instanceIndex,
+        hole,
+        part,
+        instance,
+        atMm,
+      };
     });
   });
 }
@@ -189,7 +194,10 @@ describe('le repère de chaque trou', () => {
     const heights = new Map<'front' | 'back', number[]>();
     for (const entry of supports) {
       const key = entry.hole.side as 'front' | 'back';
-      heights.set(key, [...(heights.get(key) ?? []), entry.atMm.y].sort((a, b) => a - b));
+      heights.set(
+        key,
+        [...(heights.get(key) ?? []), entry.atMm.y].sort((a, b) => a - b),
+      );
     }
 
     expect(heights.get('front')).toEqual(heights.get('back'));
@@ -242,7 +250,10 @@ describe('charnières', () => {
     for (const entry of purposed(locate(build(WARDROBE)), 'hinge_cup')) {
       // Un boîtier fraisé sur la face visible se voit, porte fermée, toute la vie du
       // meuble.
-      const [zMin, zMax] = [entry.instance.zMm, entry.instance.zMm + entry.instance.sizeZMm];
+      const [zMin, zMax] = [
+        entry.instance.zMm,
+        entry.instance.zMm + entry.instance.sizeZMm,
+      ];
 
       expect(entry.atMm.z).toBe(Math.max(zMin, zMax));
     }
@@ -303,8 +314,10 @@ describe('charnières', () => {
     for (const entry of plates) {
       expect(['side', 'divider']).toContain(entry.part.role);
       // À 37 puis 69 mm du chant avant : le bras de la charnière ne va pas plus loin.
-      expect([HINGE.plateFrontOffsetMm, HINGE.plateFrontOffsetMm + HINGE.plateHolePitchMm])
-        .toContain(entry.atMm.z);
+      expect([
+        HINGE.plateFrontOffsetMm,
+        HINGE.plateFrontOffsetMm + HINGE.plateHolePitchMm,
+      ]).toContain(entry.atMm.z);
     }
   });
 
@@ -335,7 +348,10 @@ describe('coulisses', () => {
 
   it('ne retient jamais une coulisse plus longue que le caisson', () => {
     for (const depthMm of [300, 400, 450, 500, 600, 700]) {
-      const furniture = build({ ...CHEST, dimensions: { widthMm: 900, heightMm: 800, depthMm } });
+      const furniture = build({
+        ...CHEST,
+        dimensions: { widthMm: 900, heightMm: 800, depthMm },
+      });
       const boxDepth = (
         furniture.parts.find((part) => part.role === 'drawer_side')
           ?.instances[0] as Placement
@@ -386,8 +402,7 @@ describe('tourillons', () => {
 
     // Chaque tourillon est **un** article et **deux** trous, aux mêmes coordonnées de
     // meuble. Deux trous qui ne se font pas face, c'est un séparateur qui ne rentre pas.
-    const key = (entry: Located) =>
-      `${entry.atMm.x}|${entry.atMm.y}|${entry.atMm.z}`;
+    const key = (entry: Located) => `${entry.atMm.x}|${entry.atMm.y}|${entry.atMm.z}`;
 
     expect(new Set(onPanels.map(key))).toEqual(new Set(onDivider.map(key)));
   });
@@ -427,8 +442,9 @@ describe('quincaillerie déduite des trous', () => {
     const furniture = build(BOOKCASE);
     const holes = purposed(locate(furniture), 'dowel').length;
 
-    expect(drilling(furniture).hardware.find((line) => line.key === DOWEL.key)?.quantity)
-      .toBe(holes / 2);
+    expect(
+      drilling(furniture).hardware.find((line) => line.key === DOWEL.key)?.quantity,
+    ).toBe(holes / 2);
   });
 
   it('compte une paire de coulisses par tiroir', () => {

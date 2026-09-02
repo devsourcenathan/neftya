@@ -132,6 +132,26 @@ export function Controls({ model, dispatch }: ControlsProps) {
           />
           {t('designer.hasBack')}
         </label>
+
+        {/* Le moteur ne sait pas ce qu'il y a sur le panneau : sur un mélaminé uni, la
+            contrainte de fil ne coûterait que de la chute. C'est donc une case, pas une
+            règle. */}
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={model.respectGrain}
+            onChange={(event) =>
+              dispatch({ type: 'grain', respectGrain: event.target.checked })
+            }
+          />
+          <span>
+            {t('designer.respectGrain')}
+            <span className="block text-xs text-ink-variant">
+              {t('designer.respectGrainHint')}
+            </span>
+          </span>
+        </label>
       </section>
     </div>
   );

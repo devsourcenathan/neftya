@@ -1,4 +1,10 @@
-import type { DrilledPart, DrillingResult, Furniture, Hole, Part } from '@neftya/engine';
+import type {
+  DrilledPart,
+  DrillingResult,
+  Furniture,
+  Hole,
+  Part,
+} from '@neftya/engine';
 import { ascii, rectangle, renderDxf, type DxfEntity } from './dxf.js';
 
 /**
@@ -33,7 +39,10 @@ export interface DrillLabels {
   /** Le repère d'un bloc. Reçoit la face pour la nommer dans la langue du lecteur. */
   block: (partId: string, instanceIndex: number, face: 'front' | 'back') => string;
   /** Une ligne de légende par type de trou présent dans le bloc. */
-  legend: (hole: Pick<Hole, 'purpose' | 'diameterMm' | 'depthMm'>, count: number) => string;
+  legend: (
+    hole: Pick<Hole, 'purpose' | 'diameterMm' | 'depthMm'>,
+    count: number,
+  ) => string;
 }
 
 export interface DrillPlanOptions {
@@ -142,10 +151,7 @@ interface Block {
   legend: { hole: Hole; count: number }[];
 }
 
-function blocksOf(
-  drilling: DrillingResult,
-  byId: ReadonlyMap<string, Part>,
-): Block[] {
+function blocksOf(drilling: DrillingResult, byId: ReadonlyMap<string, Part>): Block[] {
   const blocks: Block[] = [];
 
   for (const drilled of drilling.parts) {
@@ -155,8 +161,7 @@ function blocksOf(
     for (const face of ['front', 'back'] as const) {
       const holes = drilled.holes.filter(
         (hole) =>
-          hole.side === face ||
-          (face === 'front' && hole.side.startsWith('edge_')),
+          hole.side === face || (face === 'front' && hole.side.startsWith('edge_')),
       );
       if (holes.length === 0) continue;
 

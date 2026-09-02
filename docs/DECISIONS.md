@@ -1417,3 +1417,77 @@ n'importe quel modèle d'organisation, et une seule fonction les résout.
 
 **Ce qui n'a pas été fait :** renommer un modèle existant. Le supprimer et le recréer suffit
 pour l'instant, et une route de plus sans besoin établi est une route de plus à maintenir.
+
+
+---
+
+## 2026-09-02 — Le catalogue de quincaillerie précède les perçages
+
+**Décision.** Les positions de perçage sont calculées à partir d'un catalogue nommé —
+charnière à boîtier 35, coulisses à billes aux six longueurs du commerce, tourillon 8 × 30,
+taquet Ø 5 — et non de cotes génériques.
+
+**Motif.** Un perçage n'existe pas dans l'absolu. Un boîtier de charnière se fraise à 22 mm
+du chant *parce que* c'est une charnière de 35 ; un profil de caisson se perce à 37 puis tous
+les 96 *parce que* c'est une coulisse à billes. Sans article nommé, les cotes auraient été
+des moyennes, justes pour personne.
+
+**Conséquence sur les prix.** Les références de coût changent : `accessory:hinge` devient
+`accessory:hinge_35_110`, `accessory:drawer_slide_pair` devient `accessory:slide_ball_350`.
+Les prix déjà saisis sur les anciennes références sont **orphelins**. Le devis les signale
+comme manquants plutôt que de chiffrer faux — c'est le comportement qu'il a déjà pour tout
+prix absent, et une organisation qui avait saisi ses tarifs devra les ressaisir. C'est
+défendable : « une paire de coulisses » n'était pas un article qu'on achète, une paire de
+350 en est un.
+
+---
+
+## 2026-09-02 — Un jeu de trous par instance, jamais par pièce
+
+**Décision.** `drilling()` rend une entrée par **instance** de pièce, désignée par son rang
+dans `Part.instances`.
+
+**Motif.** Les deux vantaux d'une paire sont la même `Part` en quantité 2 : mêmes cotes, donc
+groupés. Ils ne se percent pourtant pas pareil — l'un charnière à gauche, l'autre à droite.
+Un perçage par pièce les aurait percés tous les deux du même côté, et la porte de droite
+aurait ouvert dans le vide.
+
+**Corollaire.** Les coordonnées sont dans le repère de **la face qu'on perce**, pas dans un
+repère unique avec une mention de face. Un trou à 50 mm du bord vu de face est à 50 mm de
+l'autre bord vu de dos ; laisser l'atelier faire ce miroir de tête est l'erreur qu'on fait
+une fois sur deux.
+
+---
+
+## 2026-09-02 — Le DXF est un plan de perçage, pas un plan de découpe
+
+**Décision.** `drilling.dxf` dessine chaque pièce seule, à plat, dans son propre repère —
+un bloc par face percée. Le placement sur panneau reste dans le PDF.
+
+**Motif.** Poser les perçages sur le plan de découpe obligerait à savoir quelle face du
+panneau est en l'air, ce que le placement ne dit pas et ne peut pas dire. Un fraisage de
+charnière fait à l'envers traverse la porte.
+
+**Format R12 ASCII**, parce que c'est la version que tout lit. Écrit à la main comme le PDF :
+deux exports du même projet doivent donner le même fichier octet pour octet, sinon
+l'instantané figé n'a plus de sens.
+
+---
+
+## 2026-09-02 — Le sens du fil est une case du projet, pas une règle du moteur
+
+**Décision.** `respectGrain` est porté par le modèle et **faux par défaut**. Le fil lui-même
+est porté par le rôle : visible → `length`, caché → `none`.
+
+**Motif.** Le moteur ne sait pas ce qu'il y a sur le panneau. Sur un mélaminé uni, contraindre
+le fil ne coûterait que de la chute ; sur un décor bois, ne pas le contraindre couche un
+vantail en travers du panneau, et cela se voit à trois mètres.
+
+**Ce que la contrainte ne couvre pas.** Le fil **continu** entre façades voisines. C'est une
+contrainte de séquence — débiter les façades d'un même meuble dans la continuité d'un même
+panneau — et elle demanderait au placement de raisonner sur des groupes de pièces. Elle reste
+ouverte.
+
+**Une note du §2 de MANUFACTURING.md était fausse** : elle annonçait les deux côtés du meuble
+de référence posés pivotés. Aucun ne l'est. Le placement par bandes pose systématiquement la
+grande dimension le long du panneau, ce qui est déjà le sens du fil.

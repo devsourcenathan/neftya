@@ -247,10 +247,9 @@ l'épaisseur d'un côté.
 > 8 mm : le jeu commence 1 mm avant le séparateur. Centrer le jeu rend la faute impossible
 > par construction plutôt que détectable après coup.
 
-> **Limite assumée de la V1.** Le moteur donne la profondeur utile du tiroir mais **ne
-> choisit pas la coulisse** : les longueurs standard (250, 300, 350, 400, 450, 500) et
-> leurs perçages relèvent du catalogue de quincaillerie, reporté en V2. En V1 l'artisan
-> choisit sa coulisse et la positionne lui-même.
+> **Depuis le 2 septembre 2026**, le moteur choisit la coulisse : la plus longue du
+> catalogue qui tienne dans la profondeur du caisson de tiroir, parmi 250, 300, 350, 400,
+> 450 et 500. Aucune n'y tenant, il ne perce rien et le dit. Voir §12.
 
 ### 5.2 Portes
 
@@ -397,12 +396,35 @@ Ce choix devra être revu si des chants épais (2 mm ABS) sont supportés.
 
 ## 8. Sens du fil
 
-Chaque pièce porte un attribut `grain` (`length`, `width`, `none`). **En V1 l'optimiseur ne
-s'en sert pas** : il peut pivoter librement les pièces pour réduire la chute.
+Chaque pièce porte un attribut `grain` (`length`, `width`, `none`).
 
-L'information est modélisée dès maintenant pour qu'activer la contrainte en V2 n'impose
-aucune migration de données. Sur un décor bois, un plan V1 devra donc être relu avant
-découpe.
+**Le fil n'existe que sur ce qui se voit.** Dessus, dessous, côtés, séparateurs, étagères,
+vantaux et façades de tiroir portent `length` ; le fond de caisson, le fond de tiroir et les
+flancs d'un caisson de tiroir portent `none`. Ils sont cachés une fois le meuble monté :
+leur imposer un sens ne changerait rien à l'oeil et coûterait de la chute à chaque panneau.
+
+`length` est le bon sens pour toutes les pièces visibles parce que les cotes de découpe sont
+normalisées, la plus grande dimension d'abord : sur un côté la longueur est la hauteur, sur
+un dessus la largeur du meuble, sur un vantail la hauteur. Dans les trois cas, c'est le sens
+où doit courir le fil.
+
+### La contrainte est portée par le projet
+
+`respectGrain` est **faux par défaut**. Le moteur ne peut pas savoir si le panneau est un
+décor bois ou un mélaminé uni ; sur un uni, la contrainte ne coûterait que de la chute.
+
+Quand elle est active, le placement ne pivote plus aucune pièce visible. Le tri préalable et
+le placement jugent la rotation de la même façon : l'un déclarant plaçable ce que l'autre
+refuse, la pièce disparaîtrait du plan sans un mot.
+
+> **Ce qu'elle change, mesuré.** Sur un dressing de 1400 × 2000, le placement libre couche
+> un vantail en travers du panneau. Le fil d'une porte de 2 m qui court à l'horizontale se
+> voit à trois mètres et aucune finition ne le rattrape. La contrainte le redresse — sans un
+> panneau de plus, sur ce meuble-là.
+
+> **Ce qui reste ouvert.** Le fil **continu** entre façades voisines : sur un décor bois,
+> les façades d'un même meuble se débitent souvent dans la continuité d'un même panneau.
+> C'est une contrainte de séquence, pas d'orientation, et elle n'est pas traitée.
 
 ---
 
@@ -502,22 +524,99 @@ Les sept points listés ici à la rédaction ont été tranchés le 31/07/2026 e
 intégrés au document (voir [DECISIONS.md](DECISIONS.md)) : tiroirs, portes, pieds,
 perçages, formats de panneaux, tolérances, export machine.
 
-**Perçages.** Le moteur produit les cotes de découpe, pas les positions de perçage.
-Neftya reste en V1 un outil de préparation : l'artisan sait où percer. Les perçages
-(tourillons, excentriques, crémaillères, coulisses) arrivent en V2 avec le catalogue de
-quincaillerie dont ils dépendent.
+**Perçages.** Livrés le 2 septembre 2026, avec le catalogue de quincaillerie dont ils
+dépendaient. Voir §12.
 
 ### Points encore ouverts
 
-1. **Longueurs de coulisses.** Le moteur donne la profondeur utile ; le choix de la
-   coulisse et son perçage attendent le catalogue (V2). Conséquence directe du point
-   précédent — voir la limite assumée du §5.1.
-2. **Épaisseur des pièces de tiroir.** Les côtés d'un tiroir sont souvent plus fins
+1. **Épaisseur des pièces de tiroir.** Les côtés d'un tiroir sont souvent plus fins
    (12 ou 15 mm) que la structure. Faut-il un `drawer_panel_thickness_mm` distinct ?
-3. **Hauteur des tiroirs superposés.** Quand plusieurs tiroirs occupent un compartiment,
+2. **Hauteur des tiroirs superposés.** Quand plusieurs tiroirs occupent un compartiment,
    se répartissent-ils la hauteur également, ou selon un ratio défini par le modèle ?
-4. **Rainure du fond de tiroir.** Même convention que le caisson principal, ou paramètres
+3. **Rainure du fond de tiroir.** Même convention que le caisson principal, ou paramètres
    propres ?
-5. **Sens du fil sur les façades.** Sur un décor bois, les façades d'un même meuble
-   doivent souvent être débitées dans la continuité. Hors périmètre V1 (§8), mais c'est le
-   cas qui rendra la contrainte de fil nécessaire en V2.
+4. **Fil continu entre façades.** Sur un décor bois, les façades d'un même meuble doivent
+   souvent être débitées dans la continuité d'un même panneau. La contrainte d'orientation
+   du §8 ne la couvre pas : c'est une contrainte de **séquence**, et elle demanderait au
+   placement de raisonner sur des groupes de pièces plutôt que sur des pièces.
+5. **Excentriques et crémaillères.** Le catalogue du §12 porte les charnières, les
+   coulisses, les tourillons et les taquets. Les excentriques et les crémaillères viendront
+   avec un besoin qui les demande.
+
+---
+
+## 12. Perçages et quincaillerie
+
+Un perçage n'existe pas dans l'absolu : il existe **pour une charnière donnée, une coulisse
+donnée, un tourillon donné**. Tant que la quincaillerie n'était pas nommée, la V1 avait
+raison de ne rien percer. Le catalogue vient donc d'abord.
+
+### Le catalogue
+
+| Clé | Article | Ce qui décide d'un perçage |
+|---|---|---|
+| `hinge_35_110` | Charnière à boîtier 35, 110° | Boîtier Ø 35 × 13, à 22 mm du chant ; embase Ø 5 × 11 à 37 puis 69 mm du chant avant |
+| `slide_ball_250` … `_500` | Coulisse à billes | Trous Ø 5 × 11 ; caisson à 37 mm puis tous les 96 ; tiroir à 32 mm de chaque bout |
+| `dowel_8x30` | Tourillon 8 × 30 | Deux fois 16 mm de profondeur, quatre par about |
+| `shelf_support_5` | Taquet d'étagère Ø 5 | Ø 5 × 10, ligne système 32 à 37 mm des deux chants |
+
+Les longueurs de coulisses sont des longueurs **achetées**, pas calculées : on ne commande
+pas une coulisse de 372 mm. Le moteur retient la plus longue qui tienne dans la profondeur
+utile ; aucune n'y tenant, il ne perce rien et signale `NO_SLIDE_FITS`.
+
+Le nombre de charnières dépend de la hauteur du vantail (§7.2 bis). Elles se répartissent
+entre deux charnières d'extrémité posées à 100 mm de chaque bout, et chaque position est
+calculée depuis ces bornes : un pas arrondi puis accumulé décalerait la dernière de
+plusieurs millimètres, et c'est celle qui ne tomberait plus en face de son embase.
+
+### 12.1 Le repère d'une pièce
+
+Une `Part` porte des cotes normalisées, ses instances portent des positions dans le meuble,
+et **les deux ne se déduisent pas l'une de l'autre sans regarder**. Un côté de 1764 × 400 a
+sa longueur dans la hauteur du meuble ; un côté de caisson bas et profond, 400 × 600, l'a
+dans la profondeur. Supposer l'un ou l'autre suffit à percer une porte de dressing à
+l'horizontale.
+
+La correspondance se fait donc **par la géométrie de l'instance** : l'axe traversant est
+celui dont l'encombrement vaut l'épaisseur et dont les deux autres redonnent la longueur et
+la largeur.
+
+Pour la même raison, le module de perçage ne relit aucune variable interne de la
+construction : il retrouve les voisins d'une pièce par la géométrie. Un perçage calculé
+depuis les mêmes intermédiaires que la construction ne dirait que ce que la construction
+croit déjà.
+
+### 12.2 Deux règles qui portent tout le reste
+
+**Un jeu de trous par instance, jamais par pièce.** Les deux vantaux d'une paire sont la
+même `Part` en quantité 2 et ne se percent pas pareil : l'un charnière à gauche, l'autre à
+droite. Les grouper les percerait tous les deux du même côté.
+
+**Les coordonnées sont dans le repère de la face qu'on perce.** Un trou à 50 mm du bord vu
+de face est à 50 mm de l'autre bord vu de dos. Donner une seule coordonnée pour les deux
+faces obligerait l'atelier à faire ce miroir de tête, et c'est l'erreur qu'on fait une fois
+sur deux. `front` est la face qui regarde le **minimum** de l'axe traversant — une
+définition géométrique, qui vaut instance par instance.
+
+### 12.3 Le côté charnière
+
+Le vantail droit d'une paire est le seul qui n'a **rien** à sa gauche : le jeu central. Un
+vantail unique a un montant des deux côtés, et la convention est alors la gauche.
+
+Départager les deux chants par la distance ne mesurerait rien : la façade recouvre la moitié
+de son séparateur, et le millimètre d'écart qui en résulte charnièrerait les deux vantaux
+d'un buffet sur son séparateur central, ouvrant chaque porte vers le mur.
+
+### 12.4 La quincaillerie se déduit des trous
+
+La nomenclature ne compte plus la quincaillerie de son côté : elle lit celle du perçage. Un
+ratio tenu à part de la géométrie finit par diverger d'elle — on ajoute une charnière au
+calcul sans la percer, ou l'inverse — et c'est l'atelier qui découvre qu'il en manque une.
+
+Un tourillon fait **deux** trous, une paire de coulisses en fait **quatre** sur les profils
+de tiroir : le décompte divise en conséquence.
+
+### 12.5 Ce qui n'est pas percé
+
+Les vis de caisson et la colle. Une vis se place à vue, et lui donner une position la
+figerait sans rien apporter. Elles restent comptées par ratio dans la nomenclature.

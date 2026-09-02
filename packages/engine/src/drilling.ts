@@ -187,7 +187,11 @@ function shelfSupports(
       add(carrier, {
         ...toPartFrame(
           carrier.frame,
-          { x: shelfCentreX, y: shelf.instance.yMm - SHELF_SUPPORT.centreBelowShelfMm, z: zMm },
+          {
+            x: shelfCentreX,
+            y: shelf.instance.yMm - SHELF_SUPPORT.centreBelowShelfMm,
+            z: zMm,
+          },
           side,
         ),
         diameterMm: SHELF_SUPPORT.diameterMm,
@@ -256,7 +260,8 @@ function hinges(
     });
 
     for (let index = 0; index < 2; index += 1) {
-      const zMm = stileFrontZ + HINGE.plateFrontOffsetMm + index * HINGE.plateHolePitchMm;
+      const zMm =
+        stileFrontZ + HINGE.plateFrontOffsetMm + index * HINGE.plateHolePitchMm;
 
       add(stile, {
         ...toPartFrame(stile.frame, { x: 0, y: yMm, z: zMm }, stileSide),
@@ -302,7 +307,9 @@ function slides(
   const az0 = span(drawerSide.instance, 'z')[0];
   const sideCentreX = (ax0 + ax1) / 2;
 
-  const covering = verticals.filter((piece) => coversHeight(piece, drawerSide.instance));
+  const covering = verticals.filter((piece) =>
+    coversHeight(piece, drawerSide.instance),
+  );
   const stile = nearestTo(covering, sideCentreX);
   if (!stile) return;
 
@@ -465,7 +472,8 @@ function piecesOf(furniture: Furniture): Piece[] {
 }
 
 function span(instance: Placement, axis: Axis): [number, number] {
-  const start = axis === 'x' ? instance.xMm : axis === 'y' ? instance.yMm : instance.zMm;
+  const start =
+    axis === 'x' ? instance.xMm : axis === 'y' ? instance.yMm : instance.zMm;
   const size =
     axis === 'x'
       ? instance.sizeXMm

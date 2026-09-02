@@ -55,7 +55,15 @@ describe('le fil est porté par la pièce', () => {
     // Sur un côté, la longueur est la hauteur ; sur un dessus, la largeur du meuble ; sur
     // un vantail, la hauteur. Dans les trois cas, c'est le sens où doit courir le fil.
     for (const part of build(WARDROBE).parts) {
-      const visible = ['top', 'bottom', 'side', 'divider', 'shelf', 'door', 'drawer_face'];
+      const visible = [
+        'top',
+        'bottom',
+        'side',
+        'divider',
+        'shelf',
+        'door',
+        'drawer_face',
+      ];
 
       expect(part.grain).toBe(visible.includes(part.role) ? 'length' : 'none');
     }
@@ -68,7 +76,13 @@ describe('le fil est porté par la pièce', () => {
     const hidden = build(WARDROBE).parts.filter((part) => part.grain === 'none');
 
     expect(hidden.map((part) => part.role).sort()).toEqual(
-      ['back', 'drawer_back_panel', 'drawer_bottom', 'drawer_front_panel', 'drawer_side'].sort(),
+      [
+        'back',
+        'drawer_back_panel',
+        'drawer_bottom',
+        'drawer_front_panel',
+        'drawer_side',
+      ].sort(),
     );
   });
 });
@@ -114,9 +128,7 @@ describe('placement sous contrainte', () => {
     }
     // Et une pièce visible qui ne rentre que pivotée est **signalée**, pas pivotée en
     // douce : c'est le menuisier qui décidera de changer de format ou de décor.
-    expect(
-      result.unplaced.some((id) => byId.get(id)?.grain === 'length'),
-    ).toBe(true);
+    expect(result.unplaced.some((id) => byId.get(id)?.grain === 'length')).toBe(true);
   });
 
   it('redresse un vantail que le placement libre couchait', () => {

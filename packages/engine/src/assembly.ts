@@ -60,12 +60,12 @@ export const DEFAULT_ASSEMBLY: readonly AssemblyStepTemplate[] = [
   {
     key: 'dividers',
     roles: ['divider'],
-    fastener: { key: 'dowel_8', per: 'divider', count: 8 },
+    fastener: { key: 'dowel_8x30', per: 'divider', count: 8 },
   },
   {
     key: 'shelves',
     roles: ['shelf'],
-    fastener: { key: 'shelf_support', per: 'shelf', count: 4 },
+    fastener: { key: 'shelf_support_5', per: 'shelf', count: 4 },
   },
   { key: 'back', roles: ['back'] },
   {

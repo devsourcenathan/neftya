@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { accessoryLabel } from './accessory-label.js';
 import { exponentOf, formatMoney, parseMoney, type Money } from '@neftya/units';
 import { ApiRequestError } from '../api/client.js';
 import { savePrice, useApi, type QuotationLine } from '../api/projects.js';
@@ -174,7 +175,7 @@ function label(reference: string, t: Translate): string {
     });
   }
 
-  if (kind === 'accessory') return t(`accessory.${rest[0]}`);
+  if (kind === 'accessory') return accessoryLabel(t, rest[0] ?? '');
   if (kind === 'edge_banding') return t('manufacturing.edgeBandingPrice');
 
   return reference;

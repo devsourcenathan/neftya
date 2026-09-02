@@ -93,7 +93,9 @@
       "settings": "Settings",
       "view": "View",
       "parts": "Parts"
-    }
+    },
+    "respectGrain": "Follow the grain direction",
+    "respectGrainHint": "For a wood decor. Visible parts will no longer be rotated when nesting, which may cost an extra panel."
   },
   "units": {
     "legend": "Unit system",
@@ -149,7 +151,8 @@
     "COMPARTMENT_TOO_NARROW": "A bay is too narrow for what it must hold.",
     "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it.",
     "DOOR_DOES_NOT_FIT": "A door leaf does not fit its bay: no parts are produced for it.",
-    "DOOR_LEAF_TOO_WIDE": "A door leaf is wide: it will pull on its hinges and end up rubbing. Fit a pair."
+    "DOOR_LEAF_TOO_WIDE": "A door leaf is wide: it will pull on its hinges and end up rubbing. Fit a pair.",
+    "NO_SLIDE_FITS": "No off-the-shelf slide fits {{usableDepthMm}} mm of usable depth: the drawer is left undrilled."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
@@ -184,14 +187,18 @@
     "board": "Board",
     "trim": "Trim",
     "panelsUsed_one": "{{count}} board",
-    "panelsUsed_other": "{{count}} boards"
+    "panelsUsed_other": "{{count}} boards",
+    "drilling": "Drilling",
+    "noDrilling": "Nothing to drill on this piece: no adjustable shelf, no door, no drawer, no divider.",
+    "downloadDrilling": "Download the drilling plan (DXF)"
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",
-    "dowel_8": "Dowels 8 mm",
-    "shelf_support": "Shelf supports",
+    "dowel_8x30": "Dowels 8 × 30",
+    "shelf_support_5": "Shelf pins Ø 5",
+    "slide_ball": "Ball-bearing slide pairs, {{length}} mm",
     "drawer_slide_pair": "Drawer slide pairs",
-    "hinge": "Hinges",
+    "hinge_35_110": "35 mm cup hinges, 110°",
     "glue": "Wood glue"
   },
   "assembly": {
@@ -314,5 +321,13 @@
     "nameFrHint": "Required: it is the reference language, the one used as fallback.",
     "nameEn": "Name (English)",
     "nameEnHint": "Optional. Without a translation, the French name is shown everywhere."
+  },
+  "purpose": {
+    "hinge_cup": "hinge cup",
+    "hinge_plate": "hinge plate",
+    "shelf_support": "shelf pin",
+    "slide_cabinet": "cabinet runner",
+    "slide_drawer": "drawer runner",
+    "dowel": "dowel"
   }
 }

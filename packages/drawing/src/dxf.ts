@@ -27,7 +27,14 @@ export interface DxfLayer {
 export type DxfEntity =
   | { kind: 'line'; layer: string; x1: number; y1: number; x2: number; y2: number }
   | { kind: 'circle'; layer: string; xMm: number; yMm: number; radiusMm: number }
-  | { kind: 'text'; layer: string; xMm: number; yMm: number; heightMm: number; value: string };
+  | {
+      kind: 'text';
+      layer: string;
+      xMm: number;
+      yMm: number;
+      heightMm: number;
+      value: string;
+    };
 
 export interface DxfDocument {
   layers: DxfLayer[];
@@ -44,7 +51,8 @@ const MILLIMETRES = 4;
 
 export function renderDxf(document: DxfDocument): string {
   const out: string[] = [];
-  const pair = (code: number, value: string | number) => out.push(String(code), String(value));
+  const pair = (code: number, value: string | number) =>
+    out.push(String(code), String(value));
 
   pair(0, 'SECTION');
   pair(2, 'HEADER');

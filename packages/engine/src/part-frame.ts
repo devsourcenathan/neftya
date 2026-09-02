@@ -73,8 +73,9 @@ export function frameOf(part: Part, instance: Placement): PartFrame {
   };
 
   const through =
-    AXES.find((axis) => sizes[axis] === part.thicknessMm && restMatches(sizes, axis, part)) ??
-    AXES.find((axis) => sizes[axis] === part.thicknessMm);
+    AXES.find(
+      (axis) => sizes[axis] === part.thicknessMm && restMatches(sizes, axis, part),
+    ) ?? AXES.find((axis) => sizes[axis] === part.thicknessMm);
 
   if (!through) {
     throw new Error(

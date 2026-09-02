@@ -44,7 +44,11 @@ interface Entity {
  * Le format est une suite de couples : un code sur une ligne, sa valeur sur la suivante.
  * Le code 0 ouvre une entité, le 8 nomme son calque.
  */
-function parse(dxf: string): { entities: Entity[]; layers: string[]; header: Map<string, string> } {
+function parse(dxf: string): {
+  entities: Entity[];
+  layers: string[];
+  header: Map<string, string>;
+} {
   const lines = dxf.split('\r\n').slice(0, -1);
   expect(lines.length % 2).toBe(0);
 
@@ -75,7 +79,10 @@ function parse(dxf: string): { entities: Entity[]; layers: string[]; header: Map
       continue;
     }
 
-    if (code === 2 && (value === 'HEADER' || value === 'TABLES' || value === 'ENTITIES')) {
+    if (
+      code === 2 &&
+      (value === 'HEADER' || value === 'TABLES' || value === 'ENTITIES')
+    ) {
       section = value;
       continue;
     }
@@ -109,7 +116,9 @@ const at = (entity: Entity, code: number) => Number(entity.values.get(code)?.[0]
  * l'ordre du fichier suffit, et vaut mieux qu'un assemblage par proximité qui fusionnerait
  * deux pièces voisines.
  */
-function contours(entities: Entity[]): { x0: number; y0: number; x1: number; y1: number }[] {
+function contours(
+  entities: Entity[],
+): { x0: number; y0: number; x1: number; y1: number }[] {
   const lines = entities.filter((entity) => entity.layer === LAYERS.contour);
   expect(lines.length % 4).toBe(0);
 
@@ -178,13 +187,12 @@ describe('les trous', () => {
   it('sont tous là, et une seule fois', () => {
     const furniture = build(WARDROBE);
     const holes = drilling(furniture).parts.flatMap((part) => part.holes);
-    const { entities } = parse(drillPlanDxf(furniture, drilling(furniture), PLAIN_LABELS));
-
-    const drawn = entities.filter((entity) =>
-      [LAYERS.face, LAYERS.back, LAYERS.edge].includes(
-        entity.layer as (typeof LAYERS)[keyof typeof LAYERS],
-      ),
+    const { entities } = parse(
+      drillPlanDxf(furniture, drilling(furniture), PLAIN_LABELS),
     );
+
+    const drilled: string[] = [LAYERS.face, LAYERS.back, LAYERS.edge];
+    const drawn = entities.filter((entity) => drilled.includes(entity.layer));
 
     // Un plan de perçage amputé d'un trou est un plan faux qui a l'air complet.
     expect(drawn).toHaveLength(holes.length);
@@ -204,7 +212,11 @@ describe('les trous', () => {
         // Un cercle qui déborde son contour est un repère faux : le trou est ailleurs que
         // là où le fichier le montre.
         const inside = boxes.some(
-          (box) => x - r >= box.x0 - 0.001 && x + r <= box.x1 + 0.001 && y - r >= box.y0 - 0.001 && y + r <= box.y1 + 0.001,
+          (box) =>
+            x - r >= box.x0 - 0.001 &&
+            x + r <= box.x1 + 0.001 &&
+            y - r >= box.y0 - 0.001 &&
+            y + r <= box.y1 + 0.001,
         );
 
         expect(inside).toBe(true);
@@ -267,8 +279,7 @@ describe('la mise en planche', () => {
       for (let j = i + 1; j < boxes.length; j += 1) {
         const a = boxes[i] as (typeof boxes)[number];
         const b = boxes[j] as (typeof boxes)[number];
-        const apart =
-          a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0;
+        const apart = a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0;
 
         // Deux pièces dessinées l'une sur l'autre donnent un fichier illisible et des
         // cotes qu'on attribue à la mauvaise pièce.

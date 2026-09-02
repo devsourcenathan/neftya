@@ -90,10 +90,7 @@ export function billOfMaterials(
  * Restent les vis et la colle, qui ne se percent pas : leurs ratios sont ceux de la
  * menuiserie courante, et ils sont **ici**, visibles, plutôt qu'éparpillés dans une vue.
  */
-function accessories(
-  furniture: Furniture,
-  drilling: DrillingResult,
-): AccessoryLine[] {
+function accessories(furniture: Furniture, drilling: DrillingResult): AccessoryLine[] {
   const sides = furniture.parts
     .filter((part) => part.role === 'side')
     .reduce((total, part) => total + part.quantity, 0);

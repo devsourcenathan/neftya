@@ -363,8 +363,12 @@ prouve.
 ## Ce qui n'est pas dans ce plan
 
 Volontairement absents de la V1, et donc de cette roadmap : analyse d'image, assistant IA,
-positions de perçage, catalogue de quincaillerie, éditeur manuel, export DXF,
-contrainte de sens du fil. Tout cela est en V2 ou V3 ([ROADMAP.md](ROADMAP.md)).
+éditeur manuel. Tout cela est en V2 ou V3 ([ROADMAP.md](ROADMAP.md)).
+
+> **Le 2 septembre 2026**, quatre postes de cette liste ont malgré tout été engagés sur
+> demande explicite : positions de perçage, catalogue de quincaillerie, export DXF et
+> contrainte de sens du fil. Le critère de sortie de la V1 — un menuisier coupe d'après le
+> plan et le meuble se monte sans reprise — n'était pas atteint, et ne l'est toujours pas.
 
 **Ne pas les commencer « puisqu'on y est ».** C'est exactement ainsi que DealerOS a livré,
 dans un seul commit de 5 744 lignes, deux phases entières de roadmap que personne n'a pu
