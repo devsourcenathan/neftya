@@ -333,6 +333,8 @@
   "account": {
     "profile": "My account",
     "subscription": "My subscription",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "switchTo": "Switch organisation",
+    "switchFailed": "Could not switch. Your access may have been revoked."
   }
 }

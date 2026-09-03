@@ -333,6 +333,8 @@
   "account": {
     "profile": "Mon compte",
     "subscription": "Mon abonnement",
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "switchTo": "Changer d’organisation",
+    "switchFailed": "Changement impossible. Votre accès a peut-être été retiré."
   }
 }

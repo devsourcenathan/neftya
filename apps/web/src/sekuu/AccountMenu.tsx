@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { portalUrl, signOut, type Session } from './session.js';
 import { useSession } from './SessionContext.js';
@@ -18,6 +20,13 @@ import { SettingsIcon } from '../ui/icons.js';
  * jour où l'une des deux change. Le compte et l'abonnement sont donc des liens vers le
  * portail, pas des pages de Neftya.
  *
+ * ## Changer d'organisation
+ *
+ * Trois gestes, dans cet ordre, et l'ordre est le sujet : activer l'organisation, **vider
+ * le cache**, revenir à l'accueil. Tout ce qui est chargé — projets, réglages, modèles —
+ * appartient à celle qu'on quitte, et l'écran d'un projet qui n'existe plus chez la
+ * nouvelle répondrait `404` sans expliquer pourquoi.
+ *
  * ## La déconnexion
  *
  * Elle part chez la plateforme. La session vit dans le cookie partagé de `.sekuu.test` :
@@ -28,8 +37,12 @@ import { SettingsIcon } from '../ui/icons.js';
  */
 export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   const { t } = useTranslation();
-  const { state } = useSession();
+  const { state, choose } = useSession();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [switching, setSwitching] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const container = useRef<HTMLDivElement>(null);
 
   // Un menu ouvert qu'on ne peut fermer qu'en cliquant le même bouton est un piège au
@@ -62,6 +75,24 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   const organization = session.organizations.find(
     (candidate) => candidate.id === session.organizationId,
   );
+  const others = session.organizations.filter(
+    (candidate) => candidate.id !== session.organizationId,
+  );
+
+  const change = async (organizationId: string) => {
+    setFailed(false);
+    setSwitching(organizationId);
+
+    const ok = await switchTo(organizationId, {
+      choose,
+      forgetCache: () => queryClient.clear(),
+      goHome: () => navigate({ to: '/' }),
+    });
+
+    setSwitching(null);
+    if (ok) setOpen(false);
+    else setFailed(true);
+  };
 
   return (
     <div ref={container} className="relative">
@@ -86,6 +117,33 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
               </p>
             )}
           </div>
+
+          {/* Une seule organisation ne se choisit pas : la liste n'apparaît qu'à qui a
+              vraiment quelque chose à changer. */}
+          {others.length > 0 && (
+            <div className="border-b border-hairline py-1">
+              <p className="label-caps px-3 pt-1 pb-1 text-outline">
+                {t('account.switchTo')}
+              </p>
+              {others.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  role="menuitem"
+                  disabled={switching !== null}
+                  className="block w-full truncate rounded px-3 py-2 text-left text-sm text-ink transition-colors hover:bg-surface-low disabled:opacity-50"
+                  onClick={() => void change(candidate.id)}
+                >
+                  {switching === candidate.id ? t('state.loading') : candidate.name}
+                </button>
+              ))}
+              {failed && (
+                <p className="px-3 py-1 text-xs text-danger">
+                  {t('account.switchFailed')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Deux liens, pas deux écrans : le portail détient le compte et l'abonnement. */}
           <MenuLink href={portalUrl('account')}>{t('account.profile')}</MenuLink>
@@ -136,6 +194,31 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
       </button>
     </div>
   );
+}
+
+/**
+ * Le changement d'organisation, sans React.
+ *
+ * L'ordre porte tout : on ne vide le cache **que** si le changement a abouti. L'inverse
+ * viderait l'écran de quelqu'un dont l'adhésion a été révoquée, pour le laisser devant
+ * une application vide sans lui dire ce qui s'est passé.
+ */
+export async function switchTo(
+  organizationId: string,
+  actions: {
+    choose: (id: string) => Promise<boolean>;
+    forgetCache: () => void;
+    goHome: () => Promise<unknown> | unknown;
+  },
+): Promise<boolean> {
+  if (!(await actions.choose(organizationId))) return false;
+
+  // Projets, réglages, modèles : tout ce qui est en cache appartient à l'organisation
+  // qu'on vient de quitter.
+  actions.forgetCache();
+  await actions.goHome();
+
+  return true;
 }
 
 function MenuLink({ href, children }: { href: string; children: React.ReactNode }) {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { portalUrl, signOut, type Session } from './session.js';
-import { displayName, initials } from './AccountMenu.js';
+import { displayName, initials, switchTo } from './AccountMenu.js';
 
 /**
  * Le compte, l'abonnement et la déconnexion.
@@ -196,5 +196,56 @@ describe('comment quelqu’un est nommé', () => {
 
     expect(initials(nameless)).toBe('?');
     expect(displayName(nameless)).toBe('—');
+  });
+});
+
+describe('changer d’organisation', () => {
+  const spies = () => ({
+    forgetCache: vi.fn(),
+    goHome: vi.fn(async () => undefined),
+  });
+
+  it('vide le cache et revient à l’accueil, dans cet ordre', async () => {
+    const order: string[] = [];
+    const actions = {
+      choose: vi.fn(async () => {
+        order.push('choose');
+        return true;
+      }),
+      forgetCache: vi.fn(() => {
+        order.push('cache');
+      }),
+      goHome: vi.fn(async () => {
+        order.push('home');
+      }),
+    };
+
+    await expect(switchTo('o2', actions)).resolves.toBe(true);
+
+    // Projets, réglages et modèles chargés appartiennent à l'organisation qu'on quitte.
+    // Sans le vidage, l'écran affiche les données de l'ancienne sous le nom de la
+    // nouvelle — et rien ne le signale.
+    expect(order).toEqual(['choose', 'cache', 'home']);
+  });
+
+  it('ne touche à rien quand le changement échoue', async () => {
+    const actions = { choose: vi.fn(async () => false), ...spies() };
+
+    await expect(switchTo('o2', actions)).resolves.toBe(false);
+
+    // Vider l'écran de quelqu'un dont l'adhésion a été révoquée le laisserait devant une
+    // application vide, sans lui dire ce qui s'est passé.
+    expect(actions.forgetCache).not.toHaveBeenCalled();
+    expect(actions.goHome).not.toHaveBeenCalled();
+  });
+
+  it('quitte la page du projet en cours', async () => {
+    const actions = { choose: vi.fn(async () => true), ...spies() };
+
+    await switchTo('o2', actions);
+
+    // Un projet ouvert n'existe pas chez la nouvelle organisation : y rester répondrait
+    // 404 sans expliquer pourquoi.
+    expect(actions.goHome).toHaveBeenCalledTimes(1);
   });
 });

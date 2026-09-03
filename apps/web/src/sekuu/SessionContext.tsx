@@ -35,7 +35,14 @@ export type SessionState =
 
 interface SessionApi {
   state: SessionState;
-  choose: (organizationId: string) => Promise<void>;
+  /**
+   * Active une organisation. Rend `false` si le changement n'a pas abouti.
+   *
+   * Rendre plutôt que lever : un `void choose(...)` dans un gestionnaire de clic
+   * transformerait un refus de la plateforme en rejet non capturé, et l'interface resterait
+   * telle quelle sans que personne sache pourquoi.
+   */
+  choose: (organizationId: string) => Promise<boolean>;
   /** Rend un jeton frais, en rafraîchissant s'il est sur le point d'expirer. */
   token: () => Promise<string>;
 }
@@ -85,8 +92,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const choose = useCallback(
     async (organizationId: string) => {
-      if (state.status !== 'choosing' && state.status !== 'ready') return;
-      setState(settle(await switchOrganization(state.session, organizationId)));
+      if (state.status !== 'choosing' && state.status !== 'ready') return false;
+
+      try {
+        setState(settle(await switchOrganization(state.session, organizationId)));
+        return true;
+      } catch (error) {
+        // Une adhésion révoquée depuis l'émission du jeton : la plateforme refuse le
+        // changement, et la session n'en est plus une. Y rester afficherait les données
+        // d'une organisation qu'on a quittée.
+        if (error instanceof NotSignedIn) {
+          setState({ status: 'anonymous' });
+          return false;
+        }
+
+        if (error instanceof PlatformUnreachable) return false;
+
+        throw error;
+      }
     },
     [state],
   );
