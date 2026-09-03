@@ -1,8 +1,10 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Bounds, ContactShadows, OrbitControls } from '@react-three/drei';
+import { compartmentAt } from '@neftya/engine';
 import type { Furniture, Part, Placement } from '@neftya/engine';
 import { Handles } from './Handles.js';
+import { Vector3, type Group } from 'three';
 
 /**
  * La 3D.
@@ -49,10 +51,12 @@ export interface SceneProps {
   furniture: Furniture;
   selectedPartId: string | null;
   /**
-   * Le clic droit sur une pièce, avec le compartiment d'où elle vient.
+   * Le clic droit, avec le compartiment **visé par le point cliqué**.
    *
-   * `null` pour un clic droit dans le vide, ou sur une pièce qui n'appartient à aucun
-   * compartiment — l'enveloppe, les séparateurs. Le menu n'aurait alors rien à proposer.
+   * Et non celui de la pièce touchée : sur un meuble fermé, ce qu'on voit et ce qu'on
+   * clique est l'enveloppe, qui n'appartient à aucun compartiment. Se fier au marquage de
+   * la pièce laissait donc le menu muet sur presque toute la surface du meuble — un défaut
+   * qui se lisait comme « le menu ne marche plus ».
    */
   onContextMenu?: (
     target: { compartment: number; xPx: number; yPx: number } | null,
@@ -106,6 +110,31 @@ export function Scene({
   hidden,
 }: SceneProps) {
   const centre = useMemo(() => boundingCentre(furniture), [furniture]);
+  const parts = useRef<Group>(null);
+
+  /**
+   * Le compartiment sous le pointeur, lu sur le point d'intersection.
+   *
+   * `worldToLocal` fait le chemin inverse des transformations : celles du groupe, mais
+   * aussi celles que `Bounds` pose au-dessus pour cadrer la vue. Refaire ce calcul à la
+   * main marcherait tant que personne ne touche au cadrage.
+   */
+  const contextMenu = (event: {
+    point: { x: number; y: number; z: number };
+    nativeEvent: MouseEvent;
+  }) => {
+    if (!onContextMenu || !parts.current) return;
+
+    const local = parts.current.worldToLocal(
+      new Vector3(event.point.x, event.point.y, event.point.z),
+    );
+
+    onContextMenu({
+      compartment: compartmentAt(furniture, local.x / MM),
+      xPx: event.nativeEvent.clientX,
+      yPx: event.nativeEvent.clientY,
+    });
+  };
 
   // Le meuble change de taille ; la caméra doit suivre. Une position fixe cadrait un
   // caisson de 600 mm et perdait un dressing de 3 mètres hors de l'écran.
@@ -149,7 +178,10 @@ export function Scene({
       <directionalLight position={[0, 1, -5]} intensity={0.25} />
 
       <Bounds key={fitKey} fit clip observe margin={1.25}>
-        <group position={[-centre.x, -centre.y, -centre.z]}>
+        {/* Le repère de ce groupe est celui du modèle, à l'échelle près : c'est lui qui
+            ramène un point du monde à une abscisse en millimètres, quelles que soient les
+            transformations que `Bounds` applique au-dessus. */}
+        <group ref={parts} position={[-centre.x, -centre.y, -centre.z]}>
           {visibleParts(furniture, hidden).flatMap((part) =>
             part.instances.map((placement, index) => (
               <PartMesh
@@ -160,7 +192,7 @@ export function Scene({
                 explode={explode}
                 selected={part.id === selectedPartId}
                 onSelect={onSelect}
-                {...(onContextMenu ? { onContextMenu } : {})}
+                {...(onContextMenu ? { onContextMenu: contextMenu } : {})}
               />
             )),
           )}
@@ -200,9 +232,10 @@ interface PartMeshProps {
   explode: number;
   selected: boolean;
   onSelect: (partId: string) => void;
-  onContextMenu?: (
-    target: { compartment: number; xPx: number; yPx: number } | null,
-  ) => void;
+  onContextMenu?: (event: {
+    point: { x: number; y: number; z: number };
+    nativeEvent: MouseEvent;
+  }) => void;
 }
 
 /**
@@ -247,15 +280,7 @@ const PartMesh = memo(function PartMesh({
         // Sans cela, le menu du navigateur se superpose au nôtre.
         event.nativeEvent.preventDefault();
 
-        onContextMenu(
-          placement.compartment === undefined
-            ? null
-            : {
-                compartment: placement.compartment,
-                xPx: event.nativeEvent.clientX,
-                yPx: event.nativeEvent.clientY,
-              },
-        );
+        onContextMenu(event);
       }}
       onPointerOver={(event) => {
         event.stopPropagation();

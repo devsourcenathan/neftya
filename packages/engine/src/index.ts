@@ -58,7 +58,7 @@ export {
   type DeflectionResult,
 } from './deflection.js';
 
-export { build, type Furniture, type Warning } from './build.js';
+export { build, compartmentAt, type Furniture, type Warning } from './build.js';
 
 export { cutList, totalEdgeBandingMm, type CutListRow } from './cut-list.js';
 

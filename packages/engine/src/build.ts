@@ -244,6 +244,31 @@ export function build(rawInput: FurnitureInput): Furniture {
 }
 
 /**
+ * Le compartiment situé à une abscisse donnée du meuble.
+ *
+ * **C'est ce qui permet à un clic droit de viser un compartiment depuis n'importe quelle
+ * surface** — un côté, le dessus, le fond. Se fier au compartiment marqué sur la pièce ne
+ * marche que pour ce qui vit *dans* un compartiment : l'enveloppe n'appartient à aucun, et
+ * c'est pourtant elle qu'on voit et qu'on clique sur un meuble fermé.
+ *
+ * Les séparateurs découpent la largeur : le rang cherché est le nombre de séparateurs
+ * situés avant le point. Hors du meuble, on retombe sur le compartiment le plus proche —
+ * un clic sur le chant d'un côté vise le compartiment qu'il borde, ce qui est ce qu'on
+ * voulait dire.
+ */
+export function compartmentAt(furniture: Furniture, xMm: number): number {
+  const centres = furniture.parts
+    .filter((part) => part.role === 'divider')
+    .flatMap((part) => part.instances)
+    .map((placement) => placement.xMm + placement.sizeXMm / 2)
+    .sort((a, b) => a - b);
+
+  const index = centres.filter((centre) => centre < xMm).length;
+
+  return Math.min(index, furniture.input.compartments.length - 1);
+}
+
+/**
  * Le partage de la largeur intérieure entre les compartiments.
  *
  * **Une largeur imposée est honorée ; ce qui reste se divise également entre les autres.**

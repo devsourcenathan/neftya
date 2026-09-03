@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { build } from './build.js';
+import { build, compartmentAt } from './build.js';
 import type { FurnitureInput } from './input.js';
 
 /**
@@ -116,5 +116,37 @@ describe('le compartiment d’une instance', () => {
     // — trois compartiments, celui du milieu ne bouge pas. Celui à un tiroir passe de 2 à 0.
     expect(drawersIn(1)).toBe(3);
     expect(drawersIn(0)).toBe(1);
+  });
+});
+
+describe('le compartiment sous un point', () => {
+  it('trouve le bon depuis n’importe quelle abscisse', () => {
+    const furniture = build(MIXED);
+    const centres = furniture.parts
+      .filter((part) => part.role === 'divider')
+      .flatMap((part) => part.instances)
+      .map((placement) => placement.xMm + placement.sizeXMm / 2)
+      .sort((a, b) => a - b);
+
+    // Juste avant et juste après chaque séparateur : c'est là que la réponse bascule.
+    expect(compartmentAt(furniture, (centres[0] as number) - 1)).toBe(0);
+    expect(compartmentAt(furniture, (centres[0] as number) + 1)).toBe(1);
+    expect(compartmentAt(furniture, (centres[1] as number) + 1)).toBe(2);
+  });
+
+  it('retombe sur le compartiment le plus proche hors du meuble', () => {
+    const furniture = build(MIXED);
+
+    // Un clic sur le chant d'un côté vise le compartiment qu'il borde. Rendre `undefined`
+    // laisserait le menu vide sur la surface qu'on clique le plus.
+    expect(compartmentAt(furniture, -50)).toBe(0);
+    expect(compartmentAt(furniture, 99_999)).toBe(MIXED.compartments.length - 1);
+  });
+
+  it('répond même sans séparateur', () => {
+    const single = build({ ...MIXED, compartments: [{ shelves: 2 }] });
+
+    expect(compartmentAt(single, 0)).toBe(0);
+    expect(compartmentAt(single, 5_000)).toBe(0);
   });
 });

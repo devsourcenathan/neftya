@@ -24,6 +24,24 @@ import { useAxisProjection, type Axis } from './drag.js';
 /** Assez gros pour se saisir au doigt, assez petit pour ne pas masquer la pièce. */
 const HANDLE_MM = 44;
 
+/**
+ * De combien chaque poignée sort de la face qu'elle règle.
+ *
+ * Posée à fleur, elle est à moitié dans le panneau : on croit viser le meuble et on tire
+ * la cote, ou l'inverse.
+ */
+const OUTSET_MM = 30;
+
+/**
+ * La hauteur de la poignée de profondeur, en part de la hauteur du meuble.
+ *
+ * **Pas au milieu.** Sur une bibliothèque à deux compartiments, le séparateur est au
+ * centre : sa poignée et celle de la profondeur tombaient au même point, au millimètre
+ * près. Deux poignées empilées se lisent comme une seule, et celle qu'on saisit n'est pas
+ * celle qu'on croit.
+ */
+const DEPTH_HANDLE_HEIGHT = 0.18;
+
 /** Le monde est en mètres ; le modèle en millimètres. */
 const MM = 0.001;
 
@@ -47,6 +65,58 @@ export interface HandlesProps {
   onDividerMoved: (index: number, deltaMm: number) => void;
 }
 
+export interface HandleSpec {
+  /** `null` pour une cote du meuble ; le rang du séparateur sinon. */
+  divider: number | null;
+  axis: Axis;
+  dimension?: 'widthMm' | 'heightMm' | 'depthMm';
+  atMm: [number, number, number];
+}
+
+/**
+ * Où se posent les poignées.
+ *
+ * **Extrait du composant pour être vérifiable.** Le premier jet posait la poignée de
+ * profondeur au centre de la face avant — exactement où tombe le séparateur d'une
+ * bibliothèque à deux compartiments. Deux poignées empilées se lisent comme une seule, et
+ * celle qu'on saisit n'est pas celle qu'on croit. C'est de l'arithmétique, donc cela se
+ * teste sans rien afficher.
+ */
+export function handleLayout(furniture: Furniture): HandleSpec[] {
+  const { widthMm, heightMm, depthMm } = furniture.input.dimensions;
+
+  return [
+    // Une poignée par cote, en dehors de la face qu'elle repousse.
+    {
+      divider: null,
+      axis: 'x',
+      dimension: 'widthMm',
+      atMm: [widthMm + OUTSET_MM, heightMm / 2, depthMm / 2],
+    },
+    {
+      divider: null,
+      axis: 'y',
+      dimension: 'heightMm',
+      atMm: [widthMm / 2, heightMm + OUTSET_MM, depthMm / 2],
+    },
+    {
+      divider: null,
+      axis: 'z',
+      dimension: 'depthMm',
+      atMm: [widthMm / 2, heightMm * DEPTH_HANDLE_HEIGHT, depthMm + OUTSET_MM],
+    },
+    // Les séparateurs restent à mi-hauteur, là où on les cherche.
+    ...dividerCentres(furniture).map((xMm, index): HandleSpec => ({
+      divider: index,
+      axis: 'x',
+      atMm: [xMm, heightMm / 2, depthMm + OUTSET_MM],
+    })),
+  ];
+}
+
+/** L'encombrement d'une poignée : deux ne doivent jamais se recouvrir. */
+export const HANDLE_SIZE_MM = HANDLE_MM;
+
 export function Handles({
   furniture,
   centre,
@@ -55,34 +125,27 @@ export function Handles({
   onDividerMoved,
 }: HandlesProps) {
   const { widthMm, heightMm, depthMm } = furniture.input.dimensions;
+  const current = { widthMm, heightMm, depthMm };
 
   return (
     <group position={[-centre.x, -centre.y, -centre.z]}>
-      {/* Une poignée par cote, sur la face qu'elle repousse. */}
-      <DragHandle
-        axis="x"
-        atMm={[widthMm, heightMm / 2, depthMm / 2]}
-        onDrag={(deltaMm) => onDimension('widthMm', widthMm + deltaMm)}
-      />
-      <DragHandle
-        axis="y"
-        atMm={[widthMm / 2, heightMm, depthMm / 2]}
-        onDrag={(deltaMm) => onDimension('heightMm', heightMm + deltaMm)}
-      />
-      <DragHandle
-        axis="z"
-        atMm={[widthMm / 2, heightMm / 2, depthMm]}
-        onDrag={(deltaMm) => onDimension('depthMm', depthMm + deltaMm)}
-      />
-
-      {dividerCentres(furniture).map((xMm, index) => (
+      {handleLayout(furniture).map((handle, index) => (
         <DragHandle
-          key={index}
-          axis="x"
-          shape="bar"
-          atMm={[xMm, heightMm / 2, depthMm]}
-          onStart={() => onDividerStart(index)}
-          onDrag={(deltaMm) => onDividerMoved(index, deltaMm)}
+          key={`${handle.divider ?? handle.dimension}-${index}`}
+          axis={handle.axis}
+          atMm={handle.atMm}
+          {...(handle.divider === null ? {} : { shape: 'bar' as const })}
+          {...(handle.divider === null
+            ? {}
+            : { onStart: () => onDividerStart(handle.divider as number) })}
+          onDrag={(deltaMm) =>
+            handle.divider === null
+              ? onDimension(
+                  handle.dimension as 'widthMm',
+                  current[handle.dimension as 'widthMm'] + deltaMm,
+                )
+              : onDividerMoved(handle.divider, deltaMm)
+          }
         />
       ))}
     </group>
