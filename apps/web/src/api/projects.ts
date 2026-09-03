@@ -3,6 +3,7 @@ import type {
   AssemblyStep,
   BillOfMaterials,
   CutListRow,
+  DrillingResult,
   NestingResult,
   ParsedFurnitureInput,
 } from '@neftya/engine';
@@ -77,6 +78,8 @@ export interface ManufacturingResource {
   project: { id: string; name: string };
   cut_list: CutListRow[];
   nesting: NestingResult;
+  /** Les positions de perçage, et la quincaillerie qu'elles impliquent. */
+  drilling: DrillingResult;
   bill: BillOfMaterials;
   assembly: AssemblyStep[];
   /** Absent quand le rôle n'autorise pas la lecture des coûts. */
@@ -157,6 +160,9 @@ export const downloadCutPlan = (files: FileClient, id: string, name: string) =>
 
 export const downloadPlans = (files: FileClient, id: string, name: string) =>
   files(`/v1/projects/${id}/plans.pdf`, fileNameOf(name, '-plans.pdf'));
+
+export const downloadDrilling = (files: FileClient, id: string, name: string) =>
+  files(`/v1/projects/${id}/drilling.dxf`, fileNameOf(name, '-percage.dxf'));
 
 const ApiContext = createContext<ApiClient | null>(null);
 const FileContext = createContext<FileClient | null>(null);

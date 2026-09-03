@@ -4,10 +4,12 @@ import {
   build,
   costLines,
   cutList,
+  drilling,
   nest,
   type AssemblyStep,
   type BillOfMaterials,
   type CutListRow,
+  type DrillingResult,
   type NestingResult,
   type ParsedFurnitureInput,
 } from '@neftya/engine';
@@ -45,6 +47,8 @@ export interface Quotation {
 export interface ManufacturingPlan {
   cutList: CutListRow[];
   nesting: NestingResult;
+  /** Les positions de perçage, et la quincaillerie qu'elles impliquent. */
+  drilling: DrillingResult;
   bill: BillOfMaterials;
   assembly: AssemblyStep[];
   quotation: Quotation;
@@ -57,11 +61,13 @@ export function manufacturingPlan(
 ): ManufacturingPlan {
   const furniture = build(model);
   const nesting = nest(furniture);
-  const bill = billOfMaterials(furniture, nesting);
+  const holes = drilling(furniture);
+  const bill = billOfMaterials(furniture, nesting, holes);
 
   return {
     cutList: cutList(furniture),
     nesting,
+    drilling: holes,
     bill,
     assembly: assemblySteps(furniture),
     quotation: quote(costLines(bill), prices, currency),

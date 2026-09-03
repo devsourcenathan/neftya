@@ -42,6 +42,19 @@ export const furnitureInput = z.object({
   parameters: parameters.default(() => DEFAULT_PARAMETERS),
   /** Un fond, sauf demande contraire. Un caisson sans fond se déforme. */
   hasBack: z.boolean().default(true),
+  /**
+   * Respecter le sens du fil au placement.
+   *
+   * Sur un décor bois, le fil de deux pièces voisines doit courir dans le même sens : une
+   * porte pivotée de 90° se voit à trois mètres, et aucune finition ne la rattrape. Le
+   * placement perd alors le droit de pivoter les pièces visibles, et consomme davantage.
+   *
+   * **Faux par défaut**, parce que le moteur ne peut pas savoir si le panneau est un décor
+   * bois ou un mélaminé uni : sur un uni, la contrainte ne coûterait que de la chute.
+   *
+   * @see docs/NEFTYA_ENGINE.md §8
+   */
+  respectGrain: z.boolean().default(false),
 });
 
 export type FurnitureInput = z.input<typeof furnitureInput>;

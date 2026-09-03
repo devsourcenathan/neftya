@@ -96,15 +96,23 @@ V2 ne doit être engagée.
 - Quotas IA par palier, via le claim `limits`
 - Notify : envoi du devis au client
 - AI : clé d'API à tâches en liste blanche
-- **Positions de perçage** et catalogue de quincaillerie (coulisses, charnières, tourillons)
+- ~~**Positions de perçage** et catalogue de quincaillerie~~ — **livrés le 2 septembre
+  2026** : charnières, coulisses, tourillons, taquets
 - ~~**Portes**, recouvrement total~~ — **livrées en V1 le 1er septembre 2026**, en applique,
   un ou deux vantaux par compartiment
-- Optimisation avancée des panneaux, avec contrainte de sens du fil
-- Export DXF
+- ~~Contrainte de sens du fil~~ — **livrée le 2 septembre 2026**, portée par le projet
+- ~~Export DXF~~ — **livré le 2 septembre 2026**, un bloc par face percée
+- Optimisation avancée des panneaux : réutilisation des chutes, fil continu entre façades
+- Excentriques et crémaillères
 - Estimation automatique des coûts
 
-Perçages et catalogue vont ensemble : les positions dépendent de la quincaillerie choisie.
-C'est ce qui fait passer Neftya d'un outil de préparation à une vraie sortie d'usinage.
+Perçages et catalogue allaient ensemble : les positions dépendent de la quincaillerie
+choisie. C'est ce qui fait passer Neftya d'un outil de préparation à une vraie sortie
+d'usinage.
+
+> **Ce bloc a été engagé avant le critère de sortie de la V1**, sur demande explicite. Le
+> critère — un menuisier coupe d'après le plan et le meuble se monte sans reprise — n'est
+> donc toujours pas atteint, et rien de ce qui précède ne l'a rapproché.
 
 ---
 

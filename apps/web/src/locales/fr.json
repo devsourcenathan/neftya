@@ -93,7 +93,9 @@
       "settings": "Réglages",
       "view": "Vue",
       "parts": "Pièces"
-    }
+    },
+    "respectGrain": "Respecter le sens du fil",
+    "respectGrainHint": "Sur un décor bois. Le placement ne pivotera plus les pièces visibles, et pourra demander un panneau de plus."
   },
   "units": {
     "legend": "Système d'unités",
@@ -149,7 +151,8 @@
     "COMPARTMENT_TOO_NARROW": "Un compartiment est trop étroit pour ce qu'il doit recevoir.",
     "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
     "DOOR_DOES_NOT_FIT": "Un vantail ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
-    "DOOR_LEAF_TOO_WIDE": "Un vantail est large : il pèsera sur ses charnières et finira par frotter. Posez-en deux."
+    "DOOR_LEAF_TOO_WIDE": "Un vantail est large : il pèsera sur ses charnières et finira par frotter. Posez-en deux.",
+    "NO_SLIDE_FITS": "Aucune coulisse du commerce ne tient dans {{usableDepthMm}} mm de profondeur utile : le tiroir n'est pas percé."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",
@@ -184,14 +187,18 @@
     "board": "Panneau",
     "trim": "Délignage",
     "panelsUsed_one": "{{count}} panneau",
-    "panelsUsed_other": "{{count}} panneaux"
+    "panelsUsed_other": "{{count}} panneaux",
+    "drilling": "Perçages",
+    "noDrilling": "Ce meuble n'a rien à percer : ni étagère amovible, ni porte, ni tiroir, ni séparateur.",
+    "downloadDrilling": "Télécharger le plan de perçage (DXF)"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",
-    "dowel_8": "Tourillons 8 mm",
-    "shelf_support": "Taquets d'étagère",
+    "dowel_8x30": "Tourillons 8 × 30",
+    "shelf_support_5": "Taquets d'étagère Ø 5",
+    "slide_ball": "Paires de coulisses à billes {{length}} mm",
     "drawer_slide_pair": "Paires de coulisses",
-    "hinge": "Charnières",
+    "hinge_35_110": "Charnières à boîtier 35, 110°",
     "glue": "Colle à bois"
   },
   "assembly": {
@@ -314,5 +321,13 @@
     "nameFrHint": "Obligatoire : c’est la langue de référence, celle qui sert de repli.",
     "nameEn": "Nom (anglais)",
     "nameEnHint": "Facultatif. Sans traduction, le nom français s’affiche partout."
+  },
+  "purpose": {
+    "hinge_cup": "boîtier de charnière",
+    "hinge_plate": "embase de charnière",
+    "shelf_support": "taquet d'étagère",
+    "slide_cabinet": "profil de caisson",
+    "slide_drawer": "profil de tiroir",
+    "dowel": "tourillon"
   }
 }

@@ -579,6 +579,30 @@ function faceLayout(
   return layout;
 }
 
+/**
+ * Les pièces dont le fil compte : celles qu'on voit.
+ *
+ * Un fond de caisson, un fond de tiroir, les flancs d'un caisson de tiroir sont cachés une
+ * fois le meuble monté. Leur imposer un sens de fil ne changerait rien à l'oeil et
+ * coûterait de la chute à chaque panneau.
+ *
+ * Les cotes de découpe étant normalisées — la plus grande dimension d'abord — `length` est
+ * le bon sens pour toutes : sur un côté, la longueur est la hauteur ; sur un dessus, c'est
+ * la largeur du meuble ; sur un vantail, la hauteur. Dans les trois cas, c'est le sens où
+ * doit courir le fil.
+ *
+ * @see docs/NEFTYA_ENGINE.md §8
+ */
+const GRAINED_ROLES: ReadonlySet<PartRole> = new Set<PartRole>([
+  'top',
+  'bottom',
+  'side',
+  'divider',
+  'shelf',
+  'door',
+  'drawer_face',
+]);
+
 /** La plus grande dimension d'abord : c'est ainsi qu'on lit une cote de découpe. */
 function panel(
   role: PartRole,
@@ -593,9 +617,7 @@ function panel(
     lengthMm: Math.max(a, b),
     widthMm: Math.min(a, b),
     thicknessMm,
-    // Modélisé dès maintenant pour qu'activer la contrainte en V2 n'impose aucune
-    // migration ; l'optimiseur V1 ne s'en sert pas encore.
-    grain: 'length',
+    grain: GRAINED_ROLES.has(role) ? 'length' : 'none',
     edges,
     placement,
   };

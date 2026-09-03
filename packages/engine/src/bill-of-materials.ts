@@ -1,4 +1,6 @@
 import type { Furniture } from './build.js';
+import type { DrillingResult } from './drilling.js';
+import type { HardwareKey } from './hardware.js';
 import type { MaterialKey } from './materials.js';
 import { totalEdgeBandingMm } from './cut-list.js';
 import type { NestingResult, PanelFormat } from './nesting.js';
@@ -27,8 +29,15 @@ export interface AccessoryLine {
   quantity: number;
 }
 
-export type AccessoryKey =
-  'screw_4x50' | 'dowel_8' | 'shelf_support' | 'drawer_slide_pair' | 'hinge' | 'glue';
+/**
+ * Les vis et la colle se déduisent des assemblages ; tout le reste vient du **catalogue de
+ * quincaillerie**, par sa clé de catalogue.
+ *
+ * `slide_ball_350` et non `drawer_slide_pair` : on n'achète pas « une coulisse », on achète
+ * une coulisse de 350. Tant que la longueur restait implicite, le devis chiffrait un
+ * article qui n'existe pas au tarif d'un fournisseur.
+ */
+export type AccessoryKey = 'screw_4x50' | 'glue' | HardwareKey;
 
 export interface BillOfMaterials {
   panels: PanelLine[];
@@ -37,9 +46,15 @@ export interface BillOfMaterials {
   accessories: AccessoryLine[];
 }
 
+/**
+ * @param drilling Le perçage du meuble. La quincaillerie en est **déduite**, jamais
+ * recomptée : un ratio tenu à part de la géométrie finit par diverger d'elle, et c'est
+ * l'atelier qui découvre qu'il manque une charnière.
+ */
 export function billOfMaterials(
   furniture: Furniture,
   nesting: NestingResult,
+  drilling: DrillingResult,
 ): BillOfMaterials {
   const panels = new Map<string, PanelLine>();
 
@@ -61,63 +76,29 @@ export function billOfMaterials(
   return {
     panels: [...panels.values()],
     edgeBandingMm: totalEdgeBandingMm(furniture),
-    accessories: accessories(furniture),
+    accessories: accessories(furniture, drilling),
   };
 }
 
 /**
- * Les accessoires se déduisent des assemblages, pas d'un forfait.
+ * Les accessoires.
  *
- * Les ratios sont ceux de la menuiserie courante, et ils sont **ici**, visibles, plutôt
- * qu'éparpillés dans une vue : le jour où un atelier travaille autrement, il n'y a qu'un
- * endroit à changer.
- */
-/**
- * Le nombre de charnières d'un vantail dépend de sa **hauteur**, pas de son nombre.
+ * **La quincaillerie vient du perçage.** Charnières, coulisses, tourillons et taquets sont
+ * ceux que le plan perce, avec la référence de catalogue retenue — c'est la même liste,
+ * lue deux fois.
  *
- * Deux charnières tiennent une porte basse ; une porte de dressing qui n'en aurait que
- * deux s'affaisse et finit par frotter sur le caisson. Les paliers sont ceux des
- * fabricants de quincaillerie.
+ * Restent les vis et la colle, qui ne se percent pas : leurs ratios sont ceux de la
+ * menuiserie courante, et ils sont **ici**, visibles, plutôt qu'éparpillés dans une vue.
  */
-function hingesFor(leafHeightMm: number): number {
-  if (leafHeightMm <= 900) return 2;
-  if (leafHeightMm <= 1600) return 3;
-  if (leafHeightMm <= 2000) return 4;
-  return 5;
-}
-
-function hinges(furniture: Furniture): number {
-  return furniture.parts
-    .filter((part) => part.role === 'door')
-    .reduce(
-      // La hauteur d'un vantail est sa plus grande dimension : les cotes de découpe sont
-      // normalisées, une porte de 2000 × 498 se lit dans cet ordre.
-      (total, part) =>
-        total + hingesFor(Math.max(part.lengthMm, part.widthMm)) * part.quantity,
-      0,
-    );
-}
-
-function accessories(furniture: Furniture): AccessoryLine[] {
-  const count = (role: string) =>
-    furniture.parts
-      .filter((part) => part.role === role)
-      .reduce((total, part) => total + part.quantity, 0);
-
-  const sides = count('side');
-  const dividers = count('divider');
-  const shelves = count('shelf');
-  const drawers = count('drawer_face');
+function accessories(furniture: Furniture, drilling: DrillingResult): AccessoryLine[] {
+  const sides = furniture.parts
+    .filter((part) => part.role === 'side')
+    .reduce((total, part) => total + part.quantity, 0);
 
   const lines: AccessoryLine[] = [
     // Quatre vis par côté et par extrémité : dessus et dessous.
     { key: 'screw_4x50', quantity: sides * 8 },
-    // Huit tourillons par séparation, quatre par extrémité.
-    { key: 'dowel_8', quantity: dividers * 8 },
-    // Quatre taquets par étagère.
-    { key: 'shelf_support', quantity: shelves * 4 },
-    { key: 'drawer_slide_pair', quantity: drawers },
-    { key: 'hinge', quantity: hinges(furniture) },
+    ...drilling.hardware.map((line) => ({ key: line.key, quantity: line.quantity })),
     { key: 'glue', quantity: 1 },
   ];
 

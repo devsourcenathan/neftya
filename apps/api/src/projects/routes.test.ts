@@ -86,6 +86,7 @@ describe('projets', () => {
       'hasBack',
       'material',
       'parameters',
+      'respectGrain',
     ]);
   });
 

@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { success } from '@neftya/contracts';
 import {
   cutPlanPdf,
+  drillPlanDxf,
+  PLAIN_LABELS,
   technicalDrawing,
   technicalDrawingPdf,
   type ViewName,
@@ -97,6 +99,7 @@ export function registerManufacturingRoutes(
       project: { id: project.id, name: project.name },
       cut_list: plan.cutList,
       nesting: plan.nesting,
+      drilling: plan.drilling,
       bill: plan.bill,
       assembly: plan.assembly,
       ...(withCosts ? { quotation: plan.quotation } : {}),
@@ -129,6 +132,29 @@ export function registerManufacturingRoutes(
         `attachment; filename="${fileNameOf(project.name)}.pdf"`,
       )
       .send(Buffer.from(pdf));
+  });
+
+  /**
+   * Le plan de perçage, en DXF.
+   *
+   * Ses repères sont volontairement **en clair et sans accent**, jamais traduits : un DXF
+   * traverse des lecteurs qui ne disent pas quel encodage ils emploient, et `hinge_cup` se
+   * comprend d'un atelier à l'autre là où « boîtier de charnière » deviendrait illisible
+   * dès le premier logiciel étranger.
+   */
+  app.get('/v1/projects/:id/drilling.dxf', async (request, reply) => {
+    requirePermission(request, 'project.read');
+    const { plan, project } = await planFor(request);
+
+    const dxf = drillPlanDxf(build(project.model), plan.drilling, PLAIN_LABELS);
+
+    return reply
+      .header('content-type', 'image/vnd.dxf')
+      .header(
+        'content-disposition',
+        `attachment; filename="${fileNameOf(project.name)}-percage.dxf"`,
+      )
+      .send(dxf);
   });
 
   /**

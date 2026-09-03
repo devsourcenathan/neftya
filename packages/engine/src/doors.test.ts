@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { build } from './build.js';
 import type { FurnitureInput } from './input.js';
 import { billOfMaterials } from './bill-of-materials.js';
+import { drilling } from './drilling.js';
 import { nest } from './nesting.js';
 import { assemblySteps } from './assembly.js';
 
@@ -189,9 +190,9 @@ describe('avertissements', () => {
 describe('quincaillerie et montage', () => {
   const hingesFor = (input: FurnitureInput) => {
     const furniture = build(input);
-    const bill = billOfMaterials(furniture, nest(furniture));
+    const bill = billOfMaterials(furniture, nest(furniture), drilling(furniture));
 
-    return bill.accessories.find((line) => line.key === 'hinge')?.quantity ?? 0;
+    return bill.accessories.find((line) => line.key === 'hinge_35_110')?.quantity ?? 0;
   };
 
   it.each([

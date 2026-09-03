@@ -75,6 +75,42 @@ export {
 } from './nesting.js';
 
 export {
+  SLIDE_LENGTHS_MM,
+  SLIDES,
+  HINGE,
+  DOWEL,
+  SHELF_SUPPORT,
+  hingesFor,
+  hingePositionsMm,
+  slideFor,
+  type HardwareKey,
+  type HingeSpec,
+  type SlideSpec,
+  type SlideLengthMm,
+  type DowelSpec,
+  type ShelfSupportSpec,
+} from './hardware.js';
+
+export {
+  frameOf,
+  toPartFrame,
+  facingSide,
+  type Axis,
+  type HoleSide,
+  type PartFrame,
+} from './part-frame.js';
+
+export {
+  drilling,
+  type DrilledPart,
+  type DrillingResult,
+  type DrillingWarning,
+  type HardwareLine,
+  type Hole,
+  type HolePurpose,
+} from './drilling.js';
+
+export {
   billOfMaterials,
   type AccessoryKey,
   type AccessoryLine,

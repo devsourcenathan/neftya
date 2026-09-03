@@ -32,3 +32,18 @@ export {
   type TechnicalDrawing,
 } from './technical-drawing.js';
 export { technicalDrawingPdf, type SheetLabels } from './plan-sheet.js';
+export {
+  renderDxf,
+  rectangle,
+  ascii,
+  type DxfDocument,
+  type DxfEntity,
+  type DxfLayer,
+} from './dxf.js';
+export {
+  drillPlanDxf,
+  LAYERS,
+  PLAIN_LABELS,
+  type DrillLabels,
+  type DrillPlanOptions,
+} from './drill-plan.js';

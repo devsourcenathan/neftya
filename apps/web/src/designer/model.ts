@@ -19,6 +19,7 @@ export type DesignerAction =
   | { type: 'dimension'; axis: 'widthMm' | 'heightMm' | 'depthMm'; valueMm: number }
   | { type: 'material'; material: MaterialKey }
   | { type: 'back'; hasBack: boolean }
+  | { type: 'grain'; respectGrain: boolean }
   | { type: 'compartments'; count: number }
   | { type: 'shelves'; index: number; count: number }
   | { type: 'drawers'; index: number; count: number }
@@ -56,6 +57,9 @@ export function reduce(
 
     case 'back':
       return { ...model, hasBack: action.hasBack };
+
+    case 'grain':
+      return { ...model, respectGrain: action.respectGrain };
 
     case 'compartments':
       return { ...model, compartments: resize(model.compartments, action.count) };
