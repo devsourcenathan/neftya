@@ -150,3 +150,30 @@ export const RedoIcon = (props: IconProps) => (
     <path d="m16 5 4 4-4 4" />
   </Svg>
 );
+
+/**
+ * Trois points : « d'autres actions ».
+ *
+ * L'engrenage disait « réglages », ce que le bouton du compte n'est pas — il ouvre un
+ * menu. Sur une barre qui porte déjà un basculement d'affichage, deux engrenages voisins
+ * se confondent.
+ */
+export const MoreIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <circle cx="5" cy="12" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="19" cy="12" r="1" />
+  </Svg>
+);
+
+/** Une prise : six points, la convention universelle du « ceci se déplace ». */
+export const GripIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <circle cx="9" cy="6" r="1" />
+    <circle cx="15" cy="6" r="1" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <circle cx="9" cy="18" r="1" />
+    <circle cx="15" cy="18" r="1" />
+  </Svg>
+);

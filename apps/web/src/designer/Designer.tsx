@@ -4,6 +4,7 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useRef,
   useMemo,
   useReducer,
   useState,
@@ -33,7 +34,7 @@ import {
 import { Controls } from './Controls.js';
 import { PartDetails } from './PartDetails.js';
 import { Layers } from './Layers.js';
-import { type DesignerAction } from './model.js';
+import { resizeAt, type DesignerAction } from './model.js';
 import { canRedo, canUndo, initialHistory, reduceHistory } from './history.js';
 import { CompartmentMenu, type MenuTarget } from './CompartmentMenu.js';
 
@@ -96,6 +97,14 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
 
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuTarget | null>(null);
+
+  /**
+   * Les largeurs au moment où l'on a saisi un séparateur.
+   *
+   * Elles changent pendant qu'on tire : sans ce repère, chaque mouvement s'appliquerait à
+   * un état déjà modifié, et le séparateur partirait plus vite que le pointeur.
+   */
+  const widthsAtGrab = useRef<number[] | null>(null);
   const [explode, setExplode] = useState(0);
   const [mode, setMode] = useState<'3d' | '2d'>('3d');
   const [view, setView] = useState<ViewName>('front');
@@ -293,6 +302,20 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
                       selectedPartId={selectedPartId}
                       onSelect={setSelectedPartId}
                       onContextMenu={setMenu}
+                      handles={{
+                        onDimension: (axis, valueMm) =>
+                          dispatch({ type: 'dimension', axis, valueMm }),
+                        onDividerStart: () => {
+                          widthsAtGrab.current = [...furniture.compartmentWidths];
+                        },
+                        onDividerMoved: (index, deltaMm) => {
+                          const base = widthsAtGrab.current;
+                          if (!base) return;
+
+                          const widths = resizeAt(base, index, deltaMm);
+                          if (widths) dispatch({ type: 'compartmentWidths', widths });
+                        },
+                      }}
                       explode={explode}
                     />
                   </Suspense>

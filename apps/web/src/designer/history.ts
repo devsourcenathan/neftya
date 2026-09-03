@@ -125,10 +125,17 @@ export function reduceHistory(history: History, action: HistoryAction): History 
  * compartiment, en supprimer un : chacun est une décision, et chacun s'annule seul.
  */
 function mergeKey(action: DesignerAction): string | null {
-  // Seule la cote se fait glisser. Ajouter une étagère, une porte ou un tiroir passe par
-  // un compteur : trois clics sont trois décisions, et fondre les deux derniers ferait
-  // reculer de deux quand on demande un.
-  return action.type === 'dimension' ? `dimension:${action.axis}` : null;
+  // Ce qui se fait glisser se fond ; ce qui se clique, non. Trois clics sur un compteur
+  // sont trois décisions, et fondre les deux derniers ferait reculer de deux quand on
+  // demande un.
+  if (action.type === 'dimension') return `dimension:${action.axis}`;
+
+  // Tirer un séparateur émet une action par mouvement de pointeur. Sans fusion, annuler ne
+  // reculerait que d'un millimètre — et il faudrait deux cents `Ctrl+Z` pour défaire un
+  // geste. Un seul séparateur se tire à la fois : la clé n'a pas besoin de son rang.
+  if (action.type === 'compartmentWidths') return 'compartmentWidths';
+
+  return null;
 }
 
 /**

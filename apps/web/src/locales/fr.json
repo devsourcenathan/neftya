@@ -98,7 +98,11 @@
     },
     "respectGrain": "Respecter le sens du fil",
     "respectGrainHint": "Sur un décor bois. Le placement ne pivotera plus les pièces visibles, et pourra demander un panneau de plus.",
-    "compartmentNumber": "Compartiment {{number}}"
+    "compartmentNumber": "Compartiment {{number}}",
+    "reorder": "Déplacer ce compartiment",
+    "reorderHint": "Glissez un compartiment pour changer son rang, ou utilisez les flèches.",
+    "moveUp": "Vers la gauche",
+    "moveDown": "Vers la droite"
   },
   "units": {
     "legend": "Système d'unités",
@@ -155,7 +159,8 @@
     "DRAWER_DOES_NOT_FIT": "Un tiroir ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
     "DOOR_DOES_NOT_FIT": "Un vantail ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
     "DOOR_LEAF_TOO_WIDE": "Un vantail est large : il pèsera sur ses charnières et finira par frotter. Posez-en deux.",
-    "NO_SLIDE_FITS": "Aucune coulisse du commerce ne tient dans {{usableDepthMm}} mm de profondeur utile : le tiroir n'est pas percé."
+    "NO_SLIDE_FITS": "Aucune coulisse du commerce ne tient dans {{usableDepthMm}} mm de profondeur utile : le tiroir n'est pas percé.",
+    "COMPARTMENT_WIDTH_MISMATCH": "Les largeurs imposées totalisent {{requestedMm}} mm pour {{availableMm}} mm disponibles."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",
@@ -353,6 +358,7 @@
       "drawers": "Retirer un tiroir",
       "doors": "Retirer un vantail",
       "compartment": "Supprimer ce compartiment"
-    }
+    },
+    "evenWidths": "Égaliser les largeurs"
   }
 }

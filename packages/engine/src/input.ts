@@ -26,6 +26,19 @@ export const compartment = z.object({
    * compartiment, il ne gagne pas un troisième vantail.
    */
   doors: z.number().int().min(0).max(2).default(0),
+  /**
+   * Largeur intérieure imposée à ce compartiment.
+   *
+   * **Absente, le compartiment est souple** : il se partage à parts égales ce que les
+   * compartiments imposés laissent. C'est le comportement d'origine, et il reste celui par
+   * défaut — un meuble dont on n'a rien dit garde des compartiments réguliers.
+   *
+   * Un socle de tiroirs de 400 mm sous une penderie qui prend le reste ne s'exprimait pas
+   * autrement : la division égale décidait pour le menuisier.
+   *
+   * @see docs/NEFTYA_ENGINE.md §7.3
+   */
+  widthMm: positiveMillimetres.optional(),
 });
 
 export type CompartmentInput = z.infer<typeof compartment>;

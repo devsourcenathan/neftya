@@ -132,6 +132,15 @@ export function CompartmentMenu({
           {t('menu.applyToAll')}
         </Item>
         <Item
+          // Le chemin du retour : sans lui, une largeur posée en tirant un séparateur ne
+          // se retire plus qu'en annulant — et une annulation ne se rattrape pas trois
+          // séances plus tard.
+          disabled={model.compartments.every((entry) => entry.widthMm === undefined)}
+          onClick={() => run({ type: 'evenWidths' })}
+        >
+          {t('menu.evenWidths')}
+        </Item>
+        <Item
           tone="danger"
           // Un meuble sans compartiment n'est plus un meuble.
           disabled={model.compartments.length <= LIMITS.compartments.min}

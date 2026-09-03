@@ -29,7 +29,13 @@ export type DesignerAction =
   /** Retire **ce** compartiment, et non le dernier. */
   | { type: 'removeCompartment'; index: number }
   /** Donne à tous les compartiments le contenu de celui-ci. */
-  | { type: 'applyToAll'; index: number };
+  | { type: 'applyToAll'; index: number }
+  /** Fixe les largeurs intérieures. `undefined` rend un compartiment souple. */
+  | { type: 'compartmentWidths'; widths: readonly (number | undefined)[] }
+  /** Rend tous les compartiments souples : ils se repartagent la largeur également. */
+  | { type: 'evenWidths' }
+  /** Déplace un compartiment dans l'ordre du meuble. */
+  | { type: 'moveCompartment'; from: number; to: number };
 
 /** Bornes de saisie. Le moteur en refuserait d'autres ; autant ne pas les proposer. */
 export const LIMITS = {
@@ -41,7 +47,40 @@ export const LIMITS = {
   drawers: { min: 0, max: 8 },
   // Au-delà de deux, ce n'est plus une porte mais une séparation.
   doors: { min: 0, max: 2 },
+  /** En deçà, un compartiment ne reçoit plus rien : ni étagère, ni tiroir, ni porte. */
+  compartmentWidthMm: { min: 60, max: 4000 },
 } as const;
+
+/**
+ * Tirer un séparateur : ce que devient chaque largeur.
+ *
+ * **Deux compartiments changent, leur somme ne bouge pas.** L'un grandit de ce que l'autre
+ * perd. C'est ce qui garde la largeur du meuble intacte — celle qu'on a mesurée contre un
+ * mur — sans que le moteur ait à rattraper un écart après coup.
+ *
+ * Le déplacement est borné par le voisin : pousser au-delà ne rétrécit pas l'autre en deçà
+ * du minimum, le séparateur s'arrête. Un arrêt franc se comprend ; un compartiment qui
+ * disparaîtrait sous le pointeur, non.
+ */
+export function resizeAt(
+  widths: readonly number[],
+  index: number,
+  deltaMm: number,
+): number[] | null {
+  const left = widths[index];
+  const right = widths[index + 1];
+  if (left === undefined || right === undefined) return null;
+
+  const { min } = LIMITS.compartmentWidthMm;
+  const bounded = Math.max(min - left, Math.min(right - min, Math.round(deltaMm)));
+  if (bounded === 0) return null;
+
+  const next = [...widths];
+  next[index] = left + bounded;
+  next[index + 1] = right - bounded;
+
+  return next;
+}
 
 export function reduce(
   model: ParsedFurnitureInput,
@@ -144,6 +183,50 @@ export function reduce(
       if (!source) return model;
 
       return { ...model, compartments: model.compartments.map(() => ({ ...source })) };
+    }
+
+    /*
+     * Tirer un séparateur écrit **deux** largeurs d'un coup — celle qui grandit et celle
+     * qui rétrécit. Deux actions séparées feraient deux pas d'historique pour un geste, et
+     * le premier `Ctrl+Z` laisserait le meuble dans un état que personne n'a vu.
+     */
+    case 'compartmentWidths':
+      return {
+        ...model,
+        compartments: model.compartments.map((compartment, index) => {
+          const widthMm = action.widths[index];
+
+          if (widthMm === undefined) {
+            const { widthMm: _dropped, ...rest } = compartment;
+            return rest;
+          }
+
+          return { ...compartment, widthMm: Math.max(1, Math.round(widthMm)) };
+        }),
+      };
+
+    /*
+     * Le chemin du retour.
+     *
+     * Sans lui, une largeur posée une fois ne se retire plus qu'en annulant — et une
+     * annulation ne se rattrape pas trois séances plus tard.
+     */
+    case 'evenWidths':
+      return {
+        ...model,
+        compartments: model.compartments.map(({ widthMm: _dropped, ...rest }) => rest),
+      };
+
+    case 'moveCompartment': {
+      const { from, to } = action;
+      if (from === to) return model;
+      if (!model.compartments[from] || !model.compartments[to]) return model;
+
+      const compartments = [...model.compartments];
+      const [moved] = compartments.splice(from, 1);
+      compartments.splice(to, 0, moved as (typeof compartments)[number]);
+
+      return { ...model, compartments };
     }
   }
 }

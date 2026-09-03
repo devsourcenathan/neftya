@@ -24,6 +24,7 @@ export interface Warning {
     | 'NO_BACK_PANEL'
     | 'FRONT_GAP_OFF_DIVIDER'
     | 'COMPARTMENT_TOO_NARROW'
+    | 'COMPARTMENT_WIDTH_MISMATCH'
     | 'DRAWER_DOES_NOT_FIT'
     | 'DOOR_DOES_NOT_FIT'
     | 'DOOR_LEAF_TOO_WIDE';
@@ -36,6 +37,15 @@ export interface Furniture {
   input: ParsedFurnitureInput;
   parameters: Parameters;
   parts: Part[];
+  /**
+   * La largeur intérieure de chaque compartiment, dans l'ordre.
+   *
+   * Rendue parce que le moteur vient de la calculer : la redevenir depuis la position des
+   * séparateurs marcherait, mais ce serait refaire un partage dont le résultat est là.
+   * C'est ce que lit l'interface pour poser une largeur au moment où l'on tire un
+   * séparateur.
+   */
+  compartmentWidths: number[];
   warnings: Warning[];
   /** Hauteur au sol, pieds compris. Affichée, jamais utilisée dans une cote. */
   totalHeightWithLegsMm: number;
@@ -111,7 +121,9 @@ export function build(rawInput: FurnitureInput): Furniture {
     });
   }
 
-  const compartmentWidths = divideEvenly(availableWidth, compartmentCount);
+  const shared = shareWidths(input.compartments, availableWidth);
+  const compartmentWidths = shared.widths;
+  warnings.push(...shared.warnings);
 
   // Profondeur utile : les étagères, séparateurs et tiroirs s'arrêtent devant le fond.
   const innerDepth = input.hasBack ? depth - p.backSetbackMm : depth;
@@ -149,16 +161,17 @@ export function build(rawInput: FurnitureInput): Furniture {
     // Tout ce que cette itération ajoute appartient à ce compartiment, et rien d'autre.
     const firstOfCompartment = drafts.length;
 
-    drafts.push(
-      ...shelvesOf(
-        compartment.shelves,
-        span,
-        innerHeight,
-        innerDepth,
-        e,
-        p.shelfSideClearanceMm,
-      ),
+    const shelves = shelvesOf(
+      compartment.shelves,
+      span,
+      innerHeight,
+      innerDepth,
+      e,
+      p.shelfSideClearanceMm,
     );
+
+    drafts.push(...shelves.drafts);
+    warnings.push(...shelves.warnings);
 
     const face = faces[index] as { startMm: number; widthMm: number };
     const rows = facadeRows(compartment, height, p);
@@ -224,8 +237,78 @@ export function build(rawInput: FurnitureInput): Furniture {
     input,
     parameters: p,
     parts,
+    compartmentWidths,
     warnings,
     totalHeightWithLegsMm: height + p.legHeightMm,
+  };
+}
+
+/**
+ * Le partage de la largeur intérieure entre les compartiments.
+ *
+ * **Une largeur imposée est honorée ; ce qui reste se divise également entre les autres.**
+ * C'est ce qui permet un socle de tiroirs de 400 mm sous une penderie qui prend le reste,
+ * sans rien imposer à qui n'a rien demandé : un meuble dont aucune largeur n'est fixée se
+ * comporte exactement comme avant.
+ *
+ * Deux cas se signalent plutôt que de se rattraper en silence :
+ *
+ *  - **les largeurs imposées dépassent la place** : le meuble n'est pas constructible tel
+ *    quel, et donner des largeurs négatives aux souples produirait une liste de découpe
+ *    fausse. Les souples reçoivent alors une largeur nulle, ce que le contrôle de
+ *    compartiment trop étroit voit déjà ;
+ *  - **tous les compartiments sont imposés et leur somme ne tombe pas juste** : le dernier
+ *    absorbe l'écart. La largeur du meuble fait foi — c'est elle qu'on a mesurée contre un
+ *    mur, et un caisson qui ne la respecterait pas laisserait un vide à l'intérieur.
+ */
+function shareWidths(
+  compartments: readonly { widthMm?: number | undefined }[],
+  availableWidth: number,
+): { widths: number[]; warnings: Warning[] } {
+  const flexible = compartments.filter(
+    (compartment) => compartment.widthMm === undefined,
+  );
+
+  if (flexible.length === compartments.length) {
+    return { widths: divideEvenly(availableWidth, compartments.length), warnings: [] };
+  }
+
+  const requested = compartments.reduce(
+    (total, compartment) => total + (compartment.widthMm ?? 0),
+    0,
+  );
+  const remaining = availableWidth - requested;
+  const warnings: Warning[] = [];
+
+  if (flexible.length === 0) {
+    const widths = compartments.map((compartment) => compartment.widthMm as number);
+
+    if (remaining !== 0) {
+      warnings.push({
+        code: 'COMPARTMENT_WIDTH_MISMATCH',
+        details: { requestedMm: requested, availableMm: availableWidth },
+      });
+      widths[widths.length - 1] = (widths.at(-1) as number) + remaining;
+    }
+
+    return { widths, warnings };
+  }
+
+  if (remaining < flexible.length) {
+    warnings.push({
+      code: 'COMPARTMENT_WIDTH_MISMATCH',
+      details: { requestedMm: requested, availableMm: availableWidth },
+    });
+  }
+
+  const share = divideEvenly(Math.max(0, remaining), flexible.length);
+  let next = 0;
+
+  return {
+    widths: compartments.map(
+      (compartment) => compartment.widthMm ?? (share[next++] as number),
+    ),
+    warnings,
   };
 }
 
@@ -240,11 +323,27 @@ function shelvesOf(
   innerDepth: number,
   thickness: number,
   clearanceMm: number,
-): DraftPart[] {
-  if (count === 0) return [];
+): { drafts: DraftPart[]; warnings: Warning[] } {
+  if (count === 0) return { drafts: [], warnings: [] };
 
   const spaces = divideEvenly(innerHeight - count * thickness, count + 1);
   const widthMm = span.widthMm - clearanceMm * 2;
+
+  // Un compartiment trop étroit pour recevoir une étagère n'en produit **aucune**, et le
+  // signale. Coupée à une cote nulle ou négative, elle apparaîtrait dans la liste de
+  // découpe comme une pièce à scier — et personne ne peut scier −4 mm.
+  if (widthMm <= 0) {
+    return {
+      drafts: [],
+      warnings: [
+        {
+          code: 'COMPARTMENT_TOO_NARROW',
+          details: { availableWidth: span.widthMm, compartmentCount: 1 },
+        },
+      ],
+    };
+  }
+
   const drafts: DraftPart[] = [];
 
   let y = thickness;
@@ -265,7 +364,7 @@ function shelvesOf(
     y += thickness;
   }
 
-  return drafts;
+  return { drafts, warnings: [] };
 }
 
 /**

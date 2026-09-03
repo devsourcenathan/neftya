@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { portalUrl, signOut, type Session } from './session.js';
 import { useSession } from './SessionContext.js';
-import { SettingsIcon } from '../ui/icons.js';
+import { MoreIcon } from '../ui/icons.js';
 
 /**
  * Qui je suis, et les trois portes qui vont avec.
@@ -145,6 +145,18 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
             </div>
           )}
 
+          {/* Les réglages de Neftya vivent ici plutôt que dans la navigation : ils se
+              règlent une fois et ne se visitent pas. La barre garde les lieux où l'on
+              travaille. */}
+          <Link
+            to="/settings"
+            role="menuitem"
+            className="block rounded px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-low"
+            onClick={() => setOpen(false)}
+          >
+            {t('settings.title')}
+          </Link>
+
           {/* Deux liens, pas deux écrans : le portail détient le compte et l'abonnement. */}
           <MenuLink href={portalUrl('account')}>{t('account.profile')}</MenuLink>
           <MenuLink href={portalUrl('subscription')}>
@@ -189,7 +201,7 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
           )}
         </span>
         <span aria-hidden="true" className={collapsed ? 'hidden' : 'hidden lg:block'}>
-          <SettingsIcon />
+          <MoreIcon />
         </span>
       </button>
     </div>

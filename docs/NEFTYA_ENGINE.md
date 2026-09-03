@@ -367,6 +367,21 @@ charnières et finira par frotter, mais c'est au menuisier de trancher.
 
 ### 7.3 Répartition d'un espace intérieur
 
+> **Depuis le 3 septembre 2026, une largeur peut être imposée.** `widthMm` sur un
+> compartiment le fige ; les compartiments qui n'en portent pas se partagent également ce
+> qui reste. Un socle de tiroirs de 400 mm sous une penderie qui prend le reste ne
+> s'exprimait pas autrement — la division égale décidait à la place du menuisier.
+>
+> Deux cas se signalent plutôt que de se rattraper en silence. Des largeurs qui **dépassent
+> la place** émettent `COMPARTMENT_WIDTH_MISMATCH`, et les compartiments souples reçoivent
+> zéro — un compartiment trop étroit ne produit alors **aucune** étagère, plutôt qu'une
+> pièce de cote négative. Quand **tous** les compartiments sont imposés et que leur somme
+> ne tombe pas juste, le dernier absorbe l'écart : la largeur du meuble fait foi, c'est
+> elle qu'on a mesurée contre un mur.
+>
+> Un modèle sans aucune largeur imposée se comporte exactement comme avant.
+
+
 Pour `n` compartiments dans une largeur intérieure `Li` avec `k = n − 1` séparateurs :
 
 ```text

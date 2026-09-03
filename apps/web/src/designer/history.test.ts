@@ -196,3 +196,27 @@ describe('repartir d’un modèle chargé', () => {
     expect(canRedo(loaded)).toBe(false);
   });
 });
+
+describe('tirer un séparateur', () => {
+  it('ne fait qu’un pas pour tout le geste', () => {
+    // Le glissement émet une action par mouvement de pointeur. Sans fusion, il faudrait
+    // deux cents Ctrl+Z pour défaire un geste.
+    const dragged = play(
+      start(),
+      [
+        [640, 560],
+        [660, 540],
+        [680, 520],
+      ].map((widths, step) => [
+        { type: 'compartmentWidths', widths } as DesignerAction,
+        step * 30,
+      ]),
+    );
+
+    expect(dragged.past).toHaveLength(1);
+    expect(dragged.present.compartments[0]?.widthMm).toBe(680);
+    expect(
+      reduceHistory(dragged, { type: 'undo' }).present.compartments[0]?.widthMm,
+    ).toBeUndefined();
+  });
+});

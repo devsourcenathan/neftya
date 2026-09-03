@@ -10,6 +10,7 @@ import {
 import { roundingIsNotable, stepFor } from '@neftya/units';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 import { SectionTitle } from '../ui/index.js';
+import { GripIcon } from '../ui/icons.js';
 import { LIMITS, type DesignerAction } from './model.js';
 
 /**
@@ -28,6 +29,9 @@ export interface ControlsProps {
 }
 
 export function Controls({ model, dispatch }: ControlsProps) {
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+
   const { t } = useTranslation();
 
   return (
@@ -58,17 +62,85 @@ export function Controls({ model, dispatch }: ControlsProps) {
           onChange={(count) => dispatch({ type: 'compartments', count })}
         />
 
+        {model.compartments.length > 1 && (
+          <p className="text-xs text-ink-variant">{t('designer.reorderHint')}</p>
+        )}
+
         <ol className="flex flex-col gap-3">
           {model.compartments.map((compartment, index) => (
             // La clé est l'indice : les compartiments n'ont pas d'identité propre, ils
             // sont définis par leur rang dans le meuble.
             <li
               key={index}
-              className="rounded-md border border-hairline bg-canvas/60 p-3"
+              draggable={model.compartments.length > 1}
+              onDragStart={(event) => {
+                setDragging(index);
+                event.dataTransfer.effectAllowed = 'move';
+                // Firefox n'entame pas un glissement sans données transportées.
+                event.dataTransfer.setData('text/plain', String(index));
+              }}
+              onDragEnd={() => {
+                setDragging(null);
+                setOver(null);
+              }}
+              onDragOver={(event) => {
+                if (dragging === null) return;
+                // Sans cela, le navigateur refuse le dépôt et le curseur dit « interdit ».
+                event.preventDefault();
+                setOver(index);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragging !== null && dragging !== index) {
+                  dispatch({ type: 'moveCompartment', from: dragging, to: index });
+                }
+                setDragging(null);
+                setOver(null);
+              }}
+              className={`rounded-md border bg-canvas/60 p-3 transition-colors ${
+                over === index && dragging !== null && dragging !== index
+                  ? 'border-accent'
+                  : 'border-hairline'
+              } ${dragging === index ? 'opacity-50' : ''}`}
             >
-              <p className="mb-2 text-sm font-medium text-ink">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
+                {model.compartments.length > 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="cursor-grab text-ink-variant"
+                    title={t('designer.reorder')}
+                  >
+                    <GripIcon />
+                  </span>
+                )}
                 {t('designer.compartment', { index: index + 1 })}
               </p>
+
+              {/* Le clavier fait ce que le glissement fait, et ce n'est pas une politesse :
+                  un glisser-déposer sans équivalent au clavier rend le réordonnancement
+                  impossible à qui n'utilise pas de souris. */}
+              {model.compartments.length > 1 && (
+                <span className="mb-2 flex gap-1">
+                  <Move
+                    label={t('designer.moveUp')}
+                    disabled={index === 0}
+                    onClick={() =>
+                      dispatch({ type: 'moveCompartment', from: index, to: index - 1 })
+                    }
+                  >
+                    ↑
+                  </Move>
+                  <Move
+                    label={t('designer.moveDown')}
+                    disabled={index === model.compartments.length - 1}
+                    onClick={() =>
+                      dispatch({ type: 'moveCompartment', from: index, to: index + 1 })
+                    }
+                  >
+                    ↓
+                  </Move>
+                </span>
+              )}
               <div className="flex flex-col gap-2">
                 <CountControl
                   label={t('designer.shelves')}
@@ -252,5 +324,31 @@ function CountControl({ label, value, min, max, onChange }: CountControlProps) {
         aria-label={label}
       />
     </div>
+  );
+}
+
+/** Le pendant clavier du glissement. Deux flèches, et le rang change. */
+function Move({
+  onClick,
+  disabled,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="flex h-6 w-6 items-center justify-center rounded border border-outline-variant text-sm text-ink transition-colors hover:bg-surface-low disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+    >
+      {children}
+    </button>
   );
 }

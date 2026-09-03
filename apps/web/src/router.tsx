@@ -8,13 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Manufacturing } from './manufacturing/Manufacturing.js';
 import { Plans } from './plans/Plans.js';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CubeIcon,
-  PlanIcon,
-  SettingsIcon,
-} from './ui/icons.js';
+import { ChevronLeftIcon, ChevronRightIcon, CubeIcon, PlanIcon } from './ui/icons.js';
 import { AccountMenu } from './sekuu/AccountMenu.js';
 import { useMediaQuery } from './ui/useMediaQuery.js';
 import { usePersisted } from './ui/usePersisted.js';
@@ -114,9 +108,6 @@ function SideNav({
       >
         <NavItem to="/" icon={<PlanIcon />} collapsed={collapsed}>
           {t('nav.projects')}
-        </NavItem>
-        <NavItem to="/settings" icon={<SettingsIcon />} collapsed={collapsed}>
-          {t('settings.title')}
         </NavItem>
       </div>
 

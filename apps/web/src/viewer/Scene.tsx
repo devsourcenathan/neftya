@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Bounds, ContactShadows, OrbitControls } from '@react-three/drei';
 import type { Furniture, Part, Placement } from '@neftya/engine';
+import { Handles } from './Handles.js';
 
 /**
  * La 3D.
@@ -56,6 +57,17 @@ export interface SceneProps {
   onContextMenu?: (
     target: { compartment: number; xPx: number; yPx: number } | null,
   ) => void;
+  /**
+   * Les poignées de manipulation directe.
+   *
+   * Absentes, la scène est en lecture seule — ce qui reste le bon comportement partout
+   * ailleurs que dans le concepteur.
+   */
+  handles?: {
+    onDimension: (axis: 'widthMm' | 'heightMm' | 'depthMm', valueMm: number) => void;
+    onDividerStart: (index: number) => void;
+    onDividerMoved: (index: number, deltaMm: number) => void;
+  };
   onSelect: (partId: string | null) => void;
   /** Écarte les pièces depuis le centre, de 0 (assemblé) à 1 (éclaté). */
   explode: number;
@@ -89,6 +101,7 @@ export function Scene({
   selectedPartId,
   onSelect,
   onContextMenu,
+  handles,
   explode,
   hidden,
 }: SceneProps) {
@@ -152,6 +165,11 @@ export function Scene({
             )),
           )}
         </group>
+        {/* Hors du groupe éclaté : une poignée qui s'envolerait avec la pièce ne
+            réglerait plus rien. */}
+        {handles && explode === 0 && (
+          <Handles furniture={furniture} centre={centre} {...handles} />
+        )}
       </Bounds>
 
       {/* L'ombre de contact pose le meuble : sans elle il flotte, et l'œil ne sait plus

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { build } from '@neftya/engine';
-import { LIMITS, defaultModel, reduce } from './model.js';
+import { LIMITS, defaultModel, reduce, resizeAt } from './model.js';
 
 /**
  * Les actions d'un menu contextuel : dupliquer, supprimer, appliquer à tous.
@@ -130,5 +130,99 @@ describe('le moteur suit', () => {
       .filter((index): index is number => index !== undefined);
 
     expect(Math.max(...compartments)).toBe(after.compartments.length - 1);
+  });
+});
+
+describe('déplacer un compartiment', () => {
+  it('le pose au rang visé, en décalant les autres', () => {
+    const after = reduce(MODEL, { type: 'moveCompartment', from: 0, to: 2 });
+    const before = contents(MODEL);
+
+    expect(contents(after)).toEqual([before[1], before[2], before[0]]);
+  });
+
+  it('ne change rien quand le rang est le même', () => {
+    expect(reduce(MODEL, { type: 'moveCompartment', from: 1, to: 1 })).toBe(MODEL);
+  });
+
+  it('ignore un rang qui n’existe pas', () => {
+    expect(reduce(MODEL, { type: 'moveCompartment', from: 0, to: 9 })).toBe(MODEL);
+    expect(reduce(MODEL, { type: 'moveCompartment', from: 9, to: 0 })).toBe(MODEL);
+  });
+
+  it('n’en perd ni n’en gagne aucun', () => {
+    for (const to of [0, 1, 2]) {
+      const after = reduce(MODEL, { type: 'moveCompartment', from: 1, to });
+
+      expect(after.compartments).toHaveLength(MODEL.compartments.length);
+      expect(contents(after).sort()).toEqual(contents(MODEL).sort());
+    }
+  });
+});
+
+describe('les largeurs imposées', () => {
+  it('s’écrivent toutes d’un coup', () => {
+    // Tirer un séparateur change **deux** largeurs. Deux actions feraient deux pas
+    // d'historique pour un geste, et le premier Ctrl+Z laisserait le meuble dans un état
+    // que personne n'a vu.
+    const after = reduce(MODEL, {
+      type: 'compartmentWidths',
+      widths: [400, 600, undefined],
+    });
+
+    expect(after.compartments.map((entry) => entry.widthMm)).toEqual([
+      400,
+      600,
+      undefined,
+    ]);
+  });
+
+  it('rendent un compartiment souple quand on les retire', () => {
+    const fixed = reduce(MODEL, {
+      type: 'compartmentWidths',
+      widths: [400, 600, 700],
+    });
+    const loosened = reduce(fixed, { type: 'evenWidths' });
+
+    // Le chemin du retour : une largeur posée doit pouvoir se défaire autrement qu'en
+    // annulant, parce qu'une annulation ne se rattrape pas trois séances plus tard.
+    for (const compartment of loosened.compartments) {
+      expect('widthMm' in compartment).toBe(false);
+    }
+  });
+
+  it('sont des millimètres entiers', () => {
+    const after = reduce(MODEL, {
+      type: 'compartmentWidths',
+      widths: [400.6, 599.2, undefined],
+    });
+
+    // Le moteur ne travaille qu'en entiers : une largeur fractionnaire s'y arrondirait
+    // ailleurs, et deux arrondis valent une cote fausse.
+    expect(after.compartments[0]?.widthMm).toBe(401);
+    expect(after.compartments[1]?.widthMm).toBe(599);
+  });
+});
+
+describe('tirer un séparateur', () => {
+  it('donne à l’un ce qu’il prend à l’autre', () => {
+    const widths = resizeAt([600, 600, 600], 0, 80);
+
+    // La somme ne bouge pas : c'est ce qui garde la largeur du meuble intacte sans que le
+    // moteur ait à rattraper un écart après coup.
+    expect(widths).toEqual([680, 520, 600]);
+  });
+
+  it('s’arrête sur le minimum du voisin', () => {
+    const widths = resizeAt([600, 100, 600], 0, 500) as number[];
+
+    // Un arrêt franc se comprend ; un compartiment qui disparaîtrait sous le pointeur, non.
+    expect(widths[1]).toBe(LIMITS.compartmentWidthMm.min);
+    expect((widths[0] as number) + (widths[1] as number)).toBe(700);
+  });
+
+  it('ne rend rien quand il n’y a rien à déplacer', () => {
+    expect(resizeAt([600, 600], 1, 40)).toBeNull();
+    expect(resizeAt([600, 600], 0, 0)).toBeNull();
   });
 });

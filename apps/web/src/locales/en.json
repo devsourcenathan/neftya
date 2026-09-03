@@ -98,7 +98,11 @@
     },
     "respectGrain": "Follow the grain direction",
     "respectGrainHint": "For a wood decor. Visible parts will no longer be rotated when nesting, which may cost an extra panel.",
-    "compartmentNumber": "Compartment {{number}}"
+    "compartmentNumber": "Compartment {{number}}",
+    "reorder": "Move this compartment",
+    "reorderHint": "Drag a compartment to reorder it, or use the arrows.",
+    "moveUp": "Towards the left",
+    "moveDown": "Towards the right"
   },
   "units": {
     "legend": "Unit system",
@@ -155,7 +159,8 @@
     "DRAWER_DOES_NOT_FIT": "A drawer does not fit its bay: no parts are produced for it.",
     "DOOR_DOES_NOT_FIT": "A door leaf does not fit its bay: no parts are produced for it.",
     "DOOR_LEAF_TOO_WIDE": "A door leaf is wide: it will pull on its hinges and end up rubbing. Fit a pair.",
-    "NO_SLIDE_FITS": "No off-the-shelf slide fits {{usableDepthMm}} mm of usable depth: the drawer is left undrilled."
+    "NO_SLIDE_FITS": "No off-the-shelf slide fits {{usableDepthMm}} mm of usable depth: the drawer is left undrilled.",
+    "COMPARTMENT_WIDTH_MISMATCH": "The fixed widths add up to {{requestedMm}} mm for {{availableMm}} mm available."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
@@ -353,6 +358,7 @@
       "drawers": "Remove a drawer",
       "doors": "Remove a leaf",
       "compartment": "Delete this compartment"
-    }
+    },
+    "evenWidths": "Even out the widths"
   }
 }
