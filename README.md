@@ -116,6 +116,59 @@ curl -s "http://localhost:4000/token?products=autre"     # 403, pas abonné
 curl -s "http://localhost:4000/token?projects_max=1"     # 409 au deuxième projet
 ```
 
+### Contre la vraie plateforme
+
+L'Identity de poche sert à travailler hors ligne. Pour éprouver l'intégration réelle —
+session unique entre produits, abonnement, quotas — Neftya se branche sur une Sekuu
+Platform locale.
+
+**Un nom d'hôte partagé est obligatoire.** Le jeton de rafraîchissement est un cookie posé
+sur `.sekuu.test` : une page servie depuis `localhost` ne le verra jamais, et l'application
+bouclera sur la connexion sans dire pourquoi. Dans le fichier `hosts` :
+
+```
+127.0.0.1 platform.sekuu.test neftya.sekuu.test
+```
+
+| | Adresse |
+| --- | --- |
+| Plateforme | `http://platform.sekuu.test:8000` |
+| API Neftya | `http://neftya.sekuu.test:3000` |
+| Interface Neftya | `http://neftya.sekuu.test:5174` |
+
+**5174 et non 5173** : DealerOS occupe le 5173, et les deux produits doivent pouvoir
+tourner ensemble — c'est la seule façon de vérifier qu'une session ouverte sur l'un ouvre
+l'autre.
+
+`.env` :
+
+```
+SEKUU_JWKS_URL=http://platform.sekuu.test:8000/.well-known/jwks.json
+SEKUU_ISSUER=https://identity.sekuu.com
+SEKUU_AUDIENCE=sekuu-platform
+NEFTYA_ALLOWED_ORIGINS=http://neftya.sekuu.test:5174
+```
+
+`apps/web/.env.local` :
+
+```
+VITE_API_URL=http://neftya.sekuu.test:3000
+VITE_SEKUU_IDENTITY_URL=http://platform.sekuu.test:8000
+VITE_SEKUU_PORTAL_URL=http://platform.sekuu.test:8000
+```
+
+`SEKUU_ISSUER` reste `https://identity.sekuu.com`, y compris en local : c'est le claim
+`iss` que la plateforme écrit dans ses jetons, une chaîne comparée et non une adresse
+appelée. Le JWKS, lui, se lit à l'adresse locale.
+
+Côté plateforme, deux choses sans lesquelles rien ne fonctionne :
+
+- l'origine de l'interface dans `SEKUU_ALLOWED_ORIGINS` — c'est la même liste qui gouverne
+  le CORS **et** la validation du `redirect` après connexion. Absente, la redirection
+  retombe silencieusement sur l'accueil de Sekuu, sans erreur ;
+- le produit `neftya` accordé à l'organisation. Sans lui, le claim `products` ne le porte
+  pas et l'API répond `403` à un compte qui vient pourtant d'être créé pour lui.
+
 ### Exploiter
 
 [OPERATIONS.md](docs/OPERATIONS.md) : configuration, sondes, journaux, sauvegarde,
