@@ -4,6 +4,7 @@ import {
   LIMITS,
   PULLS_PER_COMPARTMENT_MAX,
   defaultModel,
+  normalise,
   reduce,
   resizeAt,
 } from './model.js';
@@ -352,5 +353,62 @@ describe('les poignées', () => {
     }
 
     expect(model.compartments[0]?.pulls).toHaveLength(PULLS_PER_COMPARTMENT_MAX);
+  });
+});
+
+describe('un projet enregistré avant les poignées', () => {
+  /**
+   * Ce qu'une base contient réellement pour un projet d'avant.
+   *
+   * Ni `pulls`, ni `widthMm`, ni `respectGrain` : ces champs n'existaient pas quand il a
+   * été écrit. Le type qui l'annonce `ParsedFurnitureInput` ment — c'est du JSON relu.
+   */
+  const LEGACY = {
+    dimensions: { widthMm: 1800, heightMm: 2000, depthMm: 400 },
+    compartments: [
+      { shelves: 3, drawers: 0, doors: 0 },
+      { shelves: 1, drawers: 2, doors: 1 },
+    ],
+    material: 'mdf',
+    hasBack: true,
+  };
+
+  it('retrouve les champs que le schéma a gagnés depuis', () => {
+    const model = normalise(LEGACY);
+
+    for (const compartment of model.compartments) {
+      expect(compartment.pulls).toEqual([]);
+    }
+    expect(model.respectGrain).toBe(false);
+  });
+
+  it('survit au clic droit', () => {
+    // **Le défaut signalé.** `compartment.pulls.some(...)` levait « Cannot read properties
+    // of undefined » et le menu contextuel cessait de s'ouvrir sur tout projet ancien.
+    const model = normalise(LEGACY);
+
+    expect(() =>
+      reduce(model, {
+        type: 'addPull',
+        index: 0,
+        target: 'door',
+        slot: 0,
+        key: 'pull_knob',
+      }),
+    ).not.toThrow();
+  });
+
+  it('ne touche pas à ce qui était déjà là', () => {
+    const model = normalise(LEGACY);
+
+    expect(model.dimensions).toEqual(LEGACY.dimensions);
+    expect(model.compartments.map((entry) => entry.shelves)).toEqual([3, 1]);
+    expect(model.compartments[1]?.drawers).toBe(2);
+  });
+
+  it('est sans effet sur un modèle déjà à jour', () => {
+    // Passer deux fois ne doit rien changer : la normalisation est une remise en forme,
+    // pas une transformation.
+    expect(normalise(normalise(MODEL))).toEqual(normalise(MODEL));
   });
 });

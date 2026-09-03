@@ -371,6 +371,30 @@ function clamp(value: number, { min, max }: { min: number; max: number }): numbe
 }
 
 /**
+ * Remet un modèle à la forme courante du schéma.
+ *
+ * ## Le défaut que ceci existe pour corriger
+ *
+ * Un projet enregistré **avant** qu'un champ existe ne le porte pas. Ses compartiments
+ * n'avaient ni `pulls`, ni `widthMm`, ni `respectGrain` : la première lecture de
+ * `compartment.pulls.some(...)` levait « Cannot read properties of undefined », et le clic
+ * droit cessait de fonctionner sur tout projet ancien.
+ *
+ * ## Pourquoi ici, et pas dix `?? []`
+ *
+ * Parce que la cause n'est pas l'absence d'un champ : c'est que le modèle venu de l'API
+ * n'est **jamais repassé par le schéma**. Il arrive typé `ParsedFurnitureInput` — le type
+ * affirme qu'il l'est, le JSON dit autre chose — et chaque champ ajouté au moteur rouvre
+ * la même faille ailleurs.
+ *
+ * Le schéma est le seul endroit qui connaisse les valeurs par défaut. Le traverser une
+ * fois à l'ouverture les remplit toutes, y compris celles qui n'existent pas encore.
+ */
+export function normalise(model: unknown): ParsedFurnitureInput {
+  return furnitureInput.parse(model);
+}
+
+/**
  * Le meuble de départ.
  *
  * Passé par le schéma du moteur pour que les valeurs par défaut — paramètres d'assemblage,

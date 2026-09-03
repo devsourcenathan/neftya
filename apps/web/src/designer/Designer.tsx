@@ -85,6 +85,8 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
   const { t } = useTranslation();
   const { unitSystem, setUnitSystem, format } = usePreferences();
 
+  // `initialHistory` repasse le modèle par le schéma : un projet enregistré avant l'ajout
+  // d'un champ ne le porte pas, et le type qui l'annonce parsé ment.
   const [history, record] = useReducer(reduceHistory, initialModel, initialHistory);
   const model = history.present;
 

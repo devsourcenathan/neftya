@@ -205,3 +205,40 @@ describe('réglages', () => {
     expect(response.statusCode).toBe(422);
   });
 });
+
+describe('un projet enregistré avant un champ du schéma', () => {
+  it('ressort à la forme courante', async () => {
+    const id = (await create({ name: 'Ancien', model: SAMPLE_MODEL })).json().data
+      .id as string;
+
+    // Ce qu'une base contient réellement pour un projet d'avant : ses compartiments n'ont
+    // ni `pulls`, ni `widthMm`, ni `respectGrain`. On l'écrit à la main, parce que la
+    // route de création, elle, normalise déjà.
+    await harness.db
+      .updateTable('projects')
+      .set({
+        // Écrit sans passer par le schéma : c'est bien ce que contient une base dont
+        // les lignes précèdent l'ajout du champ.
+        model: {
+          dimensions: { widthMm: 900, heightMm: 700, depthMm: 400 },
+          compartments: [{ shelves: 2, drawers: 0, doors: 1 }],
+          material: 'mdf',
+          hasBack: true,
+        } as never,
+      })
+      .where('id', '=', id)
+      .execute();
+
+    const response = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/projects/${id}`,
+      headers: await harness.authorization(),
+    });
+
+    // Sans cela, le client reçoit un objet annoncé parsé qui ne l'est pas, et le premier
+    // `compartment.pulls.some(...)` lève « Cannot read properties of undefined ».
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.model.compartments[0].pulls).toEqual([]);
+    expect(response.json().data.model.respectGrain).toBe(false);
+  });
+});

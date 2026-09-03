@@ -182,7 +182,17 @@ function toResource(project: Project) {
   return {
     id: project.id,
     name: project.name,
-    model: project.model,
+    /*
+     * Repassé par le schéma avant de partir.
+     *
+     * Un projet enregistré **avant** qu'un champ existe ne le porte pas en base. Le rendre
+     * tel quel donne au client un objet annoncé `ParsedFurnitureInput` qui n'en est pas
+     * un — et le premier `compartment.pulls.some(...)` lève.
+     *
+     * Corrigé côté interface, mais l'API est le bon endroit : elle sert tous les clients,
+     * et c'est elle qui promet la forme. Le coût est une analyse par projet rendu.
+     */
+    model: furnitureInput.parse(project.model),
     status: statusOf(project),
     export_count: project.exportCount,
     created_by: project.createdBy,

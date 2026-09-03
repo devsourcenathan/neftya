@@ -220,3 +220,53 @@ describe('tirer un séparateur', () => {
     ).toBeUndefined();
   });
 });
+
+describe('un modèle d’avant', () => {
+  /** Ce qu'une base contient pour un projet écrit avant que `pulls` existe. */
+  const LEGACY = {
+    dimensions: { widthMm: 1800, heightMm: 2000, depthMm: 400 },
+    compartments: [{ shelves: 3, drawers: 0, doors: 0 }],
+    material: 'mdf',
+    hasBack: true,
+  };
+
+  it('entre dans l’historique remis à la forme courante', () => {
+    // **La garde est ici et non chez l'appelant**, parce qu'un appelant peut l'oublier —
+    // et l'a oublié : le premier clic droit levait « Cannot read properties of undefined ».
+    const history = initialHistory(LEGACY);
+
+    expect(history.present.compartments[0]?.pulls).toEqual([]);
+    expect(history.present.respectGrain).toBe(false);
+  });
+
+  it('supporte une action qui lit les nouveaux champs', () => {
+    const opened = initialHistory(LEGACY);
+    const after = reduceHistory(opened, {
+      type: 'do',
+      action: { type: 'doors', index: 0, count: 1 },
+      atMs: 0,
+    });
+
+    expect(() =>
+      reduceHistory(after, {
+        type: 'do',
+        action: {
+          type: 'addPull',
+          index: 0,
+          target: 'door',
+          slot: 0,
+          key: 'pull_knob',
+        },
+        atMs: 1_000,
+      }),
+    ).not.toThrow();
+  });
+
+  it('normalise aussi ce qu’on recharge', () => {
+    // `reset` ouvre un autre projet : il vient de la même API, avec la même forme
+    // incertaine.
+    const reset = reduceHistory(start(), { type: 'reset', model: LEGACY });
+
+    expect(reset.present.compartments[0]?.pulls).toEqual([]);
+  });
+});

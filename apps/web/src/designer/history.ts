@@ -1,5 +1,5 @@
 import type { ParsedFurnitureInput } from '@neftya/engine';
-import { reduce, type DesignerAction } from './model.js';
+import { normalise, reduce, type DesignerAction } from './model.js';
 
 /**
  * L'annulation.
@@ -38,7 +38,7 @@ export type HistoryAction =
   | { type: 'undo' }
   | { type: 'redo' }
   /** Repartir d'un modèle chargé : l'historique n'a plus lieu d'être. */
-  | { type: 'reset'; model: ParsedFurnitureInput };
+  | { type: 'reset'; model: unknown };
 
 /**
  * Au-delà, on n'annule plus, on refait.
@@ -51,8 +51,16 @@ export const HISTORY_DEPTH = 50;
 /** Deux actions du même geste continu se fondent en deçà de ce délai. */
 export const MERGE_WINDOW_MS = 500;
 
-export function initialHistory(model: ParsedFurnitureInput): History {
-  return { present: model, past: [], future: [], last: null };
+/**
+ * Ouvre un historique sur un modèle, **remis à la forme courante du schéma**.
+ *
+ * La normalisation est ici plutôt que chez l'appelant parce qu'un appelant peut l'oublier
+ * — et l'a oublié : un projet enregistré avant l'ajout d'un champ levait « Cannot read
+ * properties of undefined » au premier clic droit. Ici, c'est le seul chemin par lequel un
+ * modèle entre dans le concepteur, et il n'y a plus rien à ne pas oublier.
+ */
+export function initialHistory(model: unknown): History {
+  return { present: normalise(model), past: [], future: [], last: null };
 }
 
 export function reduceHistory(history: History, action: HistoryAction): History {
