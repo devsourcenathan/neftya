@@ -159,7 +159,15 @@ export function Scene({
        */
       resize={{ debounce: 0, scroll: false }}
       shadows="soft"
-      camera={{ fov: 40, position: [2.4, 1.9, 3] }}
+      /*
+       * De face, et non de dos.
+       *
+       * L'avant du meuble est le **z minimal** : c'est là que vivent les portes et les
+       * façades de tiroir, à `-18` mm. Une caméra en `z` positif regardait donc le fond du
+       * caisson — la grande face sombre — et le concepteur s'ouvrait sur ce que personne
+       * ne voit une fois le meuble contre un mur.
+       */
+      camera={{ fov: 40, position: [2.4, 1.9, -3] }}
       onPointerMissed={() => onSelect(null)}
     >
       <color attach="background" args={['#f2ede6']} />

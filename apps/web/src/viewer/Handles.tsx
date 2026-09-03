@@ -22,7 +22,7 @@ import { useAxisProjection, type Axis } from './drag.js';
  */
 
 /** Assez gros pour se saisir au doigt, assez petit pour ne pas masquer la pièce. */
-const HANDLE_MM = 44;
+const HANDLE_MM = 60;
 
 /**
  * De combien chaque poignée sort de la face qu'elle règle.
@@ -30,7 +30,17 @@ const HANDLE_MM = 44;
  * Posée à fleur, elle est à moitié dans le panneau : on croit viser le meuble et on tire
  * la cote, ou l'inverse.
  */
-const OUTSET_MM = 30;
+const OUTSET_MM = 40;
+
+/**
+ * L'avant du meuble, en millimètres.
+ *
+ * **Le z minimal, et non le maximal.** Les portes et les façades de tiroir sont posées à
+ * `-18` mm ; le fond du caisson, lui, est au z le plus grand. Poser les poignées côté
+ * profondeur les mettait donc derrière le meuble — sur le dos, là où on ne les cherche
+ * pas et où le caisson les masque dès qu'on tourne autour.
+ */
+const FRONT_MM = 0;
 
 /**
  * La hauteur de la poignée de profondeur, en part de la hauteur du meuble.
@@ -45,7 +55,15 @@ const DEPTH_HANDLE_HEIGHT = 0.18;
 /** Le monde est en mètres ; le modèle en millimètres. */
 const MM = 0.001;
 
-const IDLE = '#8a6d3b';
+/**
+ * Bleu Artisan au repos, ambre à la saisie.
+ *
+ * Une poignée couleur bois disparaît dans le meuble : c'est ce qu'elles faisaient, et
+ * c'est pourquoi on n'en comptait que deux. Une poignée est un élément d'interface posé
+ * sur un objet ; elle doit se lire comme tel, et la palette du produit en tient déjà deux
+ * qui ne ressemblent à aucune essence.
+ */
+const IDLE = '#031632';
 const ACTIVE = '#b45309';
 
 export interface HandlesProps {
@@ -103,13 +121,13 @@ export function handleLayout(furniture: Furniture): HandleSpec[] {
       divider: null,
       axis: 'z',
       dimension: 'depthMm',
-      atMm: [widthMm / 2, heightMm * DEPTH_HANDLE_HEIGHT, depthMm + OUTSET_MM],
+      atMm: [widthMm / 2, heightMm * DEPTH_HANDLE_HEIGHT, FRONT_MM - OUTSET_MM],
     },
     // Les séparateurs restent à mi-hauteur, là où on les cherche.
     ...dividerCentres(furniture).map((xMm, index): HandleSpec => ({
       divider: index,
       axis: 'x',
-      atMm: [xMm, heightMm / 2, depthMm + OUTSET_MM],
+      atMm: [xMm, heightMm / 2, FRONT_MM - OUTSET_MM],
     })),
   ];
 }
@@ -189,6 +207,13 @@ function DragHandle({
   } | null>(null);
 
   const begin = (event: ThreeEvent<PointerEvent>) => {
+    // Bouton gauche seulement.
+    //
+    // Un clic droit sur une poignée entamait un glissement et capturait le pointeur — ce
+    // qui avale le `contextmenu` qui aurait suivi. La poignée mangeait donc le menu de la
+    // pièce qu'elle recouvre, en silence.
+    if (event.nativeEvent.button !== 0) return;
+
     const projection = project(axis, atMm);
     // Vu de bout, l'axe ne se tire pas : un pixel y vaudrait des dizaines de millimètres.
     if (!projection.usable) return;
@@ -255,7 +280,7 @@ function DragHandle({
       <meshBasicMaterial
         color={dragging ? ACTIVE : IDLE}
         transparent
-        opacity={dragging ? 0.95 : 0.6}
+        opacity={dragging ? 1 : 0.85}
         depthTest={false}
       />
     </mesh>

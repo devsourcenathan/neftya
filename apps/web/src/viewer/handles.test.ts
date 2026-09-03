@@ -102,20 +102,40 @@ describe('ce que la disposition promet', () => {
     }
   });
 
-  it('pose chaque poignée de cote en dehors du meuble', () => {
+  it('pose la largeur et la hauteur hors du meuble', () => {
     for (const [, input] of MODELS) {
-      const { widthMm, heightMm, depthMm } = input.dimensions;
+      const { widthMm, heightMm } = input.dimensions;
       const handles = handleLayout(build(input));
-      const outside = { widthMm: 0, heightMm: 1, depthMm: 2 };
-      const sizes = [widthMm, heightMm, depthMm];
+      const beyond = { widthMm: [0, widthMm], heightMm: [1, heightMm] } as const;
 
       for (const handle of handles) {
-        if (handle.divider !== null || !handle.dimension) continue;
+        const limit = handle.dimension && beyond[handle.dimension as 'widthMm'];
+        if (!limit) continue;
 
-        const axis = outside[handle.dimension];
         // À fleur, la poignée est à moitié dans le panneau : on croit viser le meuble et
         // on tire la cote, ou l'inverse.
-        expect(handle.atMm[axis]).toBeGreaterThan(sizes[axis] as number);
+        expect(handle.atMm[limit[0]]).toBeGreaterThan(limit[1]);
+      }
+    }
+  });
+
+  it('pose la profondeur et les séparateurs **devant** le meuble', () => {
+    // **Le défaut signalé.** L'avant est le z **minimal** : les portes et les façades de
+    // tiroir sont à −18 mm, le fond du caisson au z le plus grand. Les poser du côté de la
+    // profondeur les mettait derrière le meuble, là où on ne les cherche pas et où le
+    // caisson les masque dès qu'on tourne autour.
+    for (const [, input] of MODELS) {
+      const furniture = build(input);
+      const frontMm = Math.min(
+        ...furniture.parts.flatMap((part) =>
+          part.instances.map((placement) => placement.zMm),
+        ),
+      );
+
+      for (const handle of handleLayout(furniture)) {
+        if (handle.dimension === 'widthMm' || handle.dimension === 'heightMm') continue;
+
+        expect(handle.atMm[2]).toBeLessThan(frontMm);
       }
     }
   });
