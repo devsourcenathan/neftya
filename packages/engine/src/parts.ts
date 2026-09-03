@@ -50,6 +50,21 @@ export interface Placement {
   sizeXMm: number;
   sizeYMm: number;
   sizeZMm: number;
+  /**
+   * Le compartiment d'où cette instance vient, s'il y en a un.
+   *
+   * **Porté par l'instance, jamais par la pièce.** Deux compartiments de même largeur avec
+   * une étagère chacun produisent la **même** `Part` en quantité 2 : la pièce appartient
+   * alors à deux compartiments, l'instance à un seul.
+   *
+   * Absent sur l'enveloppe — dessus, dessous, côtés, fond — et sur les séparateurs, qui
+   * sont entre deux compartiments et n'appartiennent à aucun.
+   *
+   * C'est ce qui permet à l'interface de remonter d'une pièce cliquée au paramètre qui l'a
+   * produite. Le redevenir par géométrie marcherait, mais ce serait deviner là où le
+   * moteur avait la réponse et l'a jetée.
+   */
+  compartment?: number;
 }
 
 export interface Part {

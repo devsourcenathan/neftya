@@ -146,6 +146,8 @@ export function build(rawInput: FurnitureInput): Furniture {
 
   input.compartments.forEach((compartment, index) => {
     const span = compartmentSpans[index] as { startMm: number; widthMm: number };
+    // Tout ce que cette itération ajoute appartient à ce compartiment, et rien d'autre.
+    const firstOfCompartment = drafts.length;
 
     drafts.push(
       ...shelvesOf(
@@ -186,6 +188,10 @@ export function build(rawInput: FurnitureInput): Furniture {
 
     drafts.push(...doors.drafts);
     warnings.push(...doors.warnings);
+
+    for (let position = firstOfCompartment; position < drafts.length; position += 1) {
+      (drafts[position] as DraftPart).placement.compartment = index;
+    }
   });
 
   // 7. Fond, logé dans une rainure.

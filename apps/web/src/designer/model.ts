@@ -23,7 +23,13 @@ export type DesignerAction =
   | { type: 'compartments'; count: number }
   | { type: 'shelves'; index: number; count: number }
   | { type: 'drawers'; index: number; count: number }
-  | { type: 'doors'; index: number; count: number };
+  | { type: 'doors'; index: number; count: number }
+  /** Insère une copie du compartiment juste après lui. */
+  | { type: 'duplicateCompartment'; index: number }
+  /** Retire **ce** compartiment, et non le dernier. */
+  | { type: 'removeCompartment'; index: number }
+  /** Donne à tous les compartiments le contenu de celui-ci. */
+  | { type: 'applyToAll'; index: number };
 
 /** Bornes de saisie. Le moteur en refuserait d'autres ; autant ne pas les proposer. */
 export const LIMITS = {
@@ -93,6 +99,52 @@ export function reduce(
             : compartment,
         ),
       };
+
+    /*
+     * Un dressing, c'est souvent le même module trois fois. La copie se pose **juste
+     * après** l'original plutôt qu'à la fin : c'est là qu'on la regarde, et c'est ce que
+     * fait tout éditeur.
+     */
+    case 'duplicateCompartment': {
+      const source = model.compartments[action.index];
+      if (!source || model.compartments.length >= LIMITS.compartments.max) return model;
+
+      const compartments = [...model.compartments];
+      compartments.splice(action.index + 1, 0, { ...source });
+
+      return { ...model, compartments };
+    }
+
+    /*
+     * Supprimer **celui-là**.
+     *
+     * Réduire le nombre de compartiments tronque par la fin : cliquer « supprimer » sur le
+     * premier effacerait le dernier, et le meuble changerait sous les yeux de quelqu'un
+     * qui visait autre chose.
+     *
+     * Le dernier compartiment ne se supprime pas : un meuble sans compartiment n'est plus
+     * un meuble, et le moteur le refuserait.
+     */
+    case 'removeCompartment': {
+      if (model.compartments.length <= LIMITS.compartments.min) return model;
+      if (!model.compartments[action.index]) return model;
+
+      return {
+        ...model,
+        compartments: model.compartments.filter((_, index) => index !== action.index),
+      };
+    }
+
+    /*
+     * Le pendant de la duplication, pour un meuble régulier : le contenu se propage, le
+     * **nombre** de compartiments ne bouge pas.
+     */
+    case 'applyToAll': {
+      const source = model.compartments[action.index];
+      if (!source) return model;
+
+      return { ...model, compartments: model.compartments.map(() => ({ ...source })) };
+    }
   }
 }
 

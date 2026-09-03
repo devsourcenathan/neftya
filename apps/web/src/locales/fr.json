@@ -7,7 +7,9 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "cancel": "Annuler",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "undo": "Annuler",
+    "redo": "Rétablir"
   },
   "auth": {
     "required": "Connectez-vous à Sekuu pour accéder à Neftya.",
@@ -95,7 +97,8 @@
       "parts": "Pièces"
     },
     "respectGrain": "Respecter le sens du fil",
-    "respectGrainHint": "Sur un décor bois. Le placement ne pivotera plus les pièces visibles, et pourra demander un panneau de plus."
+    "respectGrainHint": "Sur un décor bois. Le placement ne pivotera plus les pièces visibles, et pourra demander un panneau de plus.",
+    "compartmentNumber": "Compartiment {{number}}"
   },
   "units": {
     "legend": "Système d'unités",
@@ -336,5 +339,20 @@
     "signOut": "Se déconnecter",
     "switchTo": "Changer d’organisation",
     "switchFailed": "Changement impossible. Votre accès a peut-être été retiré."
+  },
+  "menu": {
+    "duplicate": "Dupliquer ce compartiment",
+    "applyToAll": "Appliquer à tous les compartiments",
+    "add": {
+      "shelves": "Ajouter une étagère",
+      "drawers": "Ajouter un tiroir",
+      "doors": "Ajouter un vantail"
+    },
+    "remove": {
+      "shelves": "Retirer une étagère",
+      "drawers": "Retirer un tiroir",
+      "doors": "Retirer un vantail",
+      "compartment": "Supprimer ce compartiment"
+    }
   }
 }

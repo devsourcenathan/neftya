@@ -3,6 +3,7 @@ import {
   lazy,
   useCallback,
   useDeferredValue,
+  useEffect,
   useMemo,
   useReducer,
   useState,
@@ -21,11 +22,20 @@ import { Badge, Button, SegmentedControl } from '../ui/index.js';
 import { Panel } from '../ui/Panel.js';
 import { useMediaQuery } from '../ui/useMediaQuery.js';
 import { usePersisted } from '../ui/usePersisted.js';
-import { CubeIcon, RulerIcon, SaveIcon, WarningIcon } from '../ui/icons.js';
+import {
+  CubeIcon,
+  RedoIcon,
+  RulerIcon,
+  SaveIcon,
+  UndoIcon,
+  WarningIcon,
+} from '../ui/icons.js';
 import { Controls } from './Controls.js';
 import { PartDetails } from './PartDetails.js';
 import { Layers } from './Layers.js';
-import { reduce, type DesignerAction } from './model.js';
+import { type DesignerAction } from './model.js';
+import { canRedo, canUndo, initialHistory, reduceHistory } from './history.js';
+import { CompartmentMenu, type MenuTarget } from './CompartmentMenu.js';
 
 /**
  * Le mode conception.
@@ -74,8 +84,18 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
   const { t } = useTranslation();
   const { unitSystem, setUnitSystem, format } = usePreferences();
 
-  const [model, dispatch] = useReducer(reduce, initialModel);
+  const [history, record] = useReducer(reduceHistory, initialModel, initialHistory);
+  const model = history.present;
+
+  // Le reste du concepteur ne connaît pas l'historique : il envoie des actions de modèle,
+  // comme avant. C'est ce qui permet de l'avoir ajouté sans toucher aux contrôles.
+  const dispatch = useCallback(
+    (action: DesignerAction) => record({ type: 'do', action }),
+    [],
+  );
+
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [explode, setExplode] = useState(0);
   const [mode, setMode] = useState<'3d' | '2d'>('3d');
   const [view, setView] = useState<ViewName>('front');
@@ -90,6 +110,37 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
    * enregistré. Masquer sert à regarder derrière une porte, pas à retirer la porte.
    */
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
+
+  /*
+   * `Ctrl+Z`, `Ctrl+Y`, et leurs équivalents Mac.
+   *
+   * **Pas pendant une saisie.** Les cotes s'écrivent dans des champs de texte, où
+   * `Ctrl+Z` appartient au navigateur : le détourner effacerait un chiffre à moitié tapé
+   * au lieu d'annuler un geste, et ce serait pire que de ne rien offrir.
+   */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+
+      const target = event.target as HTMLElement | null;
+      const editing =
+        target?.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
+      if (editing) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'z') {
+        event.preventDefault();
+        record({ type: event.shiftKey ? 'redo' : 'undo' });
+      } else if (key === 'y') {
+        event.preventDefault();
+        record({ type: 'redo' });
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Les panneaux repliés. Le réglage suit l'utilisateur d'une session à l'autre : replier
   // le panneau de réglages à chaque ouverture serait une corvée quotidienne.
@@ -138,10 +189,16 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
     [mode, furniture, format],
   );
 
-  const act = useCallback((action: DesignerAction) => dispatch(action), []);
-
   return (
     <div className="flex h-full flex-col gap-4">
+      {menu && (
+        <CompartmentMenu
+          target={menu}
+          model={model}
+          dispatch={dispatch}
+          onClose={() => setMenu(null)}
+        />
+      )}
       <SegmentedControl
         className="self-start lg:hidden"
         value={panel}
@@ -167,7 +224,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
             onToggle={() => toggle('settings')}
             className="w-full"
           >
-            <Controls model={model} dispatch={act} />
+            <Controls model={model} dispatch={dispatch} />
           </Panel>
         </div>
 
@@ -235,6 +292,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
                       furniture={furniture}
                       selectedPartId={selectedPartId}
                       onSelect={setSelectedPartId}
+                      onContextMenu={setMenu}
                       explode={explode}
                     />
                   </Suspense>
@@ -288,10 +346,32 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
                   ))}
                 </fieldset>
 
+                {/* L'annulation avant l'enregistrement : c'est elle qui rend le reste
+                    essayable. */}
+                <span className="ml-auto flex items-center gap-1">
+                  <Button
+                    className="px-2"
+                    disabled={!canUndo(history)}
+                    title={t('action.undo')}
+                    aria-label={t('action.undo')}
+                    onClick={() => record({ type: 'undo' })}
+                  >
+                    <UndoIcon />
+                  </Button>
+                  <Button
+                    className="px-2"
+                    disabled={!canRedo(history)}
+                    title={t('action.redo')}
+                    aria-label={t('action.redo')}
+                    onClick={() => record({ type: 'redo' })}
+                  >
+                    <RedoIcon />
+                  </Button>
+                </span>
+
                 {onSave && (
                   <Button
                     tone="primary"
-                    className="ml-auto"
                     onClick={() => onSave(model)}
                     disabled={saving}
                   >

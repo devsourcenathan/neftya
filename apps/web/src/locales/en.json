@@ -7,7 +7,9 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "retry": "Try again"
+    "retry": "Try again",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "auth": {
     "required": "Sign in to Sekuu to use Neftya.",
@@ -95,7 +97,8 @@
       "parts": "Parts"
     },
     "respectGrain": "Follow the grain direction",
-    "respectGrainHint": "For a wood decor. Visible parts will no longer be rotated when nesting, which may cost an extra panel."
+    "respectGrainHint": "For a wood decor. Visible parts will no longer be rotated when nesting, which may cost an extra panel.",
+    "compartmentNumber": "Compartment {{number}}"
   },
   "units": {
     "legend": "Unit system",
@@ -336,5 +339,20 @@
     "signOut": "Sign out",
     "switchTo": "Switch organisation",
     "switchFailed": "Could not switch. Your access may have been revoked."
+  },
+  "menu": {
+    "duplicate": "Duplicate this compartment",
+    "applyToAll": "Apply to every compartment",
+    "add": {
+      "shelves": "Add a shelf",
+      "drawers": "Add a drawer",
+      "doors": "Add a leaf"
+    },
+    "remove": {
+      "shelves": "Remove a shelf",
+      "drawers": "Remove a drawer",
+      "doors": "Remove a leaf",
+      "compartment": "Delete this compartment"
+    }
   }
 }

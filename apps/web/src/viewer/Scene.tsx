@@ -47,6 +47,15 @@ const SELECTED = '#b45309';
 export interface SceneProps {
   furniture: Furniture;
   selectedPartId: string | null;
+  /**
+   * Le clic droit sur une pièce, avec le compartiment d'où elle vient.
+   *
+   * `null` pour un clic droit dans le vide, ou sur une pièce qui n'appartient à aucun
+   * compartiment — l'enveloppe, les séparateurs. Le menu n'aurait alors rien à proposer.
+   */
+  onContextMenu?: (
+    target: { compartment: number; xPx: number; yPx: number } | null,
+  ) => void;
   onSelect: (partId: string | null) => void;
   /** Écarte les pièces depuis le centre, de 0 (assemblé) à 1 (éclaté). */
   explode: number;
@@ -79,6 +88,7 @@ export function Scene({
   furniture,
   selectedPartId,
   onSelect,
+  onContextMenu,
   explode,
   hidden,
 }: SceneProps) {
@@ -137,6 +147,7 @@ export function Scene({
                 explode={explode}
                 selected={part.id === selectedPartId}
                 onSelect={onSelect}
+                {...(onContextMenu ? { onContextMenu } : {})}
               />
             )),
           )}
@@ -171,6 +182,9 @@ interface PartMeshProps {
   explode: number;
   selected: boolean;
   onSelect: (partId: string) => void;
+  onContextMenu?: (
+    target: { compartment: number; xPx: number; yPx: number } | null,
+  ) => void;
 }
 
 /**
@@ -184,6 +198,7 @@ const PartMesh = memo(function PartMesh({
   explode,
   selected,
   onSelect,
+  onContextMenu,
 }: PartMeshProps) {
   const position: [number, number, number] = [
     (placement.xMm + placement.sizeXMm / 2) * MM,
@@ -207,6 +222,22 @@ const PartMesh = memo(function PartMesh({
       onClick={(event) => {
         event.stopPropagation();
         onSelect(part.id);
+      }}
+      onContextMenu={(event) => {
+        if (!onContextMenu) return;
+        event.stopPropagation();
+        // Sans cela, le menu du navigateur se superpose au nôtre.
+        event.nativeEvent.preventDefault();
+
+        onContextMenu(
+          placement.compartment === undefined
+            ? null
+            : {
+                compartment: placement.compartment,
+                xPx: event.nativeEvent.clientX,
+                yPx: event.nativeEvent.clientY,
+              },
+        );
       }}
       onPointerOver={(event) => {
         event.stopPropagation();
