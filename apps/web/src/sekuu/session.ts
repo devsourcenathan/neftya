@@ -80,8 +80,74 @@ export class PlatformUnreachable extends Error {
 export function redirectToPortal(
   path: 'login' | 'register' | 'subscribe' = 'login',
 ): void {
-  const target = path === 'subscribe' ? 'subscribe?product=neftya&' : `${path}?`;
-  window.location.href = `${PORTAL_URL}/${target}redirect=${encodeURIComponent(window.location.href)}`;
+  window.location.href = portalUrl(path);
+}
+
+/**
+ * Le produit, tel que le portail le connaît.
+ *
+ * Doit correspondre au slug enregistré dans le catalogue de la plateforme : l'un décide
+ * quel abonnement proposer, l'autre quel abonnement exiger. S'ils divergent, le portail
+ * vend un produit que Neftya n'ouvre pas.
+ */
+const PRODUCT = 'neftya';
+
+/**
+ * Une adresse du portail, avec le retour vers ici.
+ *
+ * `account` mène à l'aperçu du compte, `subscription` à l'abonnement en cours. **Neftya
+ * n'affiche ni l'un ni l'autre lui-même** : ce sont les mêmes écrans pour tous les
+ * produits, et les recopier ici, c'est les voir diverger de la facturation le jour où l'un
+ * des deux change. Neftya ne lit ni plan, ni facture, ni échéance — tout son contrôle
+ * d'abonnement tient dans le claim `products`.
+ */
+export function portalUrl(
+  path: 'login' | 'register' | 'subscribe' | 'subscription' | 'account',
+  target = window.location.href,
+): string {
+  const redirect = `redirect=${encodeURIComponent(target)}`;
+
+  // L'aperçu du compte est la racine du portail : il n'a pas de chemin à lui.
+  if (path === 'account') return `${PORTAL_URL}/?${redirect}`;
+
+  // `product` mène jusqu'au choix du plan ; sans lui le portail connecte la personne,
+  // la laisse créer une organisation, puis s'arrête — et Neftya répond 403 à un compte
+  // qui vient pourtant d'être créé pour lui.
+  const carriesProduct = path === 'subscribe' || path === 'subscription';
+
+  return carriesProduct
+    ? `${PORTAL_URL}/${path}?product=${encodeURIComponent(PRODUCT)}&${redirect}`
+    : `${PORTAL_URL}/${path}?${redirect}`;
+}
+
+/**
+ * Se déconnecter, **chez la plateforme**.
+ *
+ * Neftya ne détient rien à effacer au-delà du jeton en mémoire : la session vit dans le
+ * cookie partagé de `.sekuu.test`. L'effacer ici seulement laisserait la personne connectée
+ * sur tous les autres produits Sekuu, pendant que celui-ci prétend le contraire — et c'est
+ * précisément ce qu'une déconnexion doit empêcher.
+ *
+ * Vers `/login` sans `redirect` : renvoyer quelqu'un qui vient de se déconnecter là d'où
+ * il vient le reconnecterait aussitôt, tant que le cookie de l'appareil est encore valide.
+ */
+export async function signOut(session: Session | null): Promise<void> {
+  try {
+    await fetch(`${IDENTITY_URL}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        accept: 'application/json',
+        ...(session ? { authorization: `Bearer ${session.accessToken}` } : {}),
+      },
+    });
+  } catch {
+    // La plateforme injoignable ne doit pas retenir quelqu'un sur un écran connecté : on
+    // le renvoie quand même. Le cookie survit, il se reconnectera — ce qui vaut mieux que
+    // de rester bloqué sur un bouton qui ne fait rien.
+  } finally {
+    window.location.href = `${PORTAL_URL}/login`;
+  }
 }
 
 /**

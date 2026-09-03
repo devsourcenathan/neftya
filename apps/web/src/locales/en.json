@@ -329,5 +329,10 @@
     "slide_cabinet": "cabinet runner",
     "slide_drawer": "drawer runner",
     "dowel": "dowel"
+  },
+  "account": {
+    "profile": "My account",
+    "subscription": "My subscription",
+    "signOut": "Sign out"
   }
 }

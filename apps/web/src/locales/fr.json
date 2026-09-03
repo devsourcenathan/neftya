@@ -329,5 +329,10 @@
     "slide_cabinet": "profil de caisson",
     "slide_drawer": "profil de tiroir",
     "dowel": "tourillon"
+  },
+  "account": {
+    "profile": "Mon compte",
+    "subscription": "Mon abonnement",
+    "signOut": "Se déconnecter"
   }
 }

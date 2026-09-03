@@ -15,6 +15,7 @@ import {
   PlanIcon,
   SettingsIcon,
 } from './ui/icons.js';
+import { AccountMenu } from './sekuu/AccountMenu.js';
 import { useMediaQuery } from './ui/useMediaQuery.js';
 import { usePersisted } from './ui/usePersisted.js';
 import { Settings } from './settings/Settings.js';
@@ -119,13 +120,20 @@ function SideNav({
         </NavItem>
       </div>
 
+      {/* Le compte se tient en bas, comme la marque en haut : c'est là qu'on le cherche,
+          et il pousse le repli sous lui plutôt que de disputer la place de la
+          navigation. */}
+      <div className="ml-auto lg:mt-auto lg:mb-1 lg:ml-0 lg:px-2">
+        <AccountMenu collapsed={collapsed} />
+      </div>
+
       <button
         type="button"
         onClick={onToggle}
         title={t(collapsed ? 'nav.expand' : 'nav.collapse')}
         aria-label={t(collapsed ? 'nav.expand' : 'nav.collapse')}
         aria-expanded={!collapsed}
-        className={`mt-auto hidden items-center gap-3 rounded py-3 text-ink-variant transition-colors hover:bg-surface-low hover:text-ink lg:flex ${
+        className={`hidden items-center gap-3 rounded py-3 text-ink-variant transition-colors hover:bg-surface-low hover:text-ink lg:flex ${
           collapsed ? 'lg:mx-2 lg:justify-center' : 'lg:mx-4 lg:px-3'
         }`}
       >
