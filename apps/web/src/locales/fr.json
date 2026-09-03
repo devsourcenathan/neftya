@@ -160,7 +160,10 @@
     "DOOR_DOES_NOT_FIT": "Un vantail ne rentre pas dans son compartiment : aucune pièce n'est produite pour lui.",
     "DOOR_LEAF_TOO_WIDE": "Un vantail est large : il pèsera sur ses charnières et finira par frotter. Posez-en deux.",
     "NO_SLIDE_FITS": "Aucune coulisse du commerce ne tient dans {{usableDepthMm}} mm de profondeur utile : le tiroir n'est pas percé.",
-    "COMPARTMENT_WIDTH_MISMATCH": "Les largeurs imposées totalisent {{requestedMm}} mm pour {{availableMm}} mm disponibles."
+    "COMPARTMENT_WIDTH_MISMATCH": "Les largeurs imposées totalisent {{requestedMm}} mm pour {{availableMm}} mm disponibles.",
+    "PULL_UNKNOWN": "Poignée inconnue au catalogue : {{key}}.",
+    "PULL_WITHOUT_FACADE": "Une poignée du compartiment {{compartment}} n’a plus de façade.",
+    "PULL_OFF_FACADE": "Une poignée dépasse de sa façade de {{facadeWidthMm}} × {{facadeHeightMm}} mm."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",
@@ -207,7 +210,10 @@
     "slide_ball": "Paires de coulisses à billes {{length}} mm",
     "drawer_slide_pair": "Paires de coulisses",
     "hinge_35_110": "Charnières à boîtier 35, 110°",
-    "glue": "Colle à bois"
+    "glue": "Colle à bois",
+    "pull_bar": "Poignées-barres, entraxe {{centres}} mm",
+    "pull_knob": "Boutons de meuble",
+    "pull_shell": "Coquilles encastrées"
   },
   "assembly": {
     "carcass": "Assemblez le dessous et les côtés, côtés à l'intérieur, alignés sur les bords.",
@@ -336,7 +342,9 @@
     "shelf_support": "taquet d'étagère",
     "slide_cabinet": "profil de caisson",
     "slide_drawer": "profil de tiroir",
-    "dowel": "tourillon"
+    "dowel": "tourillon",
+    "pull_screw": "vis de poignée",
+    "pull_shell": "empreinte de coquille"
   },
   "account": {
     "profile": "Mon compte",
@@ -360,5 +368,14 @@
       "compartment": "Supprimer ce compartiment"
     },
     "evenWidths": "Égaliser les largeurs"
+  },
+  "pull": {
+    "shape": "Forme de la poignée",
+    "bar": "Barre, entraxe {{centres}} mm",
+    "pull_knob": "Bouton",
+    "pull_shell": "Coquille encastrée",
+    "add": "Ajouter une poignée ici",
+    "already": "Cette façade en a déjà une",
+    "remove": "Supprimer cette poignée"
   }
 }

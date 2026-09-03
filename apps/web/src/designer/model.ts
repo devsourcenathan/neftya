@@ -35,7 +35,26 @@ export type DesignerAction =
   /** Rend tous les compartiments souples : ils se repartagent la largeur également. */
   | { type: 'evenWidths' }
   /** Déplace un compartiment dans l'ordre du meuble. */
-  | { type: 'moveCompartment'; from: number; to: number };
+  | { type: 'moveCompartment'; from: number; to: number }
+  /** Pose une poignée sur une façade de ce compartiment. */
+  | {
+      type: 'addPull';
+      index: number;
+      target: 'door' | 'drawer';
+      slot: number;
+      key: string;
+    }
+  /** Retire la poignée de rang `pull` dans le compartiment `index`. */
+  | { type: 'removePull'; index: number; pull: number }
+  /** Change la forme d'une poignée sans la déplacer. */
+  | { type: 'setPullKey'; index: number; pull: number; key: string }
+  /**
+   * Déplace une poignée sur sa façade.
+   *
+   * En coordonnées de façade, jamais de meuble : une poignée suit sa porte, et une porte
+   * qui change de largeur ne doit pas emporter sa poignée ailleurs.
+   */
+  | { type: 'movePull'; index: number; pull: number; xMm: number; yMm: number };
 
 /** Bornes de saisie. Le moteur en refuserait d'autres ; autant ne pas les proposer. */
 export const LIMITS = {
@@ -217,6 +236,74 @@ export function reduce(
         compartments: model.compartments.map(({ widthMm: _dropped, ...rest }) => rest),
       };
 
+    /*
+     * Une poignée est **saisie**, pas déduite. C'est la seule chose du modèle dont le
+     * nombre ne vient d'aucun paramètre : on l'ajoute, on la retire, on la déplace.
+     */
+    case 'addPull': {
+      const compartment = model.compartments[action.index];
+      if (!compartment) return model;
+      if (compartment.pulls.length >= PULLS_PER_COMPARTMENT_MAX) return model;
+
+      // Une seule poignée par façade : deux au même endroit se percent deux fois au même
+      // endroit, et la seconde traverse le premier trou.
+      const taken = compartment.pulls.some(
+        (pull) => pull.target === action.target && pull.slot === action.slot,
+      );
+      if (taken) return model;
+
+      return withPulls(model, action.index, [
+        ...compartment.pulls,
+        { target: action.target, slot: action.slot, key: action.key },
+      ]);
+    }
+
+    case 'removePull': {
+      const compartment = model.compartments[action.index];
+      if (!compartment?.pulls[action.pull]) return model;
+
+      return withPulls(
+        model,
+        action.index,
+        compartment.pulls.filter((_, rank) => rank !== action.pull),
+      );
+    }
+
+    case 'setPullKey': {
+      const compartment = model.compartments[action.index];
+      const current = compartment?.pulls[action.pull];
+      if (!current || current.key === action.key) return model;
+
+      return withPulls(
+        model,
+        action.index,
+        compartment.pulls.map((pull, rank) =>
+          rank === action.pull ? { ...pull, key: action.key } : pull,
+        ),
+      );
+    }
+
+    case 'movePull': {
+      const compartment = model.compartments[action.index];
+      if (!compartment?.pulls[action.pull]) return model;
+
+      return withPulls(
+        model,
+        action.index,
+        compartment.pulls.map((pull, rank) =>
+          rank === action.pull
+            ? {
+                ...pull,
+                // Le moteur ne travaille qu'en entiers, et une cote négative n'existe pas
+                // sur une façade.
+                xMm: Math.max(0, Math.round(action.xMm)),
+                yMm: Math.max(0, Math.round(action.yMm)),
+              }
+            : pull,
+        ),
+      );
+    }
+
     case 'moveCompartment': {
       const { from, to } = action;
       if (from === to) return model;
@@ -255,6 +342,28 @@ function resize(
       pulls: [],
     })),
   ];
+}
+
+/**
+ * Un plafond franc.
+ *
+ * Huit poignées par compartiment couvrent large — une porte et sept tiroirs — et bornent
+ * ce qu'une saisie répétée peut produire. Le schéma du moteur porte la même borne : les
+ * deux doivent s'accorder, sinon l'interface propose ce que l'API refuse.
+ */
+export const PULLS_PER_COMPARTMENT_MAX = 8;
+
+function withPulls(
+  model: ParsedFurnitureInput,
+  index: number,
+  pulls: ParsedFurnitureInput['compartments'][number]['pulls'],
+): ParsedFurnitureInput {
+  return {
+    ...model,
+    compartments: model.compartments.map((compartment, rank) =>
+      rank === index ? { ...compartment, pulls } : compartment,
+    ),
+  };
 }
 
 function clamp(value: number, { min, max }: { min: number; max: number }): number {

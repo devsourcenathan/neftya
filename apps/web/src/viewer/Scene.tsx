@@ -1,9 +1,10 @@
 import { memo, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Bounds, ContactShadows, OrbitControls } from '@react-three/drei';
-import { compartmentAt } from '@neftya/engine';
+import { compartmentAt, facadesOf } from '@neftya/engine';
 import type { Furniture, Part, Placement } from '@neftya/engine';
 import { Handles } from './Handles.js';
+import { Pulls } from './Pulls.js';
 import { Vector3, type Group } from 'three';
 
 /**
@@ -58,9 +59,13 @@ export interface SceneProps {
    * la pièce laissait donc le menu muet sur presque toute la surface du meuble — un défaut
    * qui se lisait comme « le menu ne marche plus ».
    */
-  onContextMenu?: (
-    target: { compartment: number; xPx: number; yPx: number } | null,
-  ) => void;
+  onContextMenu?: (target: {
+    compartment: number;
+    /** La façade sous le pointeur, quand le clic est tombé sur une. */
+    facade?: { target: 'door' | 'drawer'; slot: number };
+    xPx: number;
+    yPx: number;
+  }) => void;
   /**
    * Les poignées de manipulation directe.
    *
@@ -71,6 +76,27 @@ export interface SceneProps {
     onDimension: (axis: 'widthMm' | 'heightMm' | 'depthMm', valueMm: number) => void;
     onDividerStart: (index: number) => void;
     onDividerMoved: (index: number, deltaMm: number) => void;
+  };
+  /**
+   * Les poignées de meuble : les voir, les choisir, les déplacer.
+   *
+   * Absentes, elles sont dessinées sans être manipulables — ce qui est le bon comportement
+   * partout ailleurs que dans le concepteur.
+   */
+  pullEditing?: {
+    selected: string | null;
+    onSelect: (id: string | null) => void;
+    onMove: (
+      pull: { compartment: number },
+      rank: number,
+      onFacadeMm: { xMm: number; yMm: number },
+    ) => void;
+    onContextMenu: (target: {
+      compartment: number;
+      rank: number;
+      xPx: number;
+      yPx: number;
+    }) => void;
   };
   onSelect: (partId: string | null) => void;
   /** Écarte les pièces depuis le centre, de 0 (assemblé) à 1 (éclaté). */
@@ -106,6 +132,7 @@ export function Scene({
   onSelect,
   onContextMenu,
   handles,
+  pullEditing,
   explode,
   hidden,
 }: SceneProps) {
@@ -129,8 +156,34 @@ export function Scene({
       new Vector3(event.point.x, event.point.y, event.point.z),
     );
 
+    const compartment = compartmentAt(furniture, local.x / MM);
+
+    /*
+     * La façade sous le pointeur, s'il y en a une.
+     *
+     * C'est elle qui permet à « ajouter une poignée » de savoir sur quoi : un compartiment
+     * porte une porte et trois tiroirs, et proposer les quatre dans un menu ferait choisir
+     * dans une liste ce qu'on venait de désigner du doigt.
+     */
+    const facade = facadesOf(furniture).find(
+      (candidate) =>
+        candidate.compartment === compartment &&
+        candidate.placement.xMm <= local.x / MM &&
+        candidate.placement.xMm + candidate.placement.sizeXMm >= local.x / MM &&
+        candidate.placement.yMm <= local.y / MM &&
+        candidate.placement.yMm + candidate.placement.sizeYMm >= local.y / MM,
+    );
+
     onContextMenu({
-      compartment: compartmentAt(furniture, local.x / MM),
+      compartment,
+      ...(facade
+        ? {
+            facade: {
+              target: facade.role === 'door' ? ('door' as const) : ('drawer' as const),
+              slot: facade.slot,
+            },
+          }
+        : {}),
       xPx: event.nativeEvent.clientX,
       yPx: event.nativeEvent.clientY,
     });
@@ -207,6 +260,23 @@ export function Scene({
         </group>
         {/* Hors du groupe éclaté : une poignée qui s'envolerait avec la pièce ne
             réglerait plus rien. */}
+        {/* Les poignées vivent hors du groupe éclaté : suivre leur façade en vol ne
+            dirait rien de plus, et les rendrait impossibles à saisir. */}
+        {explode === 0 && (
+          <Pulls
+            furniture={furniture}
+            centre={centre}
+            selected={pullEditing?.selected ?? null}
+            onSelect={pullEditing?.onSelect ?? (() => {})}
+            {...(pullEditing
+              ? {
+                  onMove: pullEditing.onMove,
+                  onContextMenu: pullEditing.onContextMenu,
+                }
+              : {})}
+          />
+        )}
+
         {handles && explode === 0 && (
           <Handles furniture={furniture} centre={centre} {...handles} />
         )}

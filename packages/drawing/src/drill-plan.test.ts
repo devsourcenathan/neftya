@@ -14,7 +14,18 @@ import { drillPlanDxf, LAYERS, PLAIN_LABELS } from './drill-plan.js';
 
 const WARDROBE: FurnitureInput = {
   dimensions: { widthMm: 1000, heightMm: 2000, depthMm: 600 },
-  compartments: [{ shelves: 2, drawers: 1, doors: 2 }],
+  compartments: [
+    {
+      shelves: 2,
+      drawers: 1,
+      doors: 2,
+      pulls: [
+        { target: 'door', slot: 0, key: 'pull_bar_128' },
+        { target: 'door', slot: 1, key: 'pull_knob' },
+        { target: 'drawer', slot: 0, key: 'pull_shell' },
+      ],
+    },
+  ],
 };
 
 const BOOKCASE: FurnitureInput = {
@@ -191,7 +202,7 @@ describe('les trous', () => {
       drillPlanDxf(furniture, drilling(furniture), PLAIN_LABELS),
     );
 
-    const drilled: string[] = [LAYERS.face, LAYERS.back, LAYERS.edge];
+    const drilled: string[] = [LAYERS.face, LAYERS.back, LAYERS.edge, LAYERS.through];
     const drawn = entities.filter((entity) => drilled.includes(entity.layer));
 
     // Un plan de perçage amputé d'un trou est un plan faux qui a l'air complet.
@@ -297,5 +308,38 @@ describe('la mise en planche', () => {
     // Les deux vantaux d'une paire sont la même pièce et ne se percent pas pareil : sans
     // le rang, l'atelier ne saurait pas lequel est lequel.
     expect(titles.some((title) => /^P\d+ #2 - /u.test(title))).toBe(true);
+  });
+});
+
+describe('poignées', () => {
+  it('met les traversants sur leur propre calque', () => {
+    const { entities } = parse(planOf(WARDROBE));
+    const through = entities.filter((entity) => entity.layer === LAYERS.through);
+
+    // L'atelier ne monte pas la même mèche et ne règle pas la même butée : un traversant
+    // fait sur un réglage borgne ne tient rien. Et un cercle ne dit pas s'il débouche.
+    expect(through.length).toBeGreaterThan(0);
+    for (const entity of through) expect(entity.kind).toBe('CIRCLE');
+  });
+
+  it('dessine l’empreinte d’une coquille en rectangle, pas en cercle', () => {
+    const { entities } = parse(planOf(WARDROBE));
+    const milled = entities.filter((entity) => entity.layer === LAYERS.milling);
+
+    // Une poche fraisée représentée par un perçage ferait fraiser un rond là où il faut un
+    // rectangle, et l'atelier s'en apercevrait au premier panneau.
+    expect(milled).toHaveLength(4);
+    for (const entity of milled) expect(entity.kind).toBe('LINE');
+  });
+
+  it('donne un bloc à une façade qui n’a qu’une empreinte', () => {
+    // Sans cela, la façade à coquille n'apparaîtrait pas du tout : elle n'a aucun trou, et
+    // le bloc n'était créé que pour des trous.
+    const { entities } = parse(planOf(WARDROBE));
+    const titles = entities
+      .filter((entity) => entity.layer === LAYERS.label)
+      .map((entity) => entity.values.get(1)?.[0] ?? '');
+
+    expect(titles.some((title) => title.startsWith('fraisage'))).toBe(true);
   });
 });

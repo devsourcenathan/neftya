@@ -635,3 +635,68 @@ de tiroir : le décompte divise en conséquence.
 
 Les vis de caisson et la colle. Une vis se place à vue, et lui donner une position la
 figerait sans rien apporter. Elles restent comptées par ratio dans la nomenclature.
+
+---
+
+## 13. Poignées de meuble
+
+**La première donnée du modèle qui ne se déduise de rien.** Une étagère existe parce qu'on
+a demandé trois étagères ; une poignée existe parce que quelqu'un l'a posée là. Deux
+meubles identiques peuvent en porter de différentes, au même endroit ou non, et aucune
+règle ne permet de deviner laquelle.
+
+Elle vit **dans son compartiment** plutôt que dans une liste globale : le dupliquer emporte
+ses poignées, le supprimer les emporte aussi. Une liste séparée aurait demandé de
+renuméroter des références à chaque fois, et une référence oubliée est une poignée sur une
+façade qui n'existe plus.
+
+### Le catalogue
+
+| Clé | Article | Fixation |
+|---|---|---|
+| `pull_bar_96` … `_192` | Barre, quatre entraxes du commerce | Deux vis Ø 4, **traversantes** |
+| `pull_knob` | Bouton | Une vis Ø 4, traversante |
+| `pull_shell` | Coquille encastrée | Empreinte fraisée 100 × 30 × 12, **aucune vis** |
+
+L'**entraxe** est la distance entre les centres des deux vis. C'est la seule cote qui doive
+tomber juste : une barre dont l'entraxe est faux ne se visse pas, quelle que soit sa
+longueur.
+
+### 13.1 Les vis traversent
+
+C'est la **seule exception** du moteur. Partout ailleurs le perçage est borgne — un foret
+qui débouche abîme une face qu'on regarde. Une vis de poignée, elle, doit sortir : on visse
+depuis l'intérieur de la façade, et sinon la poignée ne tient sur rien.
+
+Porté par le drapeau `Hole.through` plutôt que déduit d'une profondeur égale à l'épaisseur :
+une égalité est un accident, un drapeau est une décision, et l'atelier ne monte pas la même
+mèche dans les deux cas. Le DXF leur donne d'ailleurs leur propre calque.
+
+### 13.2 La coquille n'a aucun trou
+
+C'est une empreinte fraisée, représentée par un rectangle et non par un cercle : un perçage
+ferait fraiser un rond là où il faut un rectangle.
+
+Conséquence : **le décompte des poignées part du modèle, et non des perçages** — la seule
+quincaillerie dans ce cas. Les compter par leurs trous en aurait oublié une sur trois
+formes, et l'atelier l'aurait découvert en montant le meuble.
+
+### 13.3 La position
+
+En millimètres depuis le coin **inférieur gauche de la façade**, au centre de la poignée.
+Absente, elle est calculée : centrée sur un tiroir, et sur un vantail à quarante-cinq
+millimètres du chant **qui s'ouvre** — jamais de celui des charnières, où la main serait du
+mauvais côté du pivot.
+
+La règle du côté charnière vit dans `facades.ts`, où les charnières et les poignées la
+lisent toutes deux : deux écritures de la même règle divergent le jour où l'une est
+corrigée.
+
+### 13.4 Ce qui est refusé plutôt que rattrapé
+
+- une poignée dont la **référence a disparu du catalogue** est signalée, et le meuble
+  s'ouvre quand même : refuser le projet entier rendrait illisible un fichier enregistré ;
+- une poignée dont la **façade a été retirée** est signalée, jamais reportée sur la voisine ;
+- une poignée qui **dépasse de sa façade** est signalée. La contenance ne suffit pas : une
+  vis à trois millimètres du bord « tient » et fend le panneau. Douze millimètres de marge
+  sont exigés.

@@ -97,6 +97,7 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
 
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuTarget | null>(null);
+  const [selectedPull, setSelectedPull] = useState<string | null>(null);
 
   /**
    * Les largeurs au moment où l'on a saisi un séparateur.
@@ -302,6 +303,20 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
                       selectedPartId={selectedPartId}
                       onSelect={setSelectedPartId}
                       onContextMenu={setMenu}
+                      pullEditing={{
+                        selected: selectedPull,
+                        onSelect: setSelectedPull,
+                        onMove: (pull, rank, onFacadeMm) =>
+                          dispatch({
+                            type: 'movePull',
+                            index: pull.compartment,
+                            pull: rank,
+                            xMm: onFacadeMm.xMm,
+                            yMm: onFacadeMm.yMm,
+                          }),
+                        onContextMenu: ({ compartment, rank, xPx, yPx }) =>
+                          setMenu({ compartment, pull: rank, xPx, yPx }),
+                      }}
                       handles={{
                         onDimension: (axis, valueMm) =>
                           dispatch({ type: 'dimension', axis, valueMm }),

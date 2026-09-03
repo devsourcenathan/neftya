@@ -135,6 +135,10 @@ function mergeKey(action: DesignerAction): string | null {
   // geste. Un seul séparateur se tire à la fois : la clé n'a pas besoin de son rang.
   if (action.type === 'compartmentWidths') return 'compartmentWidths';
 
+  // Tirer une poignée sur sa façade émet aussi une action par mouvement. La clé porte son
+  // rang : deux poignées voisines déplacées coup sur coup restent deux pas.
+  if (action.type === 'movePull') return `movePull:${action.index}:${action.pull}`;
+
   return null;
 }
 

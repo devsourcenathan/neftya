@@ -37,6 +37,19 @@ const MODELS: FurnitureInput[] = [
       { shelves: 3, drawers: 0, doors: 1 },
     ],
   },
+  // Les quatre entraxes de barre, plus le bouton et la coquille : chaque forme de poignée
+  // porte sa propre clé, et la barre porte en plus son entraxe.
+  {
+    dimensions: { widthMm: 2400, heightMm: 900, depthMm: 450 },
+    compartments: [
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_bar_96' }] },
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_bar_128' }] },
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_bar_160' }] },
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_bar_192' }] },
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_knob' }] },
+      { doors: 1, pulls: [{ target: 'door', slot: 0, key: 'pull_shell' }] },
+    ],
+  },
   // Des profondeurs variées : la coulisse retenue change de longueur, donc de clé.
   ...[300, 350, 400, 450, 500, 620].map((depthMm) => ({
     dimensions: { widthMm: 900, heightMm: 800, depthMm },
@@ -57,6 +70,13 @@ const KEYS = [
 ].sort();
 
 describe('libellés de quincaillerie', () => {
+  it('couvre toutes les formes de poignée', () => {
+    const pullKeys = KEYS.filter((key) => key.startsWith('pull_'));
+
+    // Six formes : quatre entraxes de barre, un bouton, une coquille.
+    expect(pullKeys).toHaveLength(6);
+  });
+
   it('couvre les six longueurs de coulisses, et pas une seule', () => {
     // Si ce compte tombe à un, les modèles ci-dessus ne varient plus assez pour éprouver
     // la clé paramétrée, et le test ne prouverait plus grand-chose.

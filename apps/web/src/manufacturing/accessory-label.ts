@@ -14,8 +14,12 @@ import type { TFunction } from 'i18next';
  */
 export function accessoryLabel(t: TFunction, key: string): string {
   const slide = /^slide_ball_(\d+)$/u.exec(key);
+  if (slide) return t('accessory.slide_ball', { length: Number(slide[1]) });
 
-  return slide
-    ? t('accessory.slide_ball', { length: Number(slide[1]) })
-    : t(`accessory.${key}`);
+  // Même raison pour les barres : l'entraxe est la cote qui décide du perçage, et celle
+  // qu'on lit sur une facture. Quatre entrées de traduction diraient quatre fois la même.
+  const bar = /^pull_bar_(\d+)$/u.exec(key);
+  if (bar) return t('accessory.pull_bar', { centres: Number(bar[1]) });
+
+  return t(`accessory.${key}`);
 }

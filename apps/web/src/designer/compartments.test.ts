@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { build } from '@neftya/engine';
-import { LIMITS, defaultModel, reduce, resizeAt } from './model.js';
+import {
+  LIMITS,
+  PULLS_PER_COMPARTMENT_MAX,
+  defaultModel,
+  reduce,
+  resizeAt,
+} from './model.js';
 
 /**
  * Les actions d'un menu contextuel : dupliquer, supprimer, appliquer à tous.
@@ -225,5 +231,126 @@ describe('tirer un séparateur', () => {
   it('ne rend rien quand il n’y a rien à déplacer', () => {
     expect(resizeAt([600, 600], 1, 40)).toBeNull();
     expect(resizeAt([600, 600], 0, 0)).toBeNull();
+  });
+});
+
+describe('les poignées', () => {
+  const WITH_DOOR = reduce(reduce(MODEL, { type: 'doors', index: 0, count: 1 }), {
+    type: 'addPull',
+    index: 0,
+    target: 'door',
+    slot: 0,
+    key: 'pull_bar_128',
+  });
+
+  it('se posent, et une seule par façade', () => {
+    expect(WITH_DOOR.compartments[0]?.pulls).toHaveLength(1);
+
+    // Deux poignées sur la même façade se percent deux fois au même endroit, et la
+    // seconde vis traverse le premier trou.
+    const twice = reduce(WITH_DOOR, {
+      type: 'addPull',
+      index: 0,
+      target: 'door',
+      slot: 0,
+      key: 'pull_knob',
+    });
+
+    expect(twice).toBe(WITH_DOOR);
+  });
+
+  it('se retirent, celle qu’on désigne', () => {
+    const two = reduce(WITH_DOOR, {
+      type: 'addPull',
+      index: 0,
+      target: 'drawer',
+      slot: 0,
+      key: 'pull_knob',
+    });
+    const after = reduce(two, { type: 'removePull', index: 0, pull: 0 });
+
+    expect(after.compartments[0]?.pulls.map((pull) => pull.key)).toEqual(['pull_knob']);
+  });
+
+  it('changent de forme sans bouger', () => {
+    const moved = reduce(WITH_DOOR, {
+      type: 'movePull',
+      index: 0,
+      pull: 0,
+      xMm: 120,
+      yMm: 400,
+    });
+    const reshaped = reduce(moved, {
+      type: 'setPullKey',
+      index: 0,
+      pull: 0,
+      key: 'pull_shell',
+    });
+
+    // La forme et la position sont deux décisions : changer l'une ne doit pas défaire
+    // l'autre, sinon replacer une poignée devient une corvée à chaque essai.
+    expect(reshaped.compartments[0]?.pulls[0]).toEqual({
+      target: 'door',
+      slot: 0,
+      key: 'pull_shell',
+      xMm: 120,
+      yMm: 400,
+    });
+  });
+
+  it('se déplacent en entiers, jamais en négatif', () => {
+    const moved = reduce(WITH_DOOR, {
+      type: 'movePull',
+      index: 0,
+      pull: 0,
+      xMm: -40.7,
+      yMm: 399.4,
+    });
+
+    expect(moved.compartments[0]?.pulls[0]?.xMm).toBe(0);
+    expect(moved.compartments[0]?.pulls[0]?.yMm).toBe(399);
+  });
+
+  it('suivent leur compartiment quand on le duplique', () => {
+    const twice = reduce(WITH_DOOR, { type: 'duplicateCompartment', index: 0 });
+
+    // C'est la raison pour laquelle une poignée vit dans son compartiment : une liste
+    // globale aurait demandé de renuméroter des références, et une référence oubliée est
+    // une poignée sur une façade qui n'existe plus.
+    expect(twice.compartments[1]?.pulls).toEqual(WITH_DOOR.compartments[0]?.pulls);
+  });
+
+  it('disparaissent avec leur compartiment', () => {
+    const after = reduce(WITH_DOOR, { type: 'removeCompartment', index: 0 });
+
+    for (const compartment of after.compartments) {
+      expect(compartment.pulls).toEqual([]);
+    }
+  });
+
+  it('ignorent un rang qui n’existe pas', () => {
+    for (const action of [
+      { type: 'removePull', index: 0, pull: 9 },
+      { type: 'setPullKey', index: 0, pull: 9, key: 'pull_knob' },
+      { type: 'movePull', index: 0, pull: 9, xMm: 10, yMm: 10 },
+      { type: 'addPull', index: 9, target: 'door', slot: 0, key: 'pull_knob' },
+    ] as const) {
+      expect(reduce(WITH_DOOR, action)).toBe(WITH_DOOR);
+    }
+  });
+
+  it('refusent de dépasser le plafond', () => {
+    let model = WITH_DOOR;
+    for (let slot = 0; slot < PULLS_PER_COMPARTMENT_MAX + 3; slot += 1) {
+      model = reduce(model, {
+        type: 'addPull',
+        index: 0,
+        target: 'drawer',
+        slot,
+        key: 'pull_knob',
+      });
+    }
+
+    expect(model.compartments[0]?.pulls).toHaveLength(PULLS_PER_COMPARTMENT_MAX);
   });
 });

@@ -4,6 +4,7 @@ import type {
   Furniture,
   Hole,
   Part,
+  Pocket,
 } from '@neftya/engine';
 import { ascii, rectangle, renderDxf, type DxfEntity } from './dxf.js';
 
@@ -32,6 +33,16 @@ export const LAYERS = {
   face: 'PERCAGE_FACE',
   back: 'PERCAGE_DOS',
   edge: 'PERCAGE_CHANT',
+  /**
+   * Les perçages **traversants**.
+   *
+   * Sur leur propre calque, et non mêlés aux borgnes : l'atelier ne monte pas la même
+   * mèche, ne règle pas la même butée de profondeur, et un traversant fait sur un
+   * réglage borgne ne tient rien. Un cercle ne dit pas s'il débouche.
+   */
+  through: 'PERCAGE_TRAVERSANT',
+  /** Les empreintes à fraiser : une poche, pas un trou. */
+  milling: 'FRAISAGE',
   label: 'REPERE',
 } as const;
 
@@ -40,8 +51,12 @@ export interface DrillLabels {
   block: (partId: string, instanceIndex: number, face: 'front' | 'back') => string;
   /** Une ligne de légende par type de trou présent dans le bloc. */
   legend: (
-    hole: Pick<Hole, 'purpose' | 'diameterMm' | 'depthMm'>,
+    hole: Pick<Hole, 'purpose' | 'diameterMm' | 'depthMm' | 'through'>,
     count: number,
+  ) => string;
+  /** Une ligne par empreinte à fraiser. */
+  pocket: (
+    pocket: Pick<Pocket, 'purpose' | 'widthMm' | 'heightMm' | 'depthMm'>,
   ) => string;
 }
 
@@ -80,7 +95,8 @@ export function drillPlanDxf(
   for (const block of blocks) {
     // La légende s'écrit sous le contour : il faut lui réserver sa place avant de savoir
     // où commence le bloc suivant.
-    const legendHeightMm = (block.legend.length + 1) * textHeightMm * 1.6;
+    const legendHeightMm =
+      (block.legend.length + block.pockets.length + 1) * textHeightMm * 1.6;
     const blockHeightMm = block.part.widthMm + legendHeightMm;
 
     if (cursorXMm > 0 && cursorXMm + block.part.lengthMm > rowWidthMm) {
@@ -101,6 +117,7 @@ export function drillPlanDxf(
         block.part.widthMm,
       ),
       ...holeEntities(block, originXMm, originYMm + legendHeightMm),
+      ...pocketEntities(block, originXMm, originYMm + legendHeightMm),
       {
         kind: 'text',
         layer: LAYERS.label,
@@ -117,6 +134,17 @@ export function drillPlanDxf(
         heightMm: textHeightMm,
         value: labels.legend(line.hole, line.count),
       })),
+      ...block.pockets.map((pocket, index) => ({
+        kind: 'text' as const,
+        layer: LAYERS.label,
+        xMm: originXMm,
+        yMm:
+          originYMm +
+          legendHeightMm -
+          textHeightMm * 1.6 * (block.legend.length + index + 2),
+        heightMm: textHeightMm,
+        value: labels.pocket(pocket),
+      })),
     );
 
     cursorXMm += block.part.lengthMm + gapMm;
@@ -129,6 +157,8 @@ export function drillPlanDxf(
       { name: LAYERS.face, colour: 1 },
       { name: LAYERS.back, colour: 5 },
       { name: LAYERS.edge, colour: 3 },
+      { name: LAYERS.through, colour: 6 },
+      { name: LAYERS.milling, colour: 2 },
       { name: LAYERS.label, colour: 7 },
     ],
     entities,
@@ -148,6 +178,7 @@ interface Block {
    */
   face: 'front' | 'back';
   holes: Hole[];
+  pockets: Pocket[];
   legend: { hole: Hole; count: number }[];
 }
 
@@ -163,7 +194,8 @@ function blocksOf(drilling: DrillingResult, byId: ReadonlyMap<string, Part>): Bl
         (hole) =>
           hole.side === face || (face === 'front' && hole.side.startsWith('edge_')),
       );
-      if (holes.length === 0) continue;
+      const pockets = drilled.pockets.filter((pocket) => pocket.side === face);
+      if (holes.length === 0 && pockets.length === 0) continue;
 
       blocks.push({
         partId: drilled.partId,
@@ -171,6 +203,7 @@ function blocksOf(drilling: DrillingResult, byId: ReadonlyMap<string, Part>): Bl
         part,
         face,
         holes,
+        pockets,
         legend: legendOf(holes),
       });
     }
@@ -200,7 +233,13 @@ function holeEntities(block: Block, originXMm: number, originYMm: number): DxfEn
       return [
         {
           kind: 'circle' as const,
-          layer: hole.side === 'front' ? LAYERS.face : LAYERS.back,
+          // Un traversant sur son propre calque : l'atelier ne monte pas la même mèche, et
+          // un cercle ne dit pas s'il débouche.
+          layer: hole.through
+            ? LAYERS.through
+            : hole.side === 'front'
+              ? LAYERS.face
+              : LAYERS.back,
           xMm: originXMm + hole.xMm,
           yMm: originYMm + hole.yMm,
           radiusMm: hole.diameterMm / 2,
@@ -210,6 +249,29 @@ function holeEntities(block: Block, originXMm: number, originYMm: number): DxfEn
 
     return [edgeTick(hole, block.part, originXMm, originYMm)];
   });
+}
+
+/**
+ * Une empreinte fraisée : son contour, à la cote.
+ *
+ * Un rectangle et non un cercle, parce que c'est une poche : la représenter par un
+ * perçage ferait fraiser un rond là où il faut un rectangle, et l'atelier s'en
+ * apercevrait au premier panneau.
+ */
+function pocketEntities(
+  block: Block,
+  originXMm: number,
+  originYMm: number,
+): DxfEntity[] {
+  return block.pockets.flatMap((pocket) =>
+    rectangle(
+      LAYERS.milling,
+      originXMm + pocket.xMm - pocket.widthMm / 2,
+      originYMm + pocket.yMm - pocket.heightMm / 2,
+      pocket.widthMm,
+      pocket.heightMm,
+    ),
+  );
 }
 
 /**
@@ -251,7 +313,15 @@ export const PLAIN_LABELS: DrillLabels = {
   block: (partId, instanceIndex, face) =>
     ascii(`${partId} #${instanceIndex + 1} - ${face === 'front' ? 'face' : 'dos'}`),
   legend: (hole, count) =>
-    ascii(`${count}x ${hole.purpose} D${hole.diameterMm} p${hole.depthMm}`),
+    ascii(
+      `${count}x ${hole.purpose} D${hole.diameterMm} ${
+        hole.through ? 'traversant' : `p${hole.depthMm}`
+      }`,
+    ),
+  pocket: (pocket) =>
+    ascii(
+      `fraisage ${pocket.purpose} ${pocket.widthMm}x${pocket.heightMm} p${pocket.depthMm}`,
+    ),
 };
 
 export type { DrilledPart };
