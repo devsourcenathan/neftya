@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { positiveMillimetres } from './millimetres.js';
+import { pullPlacement } from './pulls.js';
 import { materialKey } from './materials.js';
 import { parameters, DEFAULT_PARAMETERS } from './parameters.js';
 
@@ -39,6 +40,21 @@ export const compartment = z.object({
    * @see docs/NEFTYA_ENGINE.md §7.3
    */
   widthMm: positiveMillimetres.optional(),
+  /**
+   * Les poignées posées sur les façades de ce compartiment.
+   *
+   * **Le premier élément du modèle qui ne se déduise de rien.** Deux meubles identiques
+   * peuvent porter des poignées différentes, au même endroit ou non : aucune règle ne
+   * permet de deviner laquelle, elle est donc saisie.
+   *
+   * Dans le compartiment plutôt que dans une liste globale : le dupliquer emporte ses
+   * poignées, le supprimer les emporte aussi. Une liste séparée aurait demandé de
+   * renuméroter des références à chaque fois, et une référence oubliée est une poignée sur
+   * une façade qui n'existe plus.
+   *
+   * @see docs/NEFTYA_ENGINE.md §13
+   */
+  pulls: z.array(pullPlacement).max(8).default([]),
 });
 
 export type CompartmentInput = z.infer<typeof compartment>;

@@ -83,6 +83,16 @@ export {
   hingesFor,
   hingePositionsMm,
   slideFor,
+  barFor,
+  pullFor,
+  PULLS,
+  PULL_BARS,
+  PULL_KNOB,
+  PULL_SHELL,
+  PULL_CENTRES_MM,
+  type PullSpec,
+  type PullShape,
+  type PullCentresMm,
   type HardwareKey,
   type HingeSpec,
   type SlideSpec,
@@ -101,6 +111,25 @@ export {
 } from './part-frame.js';
 
 export {
+  facadesOf,
+  facadeAt,
+  hingeEdgeOf,
+  type Facade,
+  type FacadeRole,
+} from './facades.js';
+
+export {
+  pulls,
+  pullPlacement,
+  suggestedPull,
+  type PlacedPull,
+  type PullPlacement,
+  type PullPlacementInput,
+  type PullResult,
+  type PullWarning,
+} from './pulls.js';
+
+export {
   drilling,
   type DrilledPart,
   type DrillingResult,
@@ -108,6 +137,7 @@ export {
   type HardwareLine,
   type Hole,
   type HolePurpose,
+  type Pocket,
 } from './drilling.js';
 
 export {

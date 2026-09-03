@@ -24,9 +24,26 @@ export const SLIDE_LENGTHS_MM = [250, 300, 350, 400, 450, 500] as const;
 
 export type SlideLengthMm = (typeof SLIDE_LENGTHS_MM)[number];
 
+/**
+ * Entraxes de poignées-barres du commerce.
+ *
+ * L'entraxe est la distance entre les **centres** des deux vis. C'est la cote qui décide
+ * du perçage, et la seule qui doive tomber juste : une barre dont l'entraxe est faux ne se
+ * visse pas, quelle que soit sa longueur.
+ */
+export const PULL_CENTRES_MM = [96, 128, 160, 192] as const;
+
+export type PullCentresMm = (typeof PULL_CENTRES_MM)[number];
+
 /** Clé stable, jamais traduite, et sur laquelle s'accroche le prix saisi. */
 export type HardwareKey =
-  'hinge_35_110' | 'dowel_8x30' | 'shelf_support_5' | `slide_ball_${SlideLengthMm}`;
+  | 'hinge_35_110'
+  | 'dowel_8x30'
+  | 'shelf_support_5'
+  | `slide_ball_${SlideLengthMm}`
+  | `pull_bar_${PullCentresMm}`
+  | 'pull_knob'
+  | 'pull_shell';
 
 /**
  * La charnière à boîtier de 35, ouverture 110° — celle qu'on trouve partout.
@@ -218,5 +235,114 @@ function spread(first: number, last: number, count: number): number[] {
 
   return Array.from({ length: count }, (_, index) =>
     Math.round(first + ((last - first) * index) / (count - 1)),
+  );
+}
+
+/* ------------------------------------------------------------------ poignées */
+
+/**
+ * Les poignées de meuble : ce qu'on saisit pour ouvrir.
+ *
+ * ## Ce qu'elles ont de particulier
+ *
+ * **Leurs vis traversent.** Une poignée se visse depuis l'intérieur de la façade ; le
+ * perçage débouche donc sur la face visible, et c'est voulu. Tout le reste de la
+ * quincaillerie de Neftya se perce en borgne — un foret qui sort abîme une face qu'on
+ * regarde. Ici la vis doit sortir, sinon la poignée ne tient sur rien.
+ *
+ * C'est la seule exception, et elle est portée par `Hole.through` plutôt que déduite d'une
+ * profondeur égale à l'épaisseur : une égalité est un accident, un drapeau est une
+ * décision.
+ *
+ * ## La coquille n'a pas de trou
+ *
+ * Une poignée encastrée est une **empreinte fraisée**, pas un perçage. Elle ne peut donc
+ * pas se compter depuis les trous comme le reste, et c'est pourquoi le décompte des
+ * poignées part du modèle.
+ */
+export type PullShape = 'bar' | 'knob' | 'shell';
+
+export interface PullSpec {
+  key: HardwareKey;
+  shape: PullShape;
+  /** Diamètre des vis de fixation. Nul pour une coquille, qui n'en a pas. */
+  screwDiameterMm: number;
+  /** Nombre de vis : deux pour une barre, une pour un bouton, aucune pour une coquille. */
+  screws: number;
+  /** Entraxe des deux vis. Nul quand il n'y en a qu'une, ou aucune. */
+  centresMm: number;
+  /** Encombrement visible, pour le rendu et pour vérifier qu'elle tient sur la façade. */
+  lengthMm: number;
+  widthMm: number;
+  /** Saillie devant la façade. Nulle pour une coquille, qui rentre dedans. */
+  projectionMm: number;
+  /** Profondeur de l'empreinte fraisée. Nulle sauf pour une coquille. */
+  recessDepthMm: number;
+}
+
+function bar(centresMm: PullCentresMm): PullSpec {
+  return {
+    key: `pull_bar_${centresMm}`,
+    shape: 'bar',
+    screwDiameterMm: 4,
+    screws: 2,
+    centresMm,
+    // Une barre dépasse son entraxe de ses deux pieds : trente-deux millimètres en tout,
+    // ce que donne la quincaillerie courante.
+    lengthMm: centresMm + 32,
+    widthMm: 14,
+    projectionMm: 32,
+    recessDepthMm: 0,
+  };
+}
+
+export const PULL_BARS: readonly PullSpec[] = PULL_CENTRES_MM.map(bar);
+
+export const PULL_KNOB: PullSpec = {
+  key: 'pull_knob',
+  shape: 'knob',
+  screwDiameterMm: 4,
+  screws: 1,
+  centresMm: 0,
+  lengthMm: 30,
+  widthMm: 30,
+  projectionMm: 28,
+  recessDepthMm: 0,
+};
+
+export const PULL_SHELL: PullSpec = {
+  key: 'pull_shell',
+  shape: 'shell',
+  screwDiameterMm: 0,
+  screws: 0,
+  centresMm: 0,
+  lengthMm: 100,
+  widthMm: 30,
+  projectionMm: 0,
+  // Douze millimètres dans un panneau de dix-huit : la coquille rentre, et il reste six
+  // millimètres de matière derrière.
+  recessDepthMm: 12,
+};
+
+export const PULLS: readonly PullSpec[] = [...PULL_BARS, PULL_KNOB, PULL_SHELL];
+
+/** La poignée d'une clé de catalogue, ou `null` si la clé n'en désigne aucune. */
+export function pullFor(key: string): PullSpec | null {
+  return PULLS.find((candidate) => candidate.key === key) ?? null;
+}
+
+/**
+ * La barre la plus large qui tienne sur une façade.
+ *
+ * Une barre de 192 sur un tiroir de 200 déborde des deux côtés : elle ne se visse pas, et
+ * proposer l'entraxe le plus grand par défaut condamnerait les petites façades.
+ */
+export function barFor(faceLengthMm: number): PullSpec | null {
+  const margin = 24;
+
+  return (
+    [...PULL_BARS]
+      .reverse()
+      .find((candidate) => candidate.lengthMm + margin <= faceLengthMm) ?? null
   );
 }

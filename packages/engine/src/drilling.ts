@@ -8,6 +8,8 @@ import {
   type HoleSide,
   type PartFrame,
 } from './part-frame.js';
+import { hingeEdgeOf } from './facades.js';
+import { pulls, type PlacedPull } from './pulls.js';
 import {
   DOWEL,
   HINGE,
@@ -45,17 +47,48 @@ export type HolePurpose =
   | 'shelf_support'
   | 'slide_cabinet'
   | 'slide_drawer'
-  | 'dowel';
+  | 'dowel'
+  | 'pull_screw';
 
 export interface Hole {
   xMm: number;
   yMm: number;
   diameterMm: number;
-  /** Profondeur borgne. Aucun perçage du moteur ne traverse. */
+  /** Profondeur percée. Égale à l'épaisseur quand le trou traverse. */
   depthMm: number;
+  /**
+   * Le trou débouche sur l'autre face.
+   *
+   * **Vrai pour les vis de poignée, et pour elles seules.** Tout le reste se perce en
+   * borgne : un foret qui sort abîme une face qu'on regarde. Une vis de poignée, elle,
+   * doit sortir — sinon la poignée ne tient sur rien.
+   *
+   * Un drapeau plutôt qu'une profondeur égale à l'épaisseur : une égalité est un accident,
+   * un drapeau est une décision, et l'atelier ne monte pas la même mèche dans les deux cas.
+   */
+  through?: boolean;
   side: HoleSide;
   /** Ce que le trou reçoit. Clé stable, jamais traduite. */
   purpose: HolePurpose;
+  hardware: HardwareKey;
+}
+
+/**
+ * Une empreinte fraisée.
+ *
+ * Une poignée encastrée n'est pas un trou : c'est une poche rectangulaire, ouverte sur la
+ * face visible. La représenter par un perçage ferait fraiser un rond là où il faut un
+ * rectangle, et l'atelier s'en apercevrait au premier panneau.
+ */
+export interface Pocket {
+  /** Le centre de la poche, dans le repère de la face qu'on fraise. */
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  heightMm: number;
+  depthMm: number;
+  side: HoleSide;
+  purpose: 'pull_shell';
   hardware: HardwareKey;
 }
 
@@ -69,6 +102,8 @@ export interface DrilledPart {
    */
   instanceIndex: number;
   holes: Hole[];
+  /** Les empreintes à fraiser. Vide pour presque toutes les pièces. */
+  pockets: Pocket[];
 }
 
 export interface DrillingWarning {
@@ -106,14 +141,22 @@ export function drilling(furniture: Furniture): DrillingResult {
     (piece) => piece.part.role === 'top' || piece.part.role === 'bottom',
   );
 
-  const drilled = new Map<string, { piece: Piece; holes: Hole[] }>();
+  const drilled = new Map<string, { piece: Piece; holes: Hole[]; pockets: Pocket[] }>();
   const warnings: DrillingWarning[] = [];
 
-  const add = (piece: Piece, hole: Hole) => {
+  const entryFor = (piece: Piece) => {
     const key = `${piece.part.id}#${piece.instanceIndex}`;
-    const entry = drilled.get(key) ?? { piece, holes: [] };
-    entry.holes.push(hole);
+    const entry = drilled.get(key) ?? { piece, holes: [], pockets: [] };
     drilled.set(key, entry);
+    return entry;
+  };
+
+  const add = (piece: Piece, hole: Hole) => {
+    entryFor(piece).holes.push(hole);
+  };
+
+  const carve = (piece: Piece, pocket: Pocket) => {
+    entryFor(piece).pockets.push(pocket);
   };
 
   for (const shelf of pieces.filter((piece) => piece.part.role === 'shelf')) {
@@ -121,7 +164,7 @@ export function drilling(furniture: Furniture): DrillingResult {
   }
 
   for (const door of pieces.filter((piece) => piece.part.role === 'door')) {
-    hinges(door, verticals, add);
+    hinges(furniture, door, verticals, add);
   }
 
   for (const side of pieces.filter((piece) => piece.part.role === 'drawer_side')) {
@@ -132,20 +175,26 @@ export function drilling(furniture: Furniture): DrillingResult {
     dowels(divider, horizontals, add);
   }
 
+  const placedPulls = pulls(furniture).pulls;
+  for (const pull of placedPulls) {
+    pullFixings(pull, pieces, add, carve);
+  }
+
   const parts = [...drilled.values()]
-    .map(({ piece, holes }) => ({
+    .map(({ piece, holes, pockets }) => ({
       partId: piece.part.id,
       instanceIndex: piece.instanceIndex,
       // Un ordre stable : le moteur est déterministe jusque dans ses listes.
       holes: [...holes].sort(
         (a, b) => a.side.localeCompare(b.side) || a.yMm - b.yMm || a.xMm - b.xMm,
       ),
+      pockets: [...pockets].sort((a, b) => a.yMm - b.yMm || a.xMm - b.xMm),
     }))
     .sort(
       (a, b) => a.partId.localeCompare(b.partId) || a.instanceIndex - b.instanceIndex,
     );
 
-  return { parts, hardware: hardwareOf(parts), warnings };
+  return { parts, hardware: hardwareOf(parts, placedPulls), warnings };
 }
 
 /* ------------------------------------------------------------------- étagères */
@@ -216,6 +265,7 @@ function shelfSupports(
  * porte de meuble courante.
  */
 function hinges(
+  furniture: Furniture,
   door: Piece,
   verticals: readonly Piece[],
   add: (piece: Piece, hole: Hole) => void,
@@ -226,20 +276,15 @@ function hinges(
   // Un vantail est **en applique** : il déborde le caisson en haut et en bas, et aucun
   // montant ne couvre sa hauteur. Exiger la couverture ne trouvait aucun montant, et le
   // moteur ne perçait aucune charnière — sans rien dire.
-  const covering = verticals.filter((piece) => overlapsHeight(piece, door.instance));
-  const left = stileNear(covering, dx0);
-  const right = stileNear(covering, dx1);
-  if (!left && !right) return;
+  // La règle du côté charnière vit dans `facades.ts` : la poignée en a besoin aussi, et
+  // deux écritures de la même règle divergent le jour où l'une est corrigée.
+  const edge = hingeEdgeOf(furniture, door.instance);
+  if (!edge) return;
 
-  // **La gauche par convention, dès qu'un montant s'y trouve.** Départager les deux
-  // chants par la distance ne mesure rien : la façade recouvre la moitié du séparateur,
-  // et le millimètre d'écart qui en résulte charnièrerait les deux vantaux d'un buffet
-  // sur son séparateur central, ouvrant chaque porte vers le mur.
-  //
-  // Le vantail droit d'une paire est le seul qui n'a **rien** à sa gauche — le jeu
-  // central — et c'est ce qui le désigne.
-  const hingeLeft = left !== null;
-  const stile = (hingeLeft ? left : right) as Piece;
+  const hingeLeft = edge === 'left';
+  const covering = verticals.filter((piece) => overlapsHeight(piece, door.instance));
+  const stile = stileNear(covering, hingeLeft ? dx0 : dx1);
+  if (!stile) return;
 
   const cupXMm = hingeLeft ? dx0 + HINGE.cupInsetMm : dx1 - HINGE.cupInsetMm;
   // Le boîtier se fraise sur la face qui regarde le caisson, jamais sur celle qu'on voit.
@@ -415,6 +460,80 @@ function dowels(
   }
 }
 
+/* -------------------------------------------------------------------- poignées */
+
+/**
+ * Les vis d'une poignée, ou l'empreinte d'une coquille.
+ *
+ * Les vis se percent **depuis l'intérieur de la façade** — c'est de là qu'on visse — et
+ * traversent jusqu'à la face visible. L'empreinte d'une coquille, elle, se fraise sur la
+ * face visible : c'est cette face-là qu'on creuse.
+ */
+function pullFixings(
+  pull: PlacedPull,
+  pieces: readonly Piece[],
+  add: (piece: Piece, hole: Hole) => void,
+  carve: (piece: Piece, pocket: Pocket) => void,
+): void {
+  const role = pull.target === 'door' ? 'door' : 'drawer_face';
+  const piece = pieces.find(
+    (candidate) =>
+      candidate.part.role === role &&
+      candidate.instance.compartment === pull.compartment &&
+      candidate.instance.xMm <= pull.atMm.xMm &&
+      candidate.instance.xMm + candidate.instance.sizeXMm >= pull.atMm.xMm &&
+      candidate.instance.yMm <= pull.atMm.yMm &&
+      candidate.instance.yMm + candidate.instance.sizeYMm >= pull.atMm.yMm,
+  );
+
+  if (!piece) return;
+
+  const { spec } = pull;
+  const inside = facingSide(piece.frame, pull.atMm.zMm + piece.instance.sizeZMm + 1);
+  const visible = inside === 'front' ? 'back' : 'front';
+
+  if (spec.shape === 'shell') {
+    const along = pull.orientation === 'horizontal';
+
+    carve(piece, {
+      ...toPartFrame(
+        piece.frame,
+        { x: pull.atMm.xMm, y: pull.atMm.yMm, z: pull.atMm.zMm },
+        visible,
+      ),
+      widthMm: along ? spec.lengthMm : spec.widthMm,
+      heightMm: along ? spec.widthMm : spec.lengthMm,
+      depthMm: spec.recessDepthMm,
+      side: visible,
+      purpose: 'pull_shell',
+      hardware: spec.key,
+    });
+
+    return;
+  }
+
+  // Une vis au centre, deux de part et d'autre à la moitié de l'entraxe.
+  const offsets = spec.screws === 1 ? [0] : [-spec.centresMm / 2, spec.centresMm / 2];
+
+  for (const offset of offsets) {
+    const point = {
+      x: pull.atMm.xMm + (pull.orientation === 'horizontal' ? offset : 0),
+      y: pull.atMm.yMm + (pull.orientation === 'vertical' ? offset : 0),
+      z: pull.atMm.zMm,
+    };
+
+    add(piece, {
+      ...toPartFrame(piece.frame, point, inside),
+      diameterMm: spec.screwDiameterMm,
+      depthMm: piece.part.thicknessMm,
+      through: true,
+      side: inside,
+      purpose: 'pull_screw',
+      hardware: spec.key,
+    });
+  }
+}
+
 /* ------------------------------------------------------------------- décompte */
 
 /**
@@ -424,7 +543,10 @@ function dowels(
  * charnière au calcul sans la percer, ou l'inverse, et le plan et la liste de courses ne
  * parlent plus du même meuble. Ici l'un ne peut pas bouger sans l'autre.
  */
-function hardwareOf(parts: readonly DrilledPart[]): HardwareLine[] {
+function hardwareOf(
+  parts: readonly DrilledPart[],
+  placedPulls: readonly PlacedPull[],
+): HardwareLine[] {
   const counts = new Map<HardwareKey, number>();
 
   const bump = (key: HardwareKey, by: number) =>
@@ -446,11 +568,24 @@ function hardwareOf(parts: readonly DrilledPart[]): HardwareLine[] {
         case 'dowel':
           bump(hole.hardware, 0.5);
           break;
+        // Les vis d'une poignée ne la comptent pas : une coquille encastrée n'a aucune
+        // vis, et le décompte des poignées part donc du modèle, juste en dessous.
+        case 'pull_screw':
+          break;
         default:
           break;
       }
     }
   }
+
+  /*
+   * **La seule quincaillerie comptée depuis le modèle, et non depuis ses trous.**
+   *
+   * Une poignée encastrée est une empreinte fraisée : elle n'a pas un seul trou. La
+   * compter par ses perçages en aurait oublié une sur trois formes, et l'atelier l'aurait
+   * découvert en montant le meuble.
+   */
+  for (const pull of placedPulls) bump(pull.spec.key, 1);
 
   return [...counts.entries()]
     .map(([key, quantity]) => ({ key, quantity: Math.round(quantity) }))
