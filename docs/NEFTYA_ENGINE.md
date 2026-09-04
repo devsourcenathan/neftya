@@ -381,6 +381,21 @@ charnières et finira par frotter, mais c'est au menuisier de trancher.
 >
 > Un modèle sans aucune largeur imposée se comporte exactement comme avant.
 
+> **La même règle vaut pour les hauteurs d'étagère.** `shelfSpacesMm` impose la hauteur de
+> chaque espace, du bas vers le haut : `n` étagères en découpent `n + 1`. Un espace de
+> 400 mm en bas pour les cartons à archives, le reste réparti au-dessus, ne s'exprimait pas
+> autrement.
+>
+> Le partage est **le même code** — `share.ts` — pour les largeurs et pour les hauteurs.
+> Deux écritures de la même règle divergent le jour où l'une est corrigée.
+>
+> Un tableau plus long que le nombre d'espaces est toléré : retirer une étagère ne doit pas
+> rendre le modèle invalide. Des hauteurs qui dépassent à elles seules la place font
+> **revenir à la division égale** avec un avertissement `SHELF_SPACE_MISMATCH` — les
+> honorer poserait une étagère hors du caisson, ce qui a été vérifié : 3 × 900 dans un
+> meuble de 2000 plaçait la troisième à 2754 mm. Les réduire au prorata serait pire, chaque
+> hauteur devenant un nombre que personne n'a saisi.
+
 
 Pour `n` compartiments dans une largeur intérieure `Li` avec `k = n − 1` séparateurs :
 

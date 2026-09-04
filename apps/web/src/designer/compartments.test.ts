@@ -59,6 +59,7 @@ describe('dupliquer un compartiment', () => {
         drawers: 0,
         doors: 0,
         pulls: [],
+        shelfSpacesMm: [],
       })),
     };
 

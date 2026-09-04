@@ -65,6 +65,7 @@ describe('modifications du modèle', () => {
       drawers: 0,
       doors: 0,
       pulls: [],
+      shelfSpacesMm: [],
     });
   });
 

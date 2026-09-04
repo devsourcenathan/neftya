@@ -55,6 +55,22 @@ export const compartment = z.object({
    * @see docs/NEFTYA_ENGINE.md §13
    */
   pulls: z.array(pullPlacement).max(8).default([]),
+  /**
+   * Hauteur imposée de chaque espace entre étagères, du bas vers le haut.
+   *
+   * `n` étagères découpent le compartiment en `n + 1` espaces. Une entrée `null` — ou
+   * absente — laisse l'espace souple : il se partage à parts égales ce que les espaces
+   * imposés laissent, ce qui est le comportement d'origine.
+   *
+   * Un espace de 400 mm en bas pour les cartons à archives, le reste réparti au-dessus,
+   * ne s'exprimait pas autrement : la division égale décidait pour le menuisier.
+   *
+   * **Un tableau trop long est toléré** : retirer une étagère ne doit pas rendre le modèle
+   * invalide, et les entrées en trop sont simplement ignorées.
+   *
+   * @see docs/NEFTYA_ENGINE.md §7.3
+   */
+  shelfSpacesMm: z.array(positiveMillimetres.nullable()).max(16).default([]),
 });
 
 export type CompartmentInput = z.infer<typeof compartment>;

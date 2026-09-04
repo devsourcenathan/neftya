@@ -340,6 +340,7 @@ function resize(
       drawers: 0,
       doors: 0,
       pulls: [],
+      shelfSpacesMm: [],
     })),
   ];
 }

@@ -1,4 +1,5 @@
 import { divideEvenly } from './millimetres.js';
+import { shareSpace } from './share.js';
 import {
   furnitureInput,
   type FurnitureInput,
@@ -25,6 +26,7 @@ export interface Warning {
     | 'FRONT_GAP_OFF_DIVIDER'
     | 'COMPARTMENT_TOO_NARROW'
     | 'COMPARTMENT_WIDTH_MISMATCH'
+    | 'SHELF_SPACE_MISMATCH'
     | 'DRAWER_DOES_NOT_FIT'
     | 'DOOR_DOES_NOT_FIT'
     | 'DOOR_LEAF_TOO_WIDE';
@@ -168,6 +170,7 @@ export function build(rawInput: FurnitureInput): Furniture {
       innerDepth,
       e,
       p.shelfSideClearanceMm,
+      compartment.shelfSpacesMm,
     );
 
     drafts.push(...shelves.drafts);
@@ -290,50 +293,22 @@ function shareWidths(
   compartments: readonly { widthMm?: number | undefined }[],
   availableWidth: number,
 ): { widths: number[]; warnings: Warning[] } {
-  const flexible = compartments.filter(
-    (compartment) => compartment.widthMm === undefined,
+  const share = shareSpace(
+    compartments.map((compartment) => compartment.widthMm),
+    compartments.length,
+    availableWidth,
   );
-
-  if (flexible.length === compartments.length) {
-    return { widths: divideEvenly(availableWidth, compartments.length), warnings: [] };
-  }
-
-  const requested = compartments.reduce(
-    (total, compartment) => total + (compartment.widthMm ?? 0),
-    0,
-  );
-  const remaining = availableWidth - requested;
-  const warnings: Warning[] = [];
-
-  if (flexible.length === 0) {
-    const widths = compartments.map((compartment) => compartment.widthMm as number);
-
-    if (remaining !== 0) {
-      warnings.push({
-        code: 'COMPARTMENT_WIDTH_MISMATCH',
-        details: { requestedMm: requested, availableMm: availableWidth },
-      });
-      widths[widths.length - 1] = (widths.at(-1) as number) + remaining;
-    }
-
-    return { widths, warnings };
-  }
-
-  if (remaining < flexible.length) {
-    warnings.push({
-      code: 'COMPARTMENT_WIDTH_MISMATCH',
-      details: { requestedMm: requested, availableMm: availableWidth },
-    });
-  }
-
-  const share = divideEvenly(Math.max(0, remaining), flexible.length);
-  let next = 0;
 
   return {
-    widths: compartments.map(
-      (compartment) => compartment.widthMm ?? (share[next++] as number),
-    ),
-    warnings,
+    widths: share.sizes,
+    warnings: share.mismatch
+      ? [
+          {
+            code: 'COMPARTMENT_WIDTH_MISMATCH',
+            details: { requestedMm: share.requestedMm, availableMm: availableWidth },
+          },
+        ]
+      : [],
   };
 }
 
@@ -348,10 +323,13 @@ function shelvesOf(
   innerDepth: number,
   thickness: number,
   clearanceMm: number,
+  /** Hauteur imposée de chaque espace, du bas vers le haut. Vide : tout est souple. */
+  spacesMm: readonly (number | null)[],
 ): { drafts: DraftPart[]; warnings: Warning[] } {
   if (count === 0) return { drafts: [], warnings: [] };
 
-  const spaces = divideEvenly(innerHeight - count * thickness, count + 1);
+  const share = shareSpace(spacesMm, count + 1, innerHeight - count * thickness);
+  const spaces = share.sizes;
   const widthMm = span.widthMm - clearanceMm * 2;
 
   // Un compartiment trop étroit pour recevoir une étagère n'en produit **aucune**, et le
@@ -368,6 +346,18 @@ function shelvesOf(
       ],
     };
   }
+
+  const warnings: Warning[] = share.mismatch
+    ? [
+        {
+          code: 'SHELF_SPACE_MISMATCH',
+          details: {
+            requestedMm: share.requestedMm,
+            availableMm: innerHeight - count * thickness,
+          },
+        },
+      ]
+    : [];
 
   const drafts: DraftPart[] = [];
 
@@ -389,7 +379,7 @@ function shelvesOf(
     y += thickness;
   }
 
-  return { drafts, warnings: [] };
+  return { drafts, warnings };
 }
 
 /**
