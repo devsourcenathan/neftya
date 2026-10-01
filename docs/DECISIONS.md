@@ -1777,3 +1777,36 @@ ferait chercher un défaut ici.
 et un code maison aurait divergé du jour où un client lit les deux. Le quota, lui, reste un
 `409` — c'est déjà ce que fait le quota de projets, et deux codes pour un même refus auraient
 obligé à écrire deux fois le même traitement côté interface.
+
+---
+
+## 2026-10-01 — L'assistant propose à l'écran, il ne crée rien
+
+**Décision.** La configuration interprétée s'affiche **avec ses cotes en clair**, et le projet
+n'est créé qu'au clic. L'assistant est posé à côté des modèles prédéfinis, jamais à leur
+place.
+
+**Motif.** Une interprétation peut être plausible et fausse, et la seule personne capable de
+le voir est celle qui a écrit la phrase — pas le code, qui a déjà vérifié tout ce qu'il
+pouvait vérifier. Créer d'abord et laisser corriger ensuite aurait rempli la liste de meubles
+que personne n'a voulus, et chacun aurait porté un nom tiré d'une phrase.
+
+**Un modèle prédéfini reste le chemin sûr** : il est complet, il est juste, et il ne dépend de
+rien. L'assistant dépend de la plateforme et d'un modèle de langage. Le présenter comme le
+point d'entrée principal aurait rendu l'outil inutilisable le jour où la clé expire.
+
+**Sans clé, la section se retire.** Un `503` portant `SERVICE_UNAVAILABLE` remplace le champ
+par son message, pour la session. Laisser le champ inviter à cliquer ferait réessayer
+indéfiniment quelque chose qui ne marchera pas aujourd'hui.
+
+**Le sondage a un plafond** : vingt fois à 1,5 s, soit trente secondes. Au-delà, l'écran
+renonce et le dit. Un onglet laissé ouvert qui interroge la plateforme toute la journée est un
+défaut que personne ne voit et que tout le monde paie.
+
+**`unusable` arrête le sondage**, au même titre que `succeeded`. La génération est finie ; la
+redemander ne la rendrait pas meilleure, elle coûterait un appel de plus. La décision est
+portée par `nextPoll`, une fonction pure testée à part : un `refetchInterval` écrit dans le
+composant est vrai le jour où on l'écrit et faux au premier état ajouté.
+
+**Les problèmes sont rendus par champ.** « Données invalides » obligerait à deviner laquelle
+des trois cotes manque — et c'est exactement ce que l'API s'est donné la peine de dire.

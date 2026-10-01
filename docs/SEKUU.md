@@ -277,6 +277,10 @@ l'API. Et deux bornes s'y ajoutent, que le moteur n'a pas à porter :
   mille.
 - **la longueur de l'entrée**, 2 000 caractères. Le coût est proportionnel à l'entrée.
 
+Côté interface, la section vit sur la page des projets, **à côté** des modèles prédéfinis et
+non à leur place : un modèle est complet, juste, et ne dépend de rien. La configuration
+s'affiche avec ses cotes, et le projet n'est créé qu'au clic.
+
 **Une sortie inexploitable n'est pas une erreur HTTP.** La génération a réussi, elle a
 coûté, et son résultat est lisible : la route rend `200` avec `status: "unusable"` et les
 problèmes par champ. Un `422` ferait réessayer là où il faut reformuler.

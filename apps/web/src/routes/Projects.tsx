@@ -21,6 +21,7 @@ import {
   SkeletonCards,
 } from '../ui/index.js';
 import { PlusIcon, TrashIcon } from '../ui/icons.js';
+import { Assistant } from '../projects/Assistant.js';
 import type { ProjectStatus } from '../api/projects.js';
 
 /** « À revoir » passe en or : c'est le seul état qui demande une action. */
@@ -154,6 +155,22 @@ export function Projects() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Avant les modèles, parce que c'est le chemin le plus court quand on sait déjà ce
+          qu'on veut — et après les projets, parce qu'on vient d'abord reprendre son travail. */}
+      <section>
+        <Assistant
+          busy={create.isPending}
+          onUse={(model) =>
+            create.mutate({
+              // Le nom saisi s'il y en a un : l'assistant ne nomme pas le meuble, il le
+              // configure, et un nom tiré de la phrase serait une phrase.
+              name: name.trim() || t('assistant.title'),
+              model,
+            })
+          }
+        />
       </section>
 
       <section>

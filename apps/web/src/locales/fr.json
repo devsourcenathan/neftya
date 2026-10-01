@@ -377,5 +377,21 @@
     "add": "Ajouter une poignée ici",
     "already": "Cette façade en a déjà une",
     "remove": "Supprimer cette poignée"
+  },
+  "assistant": {
+    "title": "Décrire le meuble",
+    "badge": "Assistant",
+    "help": "Écrivez ce que vous voulez construire, en une ou deux phrases. La configuration proposée s'affiche avant qu'un projet soit créé.",
+    "label": "La description",
+    "hint": "Donnez les cotes en millimètres : « 1800 de large, 2000 de haut, 400 de profond ».",
+    "placeholder": "Une bibliothèque de 1800 sur 2000, 400 de profond, trois compartiments de deux étagères, en MDF",
+    "submit": "Interpréter",
+    "working": "Lecture en cours…",
+    "again": "Autre description",
+    "proposal": "Configuration proposée",
+    "use": "Créer ce projet",
+    "unusable": "La description ne suffit pas à composer un meuble. Précisez ce qui suit, puis réessayez.",
+    "failed": "L'interprétation n'a pas abouti. Reformulez, ou partez d'un modèle.",
+    "timeout": "L'interprétation est trop longue. Reformulez, ou partez d'un modèle."
   }
 }

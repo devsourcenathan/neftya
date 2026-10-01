@@ -158,6 +158,21 @@ export const RedoIcon = (props: IconProps) => (
  * menu. Sur une barre qui porte déjà un basculement d'affichage, deux engrenages voisins
  * se confondent.
  */
+/**
+ * L'assistant : une baguette et deux éclats.
+ *
+ * Pas d'étoile seule — elle veut dire « favori » partout ailleurs, et un atelier qui
+ * cherche ses favoris cliquerait ici.
+ */
+export const AssistantIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M5 19 16 8" />
+    <path d="m15 5 1.2 2.8L19 9l-2.8 1.2L15 13l-1.2-2.8L11 9l2.8-1.2z" />
+    <path d="M19 16v3" />
+    <path d="M17.5 17.5h3" />
+  </Svg>
+);
+
 export const MoreIcon = (props: IconProps) => (
   <Svg {...props}>
     <circle cx="5" cy="12" r="1" />

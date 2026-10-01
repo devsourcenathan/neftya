@@ -1,4 +1,9 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  TextareaHTMLAttributes,
+} from 'react';
 
 /**
  * La trousse d'interface, réglée sur le Neftya Industrial Design System.
@@ -110,6 +115,24 @@ export function Input({
   return (
     <input
       className={`w-full rounded-t border-b border-outline-variant bg-surface-low px-3 py-2 text-sm text-ink transition-colors placeholder:text-outline focus:border-primary focus:bg-surface focus:outline-none ${className}`}
+      {...props}
+    />
+  );
+}
+
+/**
+ * Le même champ, sur plusieurs lignes.
+ *
+ * `resize-y` seulement : une description de meuble s'allonge, elle ne s'élargit pas — et
+ * une poignée libre laisse déborder le champ hors de sa colonne.
+ */
+export function Textarea({
+  className = '',
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={`w-full resize-y rounded-t border-b border-outline-variant bg-surface-low px-3 py-2 text-sm text-ink transition-colors placeholder:text-outline focus:border-primary focus:bg-surface focus:outline-none ${className}`}
       {...props}
     />
   );

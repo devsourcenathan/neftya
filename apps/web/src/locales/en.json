@@ -377,5 +377,21 @@
     "add": "Add a handle here",
     "already": "This facade already has one",
     "remove": "Remove this handle"
+  },
+  "assistant": {
+    "title": "Describe the furniture",
+    "badge": "Assistant",
+    "help": "Write what you want to build, in a sentence or two. The proposed configuration is shown before any project is created.",
+    "label": "The description",
+    "hint": "Give sizes in millimetres: “1800 wide, 2000 high, 400 deep”.",
+    "placeholder": "A bookcase 1800 by 2000, 400 deep, three compartments with two shelves each, in MDF",
+    "submit": "Interpret",
+    "working": "Reading…",
+    "again": "Another description",
+    "proposal": "Proposed configuration",
+    "use": "Create this project",
+    "unusable": "The description is not enough to compose a piece of furniture. Clarify the following, then try again.",
+    "failed": "The interpretation did not complete. Rephrase, or start from a preset.",
+    "timeout": "The interpretation is taking too long. Rephrase, or start from a preset."
   }
 }
