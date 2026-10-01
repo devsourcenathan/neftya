@@ -44,6 +44,18 @@ export const notFound = (message = 'Ressource introuvable.') =>
 
 export const conflict = (message: string) => new HttpError('CONFLICT', message);
 
+/**
+ * Une capacite de la plateforme manque, ou n'a pas repondu.
+ *
+ * A distinguer d'une erreur interne : rien n'est casse chez nous, et l'appelant peut
+ * reessayer plus tard. Rendre `500` ferait chercher un defaut dans Neftya, et le code du
+ * catalogue de la plateforme dit exactement la bonne chose.
+ *
+ * @see Sekuu-Platform/docs/02-standards/error-codes.md section 3.7
+ */
+export const serviceUnavailable = (message: string) =>
+  new HttpError('SERVICE_UNAVAILABLE', message);
+
 export const validationFailed = (details: Record<string, string[]>) =>
   new HttpError('VALIDATION_ERROR', 'Les données envoyées sont invalides.', details);
 

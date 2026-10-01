@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import type { Database } from '../db/schema.js';
 import type { LogSink } from '../observability/logging.js';
+import type { SekuuAI } from '../sekuu/ai.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
 import type { SekuuLimits, SekuuRole } from '../sekuu/sekuu-context.js';
 
@@ -63,6 +64,14 @@ export interface HarnessOptions {
   logSink?: LogSink;
   /** Origines navigateur admises. Vide par défaut, comme en production. */
   allowedOrigins?: readonly string[];
+  /**
+   * L'assistant. **Absent par défaut**, comme sur une installation sans clé.
+   *
+   * C'est le bon défaut : la plupart des tests n'en veulent pas, et celui qui vérifie qu'un
+   * assistant non configuré le dit n'aurait rien à vérifier si le banc d'essai en fournissait
+   * un d'office.
+   */
+  ai?: SekuuAI;
 }
 
 /**
@@ -123,6 +132,7 @@ export async function createHarness(
     // de la suite, où personne ne les lirait.
     logSink: options.logSink ?? (() => {}),
     ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}),
+    ...(options.ai ? { ai: options.ai } : {}),
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
       issuer: ISSUER,

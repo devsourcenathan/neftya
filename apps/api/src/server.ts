@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
 import { createDatabase, migrate } from './db/index.js';
+import { SekuuAI } from './sekuu/ai.js';
 import { SekuuStorage } from './sekuu/storage.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
 
@@ -23,6 +24,10 @@ const db = createDatabase(required('DATABASE_URL'));
 // local, où personne n'a de clé.
 const storageKey = process.env['SEKUU_STORAGE_API_KEY'];
 
+// Distincte de celle de Storage, delibérément : une clé d'IA dépense, et sa fuite coûte de
+// l'argent à chaque appel. Sans elle, l'assistant dit qu'il n'est pas configuré.
+const aiKey = process.env['SEKUU_AI_API_KEY'];
+
 const app = buildApp({
   db,
   // Séparées par des virgules. Vide : aucune origine navigateur n'est admise, ce qui est
@@ -37,6 +42,14 @@ const app = buildApp({
         storage: new SekuuStorage({
           baseUrl: process.env['SEKUU_STORAGE_URL'] ?? 'https://storage.sekuu.com',
           apiKey: storageKey,
+        }),
+      }
+    : {}),
+  ...(aiKey
+    ? {
+        ai: new SekuuAI({
+          baseUrl: process.env['SEKUU_AI_URL'] ?? 'https://ai.sekuu.com',
+          apiKey: aiKey,
         }),
       }
     : {}),

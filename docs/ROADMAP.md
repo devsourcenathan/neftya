@@ -90,8 +90,11 @@ V2 ne doit être engagée.
 
 ## V2 — Intelligence et usinage
 
-- Image → analyse et structure
-- Texte → configuration
+- **Image → analyse et structure** — **bloqué par la plateforme** : aucune tâche de Sekuu AI
+  n'accepte d'image, et son périmètre de V1 exclut explicitement l'OCR et l'analyse de
+  document. Demande d'abord une tâche à entrée image chez Sekuu.
+- ~~Texte → configuration~~ — **livré le 1er octobre 2026** : `extract`, et la sortie passe
+  par le schéma du moteur
 - Assistant conversationnel
 - Quotas IA par palier, via le claim `limits`
 - Notify : envoi du devis au client

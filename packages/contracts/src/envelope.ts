@@ -15,6 +15,7 @@ export const errorCode = z.enum([
   'CONFLICT',
   'RATE_LIMITED',
   'INTERNAL_ERROR',
+  'SERVICE_UNAVAILABLE',
 ]);
 
 export type ErrorCode = z.infer<typeof errorCode>;
@@ -63,4 +64,5 @@ export const HTTP_STATUS: Record<ErrorCode, number> = {
   CONFLICT: 409,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
 };

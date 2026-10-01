@@ -1692,3 +1692,88 @@ l'utilisateur, ce qui arrive dès qu'une page lance deux requêtes au chargement
 **Éprouvées en les cassant** : sans `??=`, deux rafraîchissements partent ; sans
 l'enchaînement, la session s'ouvre sans organisation et l'API refuse tout avec un jeton
 valide.
+
+---
+
+## 2026-10-01 — L'IA propose, le schéma du moteur décide
+
+**Décision.** L'assistant interprète une description par la tâche `extract` de Sekuu AI, et
+sa sortie passe par **`furnitureInput.parse`** — le même schéma qui garde l'API — avant
+d'approcher quoi que ce soit.
+
+**Motif.** Un modèle de langage rend du texte *plausible*, et « plausible » est exactement le
+danger : une cote fausse qui a l'air juste traverse tout l'outil sans rien déclencher et
+ressort en plan de découpe. Écrire une validation propre à l'assistant aurait créé deux
+définitions de ce qu'est un meuble valide, qui divergeraient à la première évolution du
+moteur.
+
+**Deux bornes s'ajoutent au schéma, et elles n'ont pas leur place dans le moteur.**
+
+La première est la **vraisemblance d'une cote** : entre 100 et 4 000 mm. `positiveMillimetres`
+accepte 2 comme 2 000 000, et il a raison de ne pas avoir d'opinion sur la taille d'un
+meuble. Mais « une bibliothèque de 1,80 m » mal lue donne une bibliothèque de **1,8 mm**, que
+le moteur calculerait sans broncher. Les bornes n'arbitrent pas le goût ; elles attrapent un
+facteur mille.
+
+La seconde est la **longueur de l'entrée**, 2 000 caractères : le coût est proportionnel à
+l'entrée.
+
+**Rien n'est rattrapé en silence.** Un nombre négatif d'étagères est signalé, pas ramené à
+zéro : le corriger fabriquerait un meuble que personne n'a demandé, et la personne croirait
+avoir été comprise. Seule exception, documentée : un meuble a **au moins un compartiment**,
+parce que c'est une vérité de structure et non une mesure.
+
+**Une sortie inexploitable n'est pas une erreur HTTP.** `200`, `status: "unusable"`, et les
+problèmes par champ. La génération a réussi et a coûté ; un `422` ferait réessayer là où il
+faut reformuler.
+
+**L'aménagement est uniforme**, et c'est le contrat qui le veut. `extract` rend un objet
+portant exactement les clés demandées, et rien ne permet de déclarer la forme d'une valeur
+imbriquée : demander un tableau de compartiments serait demander au modèle de l'inventer. La
+structure est donc composée en code, et l'utilisateur ajuste au compartiment ensuite.
+
+**La clé d'idempotence porte le texte**, pas un identifiant tiré au hasard. Deux fois la même
+description est la même question : la repayer serait absurde, et une valeur aléatoire rendrait
+l'en-tête décoratif.
+
+**Le nom du champ est le seul levier sur l'unité.** Les instructions de la tâche appartiennent
+à la plateforme — « Extrais les champs demandés » — et ne sont pas surchargeables. `widthMm`
+est donc tout ce qui dit au modèle qu'on attend des millimètres, et ce n'est pas une garantie.
+C'est précisément pour cela que les bornes existent.
+
+---
+
+## 2026-10-01 — « Image → structure » est bloqué par la plateforme, pas par Neftya
+
+**Décision.** Le poste « Image → analyse et structure » de la V2 n'est pas engagé, et la
+raison est consignée plutôt que redécouverte.
+
+**Motif.** Les modèles de Sekuu AI déclarent la capacité `vision`, mais **aucune tâche
+n'accepte d'image** : toutes les entrées sont des chaînes. Le périmètre de la V1 de la
+plateforme l'écrit noir sur blanc — « ni OCR ni analyse de document », faute d'un modèle de
+vision, d'un pipeline d'extraction et de documents réels pour l'éprouver.
+
+**Conséquence.** Le poste demande d'abord une tâche à entrée image **chez Sekuu**, avec son
+modèle, ses bornes, son schéma de sortie et ses tests. C'est un arbitrage de plateforme.
+
+**Ce qu'on n'a pas fait, et pourquoi.** Passer par la tâche libre `prompt` en y collant une
+image encodée aurait contourné la borne, pas la difficulté : coût imprévisible, sortie sans
+forme promise, et une analyse de réponse à écrire à la main qui vieillirait en silence au
+prochain changement de modèle. La règle de la plateforme est explicite — si un produit appelle
+`prompt` trois fois avec les mêmes instructions, c'est une tâche.
+
+---
+
+## 2026-10-01 — `SERVICE_UNAVAILABLE` entre au catalogue d'erreurs
+
+**Décision.** Le code `SERVICE_UNAVAILABLE` (503) est ajouté à l'énumération de
+`@neftya/contracts`.
+
+**Motif.** Une capacité de la plateforme qui manque ou ne répond pas n'est **pas** une erreur
+interne : rien n'est cassé dans Neftya, et l'appelant peut réessayer plus tard. Rendre `500`
+ferait chercher un défaut ici.
+
+**Pris au catalogue de la plateforme, pas inventé.** L'enveloppe de Neftya est celle de Sekuu,
+et un code maison aurait divergé du jour où un client lit les deux. Le quota, lui, reste un
+`409` — c'est déjà ce que fait le quota de projets, et deux codes pour un même refus auraient
+obligé à écrire deux fois le même traitement côté interface.

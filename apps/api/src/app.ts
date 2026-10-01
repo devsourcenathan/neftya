@@ -19,7 +19,9 @@ import {
   registerLogging,
   type LogSink,
 } from './observability/logging.js';
+import { registerAssistantRoutes } from './assistant/routes.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
+import type { SekuuAI } from './sekuu/ai.js';
 import type { SekuuStorage } from './sekuu/storage.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
 
@@ -35,6 +37,13 @@ export interface AppDependencies {
   verifier: TokenVerifier;
   /** Absent tant qu'aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
   storage?: SekuuStorage;
+  /**
+   * Absent tant qu'aucune clé d'IA n'est configurée.
+   *
+   * Contrairement à Storage, il n'y a rien à dégrader : sans la plateforme, l'assistant
+   * répond qu'il n'est pas configuré. Une interprétation n'a pas de version locale.
+   */
+  ai?: SekuuAI;
   /** Injectable : les tests lisent ce qui a été journalisé au lieu de le voir passer. */
   logSink?: LogSink;
   /**
@@ -105,6 +114,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
 
     registerProjectRoutes(authenticated, projects);
     registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
+    registerAssistantRoutes(authenticated, dependencies.ai);
     registerSettingsRoutes(authenticated, settings);
     registerManufacturingRoutes(authenticated, {
       projects,

@@ -232,21 +232,81 @@ rafraîchissent en même temps déconnectent l'utilisateur : les rafraîchisseme
 
 ## 8. Ce que Neftya consomme des autres modules
 
-Pour ce que le serveur fait de sa propre initiative — un PDF, un devis envoyé, une analyse
-d'image — le jeton de l'utilisateur n'existe pas. Il faut une clé d'API.
+Pour ce que le serveur fait de sa propre initiative — un PDF, un devis envoyé, une
+description interprétée — le jeton de l'utilisateur n'existe pas. Il faut une clé d'API.
 
 | Besoin Neftya | Scope | Périmètre exigé |
 |---|---|---|
 | Envoyer un devis au client | `notifications.send.delegated` | — |
-| Déposer images, exports, modèles 3D | `storage.write`, `storage.read` | `subject_types: ["neftya.project"]` |
-| Analyser une image, générer une configuration | `ai.run`, `ai.read` | `ai_tasks` en liste blanche |
+| Déposer images, exports, modèles 3D | `storage.write.delegated` | `--types=neftya.export` |
+| Interpréter une description de meuble | `ai.run.delegated` | `--types=extract` |
 
 Deux règles : **le minimum** — une clé qui envoie des messages n'a pas à lire des
 fichiers — et **un périmètre**. Le scope dit que la clé peut agir, le périmètre dit sur
 quoi ; sans le second, le premier est le plus large possible.
 
 `notifications.send.delegated` plutôt que `notifications.send` : Neftya écrit **aux clients
-de ses artisans**, pas seulement pour lui-même. Cette clé ne s'émet qu'en console.
+de ses artisans**, pas seulement pour lui-même. Ces clés ne s'émettent qu'en console :
+
+```bash
+php artisan identity:delegated-key neftya --owner=<slug> --for=ai --types=extract
+```
+
+**Trois clés, jamais une.** Écrire aux clients, déposer leurs fichiers et dépenser en IA
+sont trois dangers différents, et une clé qui porterait les trois serait la plus large des
+trois. Celle d'IA compte le plus : elle **dépense**, et sa fuite coûte de l'argent à chaque
+appel.
+
+### 8.1 L'assistant — décrire un meuble en une phrase
+
+`POST /v1/assistant/interpretations` soumet une description, `GET …/{id}` lit l'issue. Deux
+temps, parce que la tâche `extract` n'est pas synchrone : attendre dans la requête tiendrait
+un processus pendant que le modèle réfléchit.
+
+**On nomme une tâche, jamais un modèle.** L'API refuse un champ `model`, elle ne l'ignore
+pas. La plateforme nomme le modèle, tient le plafond de dépense, le quota et le registre —
+donc le jour où un modèle meilleur arrive, Neftya n'a rien à déployer.
+
+**La sortie est une proposition.** `furnitureInput.parse` tranche — le même schéma qui garde
+l'API. Et deux bornes s'y ajoutent, que le moteur n'a pas à porter :
+
+- **la vraisemblance d'une cote**, entre 100 et 4 000 mm. Le moteur accepte 2 mm comme
+  2 000 000, et il a raison de ne pas avoir d'opinion sur la taille d'un meuble. Mais « une
+  bibliothèque de 1,80 m » mal lue donne une bibliothèque de **1,8 mm**, que le moteur
+  calculerait sans broncher. Les bornes n'arbitrent pas le goût ; elles attrapent un facteur
+  mille.
+- **la longueur de l'entrée**, 2 000 caractères. Le coût est proportionnel à l'entrée.
+
+**Une sortie inexploitable n'est pas une erreur HTTP.** La génération a réussi, elle a
+coûté, et son résultat est lisible : la route rend `200` avec `status: "unusable"` et les
+problèmes par champ. Un `422` ferait réessayer là où il faut reformuler.
+
+**L'aménagement est uniforme** — même nombre d'étagères, de tiroirs et de portes dans chaque
+compartiment. « Le premier en tiroirs » n'est pas exprimable dans une liste de champs plats,
+et rien dans le contrat ne permet de déclarer la forme d'une valeur imbriquée : la demander
+serait demander au modèle de l'inventer. L'utilisateur ajuste ensuite au compartiment, là où
+l'interface sait déjà le faire.
+
+### 8.2 Ce que Sekuu AI ne sait pas encore faire
+
+**Analyser une image.** Les modèles déclarent la capacité `vision`, mais **aucune tâche
+n'accepte d'image** : toutes les entrées sont des chaînes. La plateforme l'écrit dans son
+périmètre de V1 — « ni OCR ni analyse de document », faute d'un modèle de vision, d'un
+pipeline d'extraction et de documents réels pour l'éprouver.
+
+« Image → analyse et structure » de la roadmap Neftya est donc **bloqué par la plateforme**,
+et non par Neftya. Il demande d'abord une tâche à entrée image chez Sekuu, avec son modèle,
+ses bornes, son schéma de sortie et ses tests.
+
+### 8.3 Les quotas d'IA
+
+`AI_QUOTA_EXCEEDED` et `AI_SPEND_CAP_REACHED` partagent le même `429` et ne veulent pas dire
+la même chose : le premier se résout en changeant de plan, le second non — c'est la
+plateforme qui s'est protégée, et inviter le client à payer plus serait mensonger. Les deux
+rendent `503`, et **seul le premier nomme l'abonnement**.
+
+Les plans Neftya ne portent aujourd'hui aucune limite d'IA. En ajouter une est soumis à la
+règle qu'on s'est donnée : **aucune limite que personne n'applique.**
 
 ---
 
