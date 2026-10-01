@@ -281,11 +281,16 @@ cela ne prouve rien.
 - [x] **Aucune table `users`** — `db/schema.ts` n'en déclare pas
 
 Trois points portent sur le **client** de la plateforme, pas sur l'API, et se traitent là où
-la session vit — en phase 3 pour les deux premiers, en phase 5 pour le troisième :
+la session vit :
 
-- [ ] `switch-organization` enchaîné après `login` — phase 3
-- [ ] Rafraîchissement sérialisé, un seul à la fois — phase 3
+- [x] `switch-organization` enchaîné après `login` — `session.ts`, `openSession`, et `session.test.ts`
+- [x] Rafraîchissement sérialisé, un seul à la fois — `session.ts`, `refresh`, et `session.test.ts`
 - [ ] Clés d'API à scopes minimaux, avec `subject_types` et `ai_tasks` — phase 5, avec AI
+
+Les deux premiers étaient **écrits depuis le 3 septembre 2026 et restés décochés** : le code
+les faisait, rien ne le prouvait. Ils sont cochés le 1er octobre, une fois les tests écrits
+et chacun éprouvé en cassant sa garde — sans `??=`, deux rafraîchissements concurrents
+partent ; sans l'enchaînement, la session ouvre sans organisation.
 
 Côté API, l'absence d'organisation dans le jeton est déjà un refus explicite dont le message
 nomme `switch-organization` : le client ne peut pas se tromper longtemps.
