@@ -65,21 +65,41 @@ export interface HarnessOptions {
   allowedOrigins?: readonly string[];
 }
 
+/**
+ * La base sur laquelle la suite travaille — ou un refus.
+ *
+ * Il y avait ici un repli sur `localhost:5442`, le port de `docker compose`. Un repli sur
+ * une adresse plausible ne protège de rien : le jour où la variable a cessé d'arriver
+ * jusqu'aux tests, ils ont continué à composer un numéro au lieu de dire qu'ils n'en
+ * avaient pas, et le défaut a tenu un mois sous un port qui répondait par hasard.
+ *
+ * Mieux vaut refuser. Une suite qui ne sait pas où elle écrit ne doit pas écrire.
+ */
+export function connectionString(): string {
+  const value = process.env['DATABASE_URL'];
+  if (!value) {
+    throw new Error(
+      "DATABASE_URL manquante : le banc d'essai ne devine pas sur quelle base travailler. " +
+        "La renseigner dans `.env` à la racine, ou dans l'environnement — " +
+        'voir README.md, « Démarrer ».',
+    );
+  }
+  return value;
+}
+
 export async function createHarness(
   schema: string,
   options: HarnessOptions = {},
 ): Promise<Harness> {
-  // Par défaut, ce que `docker compose up` expose. La CI fournit `DATABASE_URL`.
-  const connectionString =
-    process.env['DATABASE_URL'] ?? 'postgres://neftya:neftya@localhost:5442/neftya';
+  const connection = connectionString();
 
-  const admin = new pg.Pool({ connectionString, max: 1 });
+  const admin = new pg.Pool({ connectionString: connection, max: 1 });
   await admin.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
   await admin.query(`CREATE SCHEMA ${schema}`);
   await admin.end();
 
   const pool = new pg.Pool({
-    connectionString,
+    connectionString: connection,
     max: 5,
     options: `-c search_path=${schema}`,
   });
@@ -149,7 +169,7 @@ export async function createHarness(
     close: async () => {
       await app.close();
       await db.destroy();
-      const cleanup = new pg.Pool({ connectionString, max: 1 });
+      const cleanup = new pg.Pool({ connectionString: connection, max: 1 });
       await cleanup.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
       await cleanup.end();
     },

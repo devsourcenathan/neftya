@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
 import { backup, restore, toolsAvailable } from './backup.js';
-import { createHarness, type Harness } from '../test-support/harness.js';
+import {
+  connectionString,
+  createHarness,
+  type Harness,
+} from '../test-support/harness.js';
 
 /**
  * **Le va-et-vient complet, pour de vrai.**
@@ -20,8 +24,7 @@ import { createHarness, type Harness } from '../test-support/harness.js';
  */
 
 const SCHEMA = 'test_sauvegarde';
-const CONNECTION =
-  process.env['DATABASE_URL'] ?? 'postgres://neftya:neftya@localhost:5442/neftya';
+const CONNECTION = connectionString();
 
 let harness: Harness;
 let directory: string;
