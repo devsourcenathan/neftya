@@ -1491,3 +1491,204 @@ ouverte.
 **Une note du §2 de MANUFACTURING.md était fausse** : elle annonçait les deux côtés du meuble
 de référence posés pivotés. Aucun ne l'est. Le placement par bandes pose systématiquement la
 grande dimension le long du panneau, ce qui est déjà le sens du fil.
+
+---
+
+## 2026-09-03 — Neftya sous un sous-domaine de la plateforme
+
+**Décision.** L'interface est servie depuis `neftya.sekuu.test`, port **5174**, en
+`strictPort`. `SEKUU_ISSUER` reste `https://identity.sekuu.com` y compris en local.
+
+**Motif.** Un nom d'hôte partagé est la condition de tout le reste : le jeton de
+rafraîchissement est un cookie posé sur `.sekuu.test`, et une page servie depuis `localhost`
+ne le verra jamais. Le symptôme serait une boucle sur la connexion, sans rien qui l'explique.
+Le port 5174 parce que DealerOS occupe le 5173, et que les deux produits doivent tourner
+ensemble — c'est la seule façon de vérifier qu'une session ouverte sur l'un ouvre l'autre.
+`strictPort` plutôt qu'un repli sur 5175 : ce port est inscrit dans les origines autorisées
+de la plateforme et dans le CORS de l'API.
+
+**`iss` est une chaîne comparée, pas une adresse appelée.** C'est le claim que la plateforme
+écrit ; le JWKS, lui, se lit à l'adresse locale.
+
+**L'Identity de poche n'est pas supprimée.** Elle reste le mode hors ligne, et trois
+variables suffisent à y revenir.
+
+---
+
+## 2026-09-03 — Le compte et l'abonnement restent au portail
+
+**Décision.** Neftya n'affiche **ni** l'aperçu du compte, **ni** l'abonnement, **ni** les
+factures. Le menu du compte ouvre le portail, en y portant `product=neftya` et l'adresse de
+retour.
+
+**Motif.** Ce sont les mêmes écrans pour tous les produits Sekuu. Les recopier ici, c'est les
+voir diverger de la facturation le jour où l'un des deux change — et la facturation est
+l'endroit où une divergence se paie.
+
+**Conséquence.** Tout le contrôle d'abonnement de Neftya tient dans le claim `products`.
+Neftya ne lit ni plan, ni facture, ni échéance.
+
+**Ce que ça a révélé.** Le manque venait d'un utilisateur, une fois la session unique en
+place : la session marchait, et il n'y avait **aucune porte de sortie** — ni profil, ni
+déconnexion, ni abonnement. Une intégration qui entre sans permettre de sortir n'est pas
+finie, et cela ne se voit pas en la testant soi-même.
+
+---
+
+## 2026-09-03 — Quand une mutation survit, déplacer la garde plutôt qu'ajouter un test
+
+**Décision.** `initialHistory` **normalise** le modèle qu'on lui donne. L'appelant ne peut
+plus l'oublier, parce qu'il ne lui est plus demandé d'y penser.
+
+**Motif.** La normalisation était d'abord posée dans `Designer.tsx`. Elle a été retirée pour
+voir si un test le remarquait : **aucun ne l'a vu**. La leçon n'était pas qu'il manquait un
+test, mais que la garde était au mauvais endroit — une garde qu'un appelant doit penser à
+écrire est une garde qu'un appelant finit par oublier.
+
+**Conséquence sur l'annulation.** Fenêtre de fusion de **500 ms**, profondeur **50**, et
+seules les actions qu'on *fait glisser* se fondent : une dimension par axe, les largeurs de
+compartiment, le déplacement d'une poignée donnée. Trois clics sur un compteur sont trois
+décisions ; les fondre ferait reculer de trois quand on demande un.
+
+---
+
+## 2026-09-04 — Le menu contextuel agit sur le compartiment, jamais sur la pièce
+
+**Décision.** Les actions du clic droit portent sur le compartiment : y ajouter ou en retirer
+une étagère, le dupliquer, le supprimer, appliquer ses réglages à tous.
+
+**Motif.** Une pièce est une **conséquence**, pas un objet. « Supprimer cette étagère » est
+inexprimable dans un modèle paramétrique : la prochaine recomposition la ferait revenir.
+« Retirer une étagère de ce compartiment » se dit, et tient.
+
+**C'est la première fois que l'interface a dû obéir à cette règle**, et elle s'est trompée
+une fois : le menu visait la pièce cliquée. Il dérive maintenant le compartiment de la
+position du clic dans le repère du meuble.
+
+---
+
+## 2026-09-04 — L'avant du meuble est le z minimal
+
+**Décision.** L'avant est à **z minimal** ; les portes sont en applique à z = −18. La caméra
+regarde depuis `z` négatif.
+
+**Motif.** Cette convention existait déjà dans le moteur, sans être écrite. L'interface a posé
+les poignées de cote et la caméra **du côté opposé**, donc sur le dos du meuble.
+
+**Ce qui doit être retenu.** Le test qui accompagnait ce travail avait encodé la même erreur :
+il affirmait la poignée de profondeur au-delà de `depthMm`, et il passait. Un test écrit de la
+même main que le code confirme la convention de cette main, pas celle du modèle. Les
+conventions implicites se paient deux fois — une fois dans le code, une fois dans le test qui
+les bénit.
+
+---
+
+## 2026-09-04 — Les poignées, et la seule quincaillerie comptée depuis le modèle
+
+**Décision.** Trois formes : barre à deux vis, bouton à une vis, coquille encastrée. Les vis
+de poignée sont les **seuls perçages traversants** du catalogue. Et les poignées sont comptées
+**depuis le modèle**, non depuis leurs trous.
+
+**Motif.** Une coquille encastrée est une empreinte fraisée : elle n'a pas un seul trou. La
+compter par ses perçages en aurait oublié une sur trois formes, et l'atelier l'aurait
+découvert en montant le meuble. Les vis, elles, ne comptent rien : elles appartiennent à la
+poignée déjà comptée.
+
+**Corollaire.** La pose par défaut est une suggestion, pas une contrainte : la position se
+reprend à la main, et `key` est une chaîne libre pour que le catalogue grossisse sans que le
+modèle change de forme.
+
+---
+
+## 2026-09-04 — Partager un espace est une seule règle
+
+**Décision.** `shareSpace` sert **à la fois** aux largeurs de compartiment et aux hauteurs
+d'étagère. Ce qui est demandé est honoré, le reste se partage à égalité, et un total
+impossible retombe sur un partage égal avec un avertissement.
+
+**Motif.** Les deux problèmes sont le même : des tailles demandées, des tailles libres, un
+total fixe. Deux implémentations auraient divergé sur les cas limites — et les cas limites
+sont tout ce qui compte ici. Une ouverture qui se referme a produit une étagère de **−4 mm**
+avant que `shelvesOf` apprenne à refuser.
+
+---
+
+## 2026-09-04 — Trois prix orphelins sont reportés, le quatrième reste où il est
+
+**Décision.** La migration `0004` reporte les **renommages exacts** — `hinge`, `dowel_8`,
+`shelf_support` — et laisse `accessory:drawer_slide_pair` en place.
+
+**Motif, et révision du 2 septembre.** L'entrée du 2 septembre concluait qu'une organisation
+devrait **tout** ressaisir. C'était trop large : trois des quatre articles ont un successeur
+unique, et faire ressaisir un prix qu'on sait reporter est du travail infligé sans raison.
+
+La coulisse, en revanche, correspond maintenant à six références, et une coulisse de 250 ne
+coûte pas ce que coûte une de 500. Recopier le montant sur les six **inventerait cinq tarifs**
+— précisément ce que le changement de référence visait à empêcher. La ligne reste donc là :
+elle ne sert plus au devis, elle ne gêne rien, et elle garde la trace du montant retenu.
+
+**Qui a déjà saisi la nouvelle référence la garde.** Elle est plus récente, et elle a été
+saisie en connaissance du changement.
+
+---
+
+## 2026-09-04 — Les tarifs de Neftya sont ceux de DealerOS
+
+**Décision.** Solo 5 000, Pro 15 000, Max 40 000 XAF par mois. Remise croissante avec
+l'engagement : 2 % au trimestre, 3 % au semestre, 5 % à l'année. **Trois limites, et trois
+seulement** : projets, membres, stockage.
+
+**Motif.** Un produit de la plateforme se vend au même prix qu'un autre tant que rien ne
+justifie l'écart. Les montants sont écrits en clair plutôt que calculés : un tarif se lit, se
+vérifie et se cite dans une facture, et le reconstituer à l'exécution rendrait une remise
+modifiée rétroactive sur des factures déjà émises.
+
+**Aucune limite que personne n'applique.** `neftya_projects_max` est la seule que Neftya sache
+appliquer ; les deux autres sont lues par la plateforme. Publier un quota que rien n'applique
+est une promesse qu'on ne tient pas, et le client la découvre en la dépassant sans effet.
+
+**Ce que la donnée cachait.** Le portail affichait les offres de DealerOS à qui venait de
+Neftya. Le filtre par produit manquait **depuis toujours** ; il était invisible tant qu'un
+seul produit avait des plans. Un défaut que la donnée masque n'est pas moins ancien.
+
+---
+
+## 2026-10-01 — Une suite qui ne sait pas où elle écrit ne doit pas écrire
+
+**Décision.** `vitest.config.ts` charge `.env`, et le banc d'essai **refuse** de tourner sans
+`DATABASE_URL`. Le repli sur `postgres://…@localhost:5442/neftya` a disparu.
+
+**Motif.** Deux défauts s'annulaient : Vitest ne lit pas `.env`, et le harnais avait ce port
+codé en dur. Tant qu'un PostgreSQL local y répondait, la suite composait le bon numéro par
+hasard et personne ne pouvait voir que la variable n'arrivait jamais. Le jour où la base a
+déménagé, douze fichiers ont échoué d'un coup. **Un repli sur une adresse plausible ne protège
+de rien** — il retarde seulement le moment où on apprend qu'on ne savait pas.
+
+**L'environnement réel garde la main** sur `.env` : en intégration continue c'est lui qui
+fournit l'URL, et un `.env` oublié sur une machine ne doit pas faire tourner la suite ailleurs
+qu'on croit.
+
+**Base hébergée : le point d'accès direct, pas le pooler.** Chaque fichier de test travaille
+dans son propre schéma, passé en paramètre de démarrage (`options=-c search_path=…`). Un pooler
+rejette ce paramètre et toute la suite tombe. Sur Neon, c'est l'URL sans `-pooler`.
+
+---
+
+## 2026-10-01 — Une case cochée sans test ne prouve rien, y compris les nôtres
+
+**Décision.** Les deux cases client de [SEKUU.md](SEKUU.md) §10 — `switch-organization`
+enchaîné, et le rafraîchissement sérialisé — sont cochées, après écriture des tests qui les
+tiennent.
+
+**Motif.** Le code les faisait **depuis le 3 septembre**. Les cases sont restées vides, ce qui
+était la bonne réponse : la liste exige qu'une case renvoie à un test qui échoue si on retire
+la garde. Elles ne pouvaient pas être cochées avant que ce test existe.
+
+Les deux gardes sont du genre qui marche à la main et casse en charge : un jeton de
+rafraîchissement **ne se rejoue pas** — le rejouer révoque la session entière, c'est la
+détection de vol, et elle est volontairement brutale. Deux appels concurrents déconnectent
+l'utilisateur, ce qui arrive dès qu'une page lance deux requêtes au chargement.
+
+**Éprouvées en les cassant** : sans `??=`, deux rafraîchissements partent ; sans
+l'enchaînement, la session s'ouvre sans organisation et l'API refuse tout avec un jeton
+valide.
