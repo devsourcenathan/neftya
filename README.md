@@ -71,6 +71,15 @@ npm install
 npm run dev:identity          # Identity de démonstration, port 4000
 ```
 
+`docker compose` est **une** façon d'avoir la base, pas la seule : n'importe quel
+PostgreSQL 18 convient, y compris une base hébergée. Rien ne la devine — `DATABASE_URL`
+est lue de `.env`, et le banc d'essai refuse de tourner sans elle plutôt que de composer
+un port plausible.
+
+Sur une base hébergée, prendre le **point d'accès direct** et non le pooler : chaque
+fichier de test travaille dans son propre schéma, passé en paramètre de démarrage, et un
+pooler rejette ce paramètre. Voir `.env.example`.
+
 ```bash
 cp .env.example .env          # une fois, puis pointer SEKUU_* sur localhost:4000
 npm run dev:api               # API sur http://localhost:3000
