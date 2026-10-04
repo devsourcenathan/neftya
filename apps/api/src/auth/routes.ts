@@ -5,6 +5,7 @@ import {
   createOrganizationBody,
   inviteBody,
   loginBody,
+  quotasBody,
   refreshBody,
   registerBody,
   switchOrganizationBody,
@@ -262,6 +263,29 @@ export function registerProtectedAuthRoutes(
     // pour que les tests et l'amorçage n'aient pas à lire la boîte mail.
     return reply.status(201).send(success({ invitationToken: token }));
   });
+
+  app.get('/v1/auth/quotas', async (request) => {
+    const context = sekuuOf(request);
+    const quotas = await repository.getQuotas(context.organizationId);
+    return success({
+      projectsMax: quotas?.projectsMax ?? null,
+      aiMonthMax: quotas?.aiMonthMax ?? null,
+    });
+  });
+
+  app.put('/v1/auth/quotas', async (request) => {
+    const context = sekuuOf(request);
+    const role = await repository.roleOf(context.userId, context.organizationId);
+    if (role !== 'owner') {
+      throw forbidden('Seul le propriétaire peut modifier les plafonds.');
+    }
+    const body = parse(quotasBody, request.body);
+    const quotas = await repository.saveQuotas(context.organizationId, {
+      ...(body.projectsMax !== undefined ? { projectsMax: body.projectsMax } : {}),
+      ...(body.aiMonthMax !== undefined ? { aiMonthMax: body.aiMonthMax } : {}),
+    });
+    return success({ projectsMax: quotas.projectsMax, aiMonthMax: quotas.aiMonthMax });
+  });
 }
 
 async function openSession(
@@ -296,11 +320,19 @@ async function accessFor(
       ? [roles.get(organizationId) as OrganizationRole]
       : [];
   const user = await repository.findUserById(userId);
+  const quotas = organizationId ? await repository.getQuotas(organizationId) : null;
+  const limits: Record<string, number | null> = {
+    ...(quotas?.projectsMax != null ? { neftya_projects_max: quotas.projectsMax } : {}),
+    ...(quotas?.aiMonthMax != null
+      ? { neftya_ai_analyses_max: quotas.aiMonthMax }
+      : {}),
+  };
   const { token, expiresIn } = await signAccess(jwtSecret, {
     userId,
     organizationId,
     roles: activeRole,
     language: user?.language ?? 'fr',
+    limits,
   });
   return {
     accessToken: token,

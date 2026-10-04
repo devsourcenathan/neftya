@@ -102,3 +102,21 @@ export const sessionResource = z.object({
 });
 
 export type SessionResource = z.infer<typeof sessionResource>;
+
+/**
+ * Plafonds d'une organisation. `null` = illimité, champ absent = inchangé.
+ * Seul `owner` peut les écrire ; tout membre actif peut les lire.
+ */
+export const quotasBody = z.object({
+  projectsMax: z.number().int().nonnegative().nullable().optional(),
+  aiMonthMax: z.number().int().nonnegative().nullable().optional(),
+});
+
+export type QuotasBody = z.infer<typeof quotasBody>;
+
+export const quotasResource = z.object({
+  projectsMax: z.number().int().nonnegative().nullable(),
+  aiMonthMax: z.number().int().nonnegative().nullable(),
+});
+
+export type QuotasResource = z.infer<typeof quotasResource>;

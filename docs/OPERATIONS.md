@@ -171,7 +171,7 @@ quelques kilooctets. Un fichier vide est le symptôme classique d'une sauvegarde
 | Tout répond `403` | L'organisation est-elle abonnée au produit `neftya` ? |
 | Un client ne voit pas ses projets | Le jeton porte-t-il **la bonne** organisation ? Le cloisonnement rend `404`, jamais les données d'autrui. |
 | `404` sur une ressource qui existe | C'est le comportement attendu entre organisations. Vérifier `organization_id` dans les journaux. |
-| `409` à la création | Quota `neftya_projects_max` atteint. C'est Billing qui le publie, pas Neftya. |
+| `409` à la création | Quota `neftya_projects_max` atteint. En local : `organization_quotas`, modifiable par le propriétaire (`PUT /v1/auth/quotas`). |
 | `/ready` en `503` | La base. `/health` reste vert : le processus va bien. |
 | Un export sans `storage_object_id` | Storage était indisponible, ou aucune clé n'est configurée. L'export est intact. |
 | Déconnexions aléatoires | Deux rafraîchissements simultanés. Le rejeu d'un jeton de rafraîchissement révoque **toute** la session : c'est la détection de vol de la plateforme. |

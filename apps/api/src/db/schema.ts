@@ -164,6 +164,17 @@ export interface InvitationsTable {
   created_at: CreatedAt;
 }
 
+/**
+ * Plafonds locaux — voir `0006_quotas.sql`. `null` = illimité, pas de ligne
+ * = ressource non couverte : dans les deux cas, ne pas plafonner.
+ */
+export interface OrganizationQuotasTable {
+  organization_id: string;
+  projects_max: number | null;
+  ai_month_max: number | null;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -175,4 +186,5 @@ export interface Database {
   memberships: MembershipsTable;
   refresh_sessions: RefreshSessionsTable;
   invitations: InvitationsTable;
+  organization_quotas: OrganizationQuotasTable;
 }

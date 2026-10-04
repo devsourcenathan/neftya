@@ -179,7 +179,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organizations, users CASCADE`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users CASCADE`.execute(
         db,
       );
     },

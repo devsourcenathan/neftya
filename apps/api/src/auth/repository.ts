@@ -308,6 +308,55 @@ export class AuthRepository {
     });
   }
 
+  /**
+   * Plafonds d'une organisation. `null` = pas de ligne, donc ressource non
+   * couverte : ne pas plafonner (trois états, comme les claims Sekuu).
+   */
+  async getQuotas(
+    organizationId: string,
+  ): Promise<{ projectsMax: number | null; aiMonthMax: number | null } | null> {
+    const row = await this.db
+      .selectFrom('organization_quotas')
+      .select(['projects_max', 'ai_month_max'])
+      .where('organization_id', '=', organizationId)
+      .executeTakeFirst();
+    if (!row) return null;
+    return { projectsMax: row.projects_max, aiMonthMax: row.ai_month_max };
+  }
+
+  async saveQuotas(
+    organizationId: string,
+    quotas: { projectsMax?: number | null; aiMonthMax?: number | null },
+  ): Promise<{ projectsMax: number | null; aiMonthMax: number | null }> {
+    const existing = await this.getQuotas(organizationId);
+    const next = {
+      projectsMax:
+        quotas.projectsMax !== undefined
+          ? quotas.projectsMax
+          : (existing?.projectsMax ?? null),
+      aiMonthMax:
+        quotas.aiMonthMax !== undefined
+          ? quotas.aiMonthMax
+          : (existing?.aiMonthMax ?? null),
+    };
+    await this.db
+      .insertInto('organization_quotas')
+      .values({
+        organization_id: organizationId,
+        projects_max: next.projectsMax,
+        ai_month_max: next.aiMonthMax,
+      })
+      .onConflict((conflict) =>
+        conflict.column('organization_id').doUpdateSet({
+          projects_max: next.projectsMax,
+          ai_month_max: next.aiMonthMax,
+          updated_at: new Date(),
+        }),
+      )
+      .execute();
+    return next;
+  }
+
   private async uniqueSlug(name: string): Promise<string> {
     const base =
       name

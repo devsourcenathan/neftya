@@ -32,8 +32,18 @@ l'utilisateur** — détection de vol, comme la plateforme.
 puis Sekuu. Les deux sortes de jetons passent pendant la transition ; quand
 la plateforme reviendra, `AUTH_PROVIDER` choisira — aucune route ne change.
 
-## 4. Ce qui n'existe pas (et ne manque pas encore)
+## 4. Quotas
 
+`organization_quotas` porte les plafonds, recopiés dans le jeton à chaque
+ouverture de session (`GET /v1/auth/quotas` les lit, `PUT /v1/auth/quotas`
+les écrit — seul `owner`). Trois états, comme côté Sekuu : pas de ligne =
+pas couvert, `null` = illimité, entier = plafond (`0` bloque tout).
+
+Un changement prend effet au prochain rafraîchissement (15 min au plus
+pour le jeton d'accès). Pas de facturation : les plafonds sont des
+garde-fous, pas des plans.
+
+## 5. Ce qui n'existe pas (et ne manque pas encore)
 - Session unique entre produits, cookie partagé : un seul produit tourne.
 - `billing_manager` : pas de facturation ; `owner`/`admin` couvrent.
 - Choix du plan, factures, portail : voir chantier B (quotas locaux).

@@ -26,6 +26,8 @@ export interface AccessClaims {
   organizationId: string | null;
   roles: readonly string[];
   language: string;
+  /** Plafonds recopiés de `organization_quotas`. Absents = ne pas plafonner. */
+  limits?: Record<string, number | null>;
 }
 
 export async function signAccess(
@@ -37,7 +39,7 @@ export async function signAccess(
     org: claims.organizationId,
     roles: [...claims.roles],
     products: ['neftya'],
-    limits: {},
+    limits: claims.limits ?? {},
     lang: claims.language,
   })
     .setProtectedHeader({ alg: 'HS256' })
@@ -89,10 +91,23 @@ export async function verifyAccess(
     organizationId,
     roles,
     products: ['neftya'],
-    limits: {},
+    limits: asLimits(payload['limits']),
     sessionId: null,
     language: typeof payload['lang'] === 'string' ? payload['lang'] : 'fr',
   };
+}
+
+/**
+ * Comme côté Sekuu : `null` vaut « illimité » et est conservé tel quel —
+ * c'est `limitOf` qui tranche, pas le décodeur.
+ */
+function asLimits(value: unknown): Record<string, number | null> {
+  if (typeof value !== 'object' || value === null) return {};
+  const limits: Record<string, number | null> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (raw === null || typeof raw === 'number') limits[key] = raw;
+  }
+  return limits;
 }
 
 /** Jeton opaque : 256 bits, encodés en hexadécimal. */
