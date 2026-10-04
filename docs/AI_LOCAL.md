@@ -38,7 +38,6 @@ Sans clé, l'assistant répond `503` qu'il n'est pas configuré : il n'y a rien
 | `SEKUU_AI_API_KEY` | repli plateforme | local prioritaire |
 
 ## 4. Limites assumées
-
 - **Pas de vision.** Comme côté Sekuu, l'analyse d'image reste bloquée —
   cette fois par l'absence de pipeline, pas par la plateforme.
 - **Synchrone** : un appel tient sa requête HTTP (timeout 30 s). Au-delà de
@@ -46,3 +45,7 @@ Sans clé, l'assistant répond `503` qu'il n'est pas configuré : il n'y a rien
   nécessaires — l'interface sonde déjà, elle n'aura rien à changer.
 - Le quota compte les générations **créées** (réussies comme ratées) :
   les deux ont brûlé des jetons. La relecture idempotente ne compte pas.
+- `raw_output` garde le brut du modèle (tronqué à 4 000 caractères) : un
+  `failed` sans lui ne dit pas si le modèle a déraillé, si la réponse est
+  tronquée, ou si le fournisseur ignore `response_format`. C'est le journal
+  de bord, lisible en base, jamais exposé par l'API.

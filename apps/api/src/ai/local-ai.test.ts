@@ -106,6 +106,30 @@ describe('extraire', () => {
     expect(generation.output).toBeNull();
   });
 
+  it('garde le brut du modèle quand la sortie est inexploitable', async () => {
+    const ai = localAi(
+      () =>
+        new Response(
+          JSON.stringify({ choices: [{ message: { content: 'voici un meuble' } }] }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          },
+        ),
+    );
+
+    const generation = await ai.extract(REQUEST);
+
+    // Sans le brut, un `failed` ne dit pas si le modèle a déraillé, si la
+    // réponse est tronquée, ou si le fournisseur ignore `response_format`.
+    const row = await harness.db
+      .selectFrom('ai_generations')
+      .select('raw_output')
+      .where('id', '=', generation.id)
+      .executeTakeFirstOrThrow();
+    expect(row.raw_output).toContain('voici un meuble');
+  });
+
   it('traduit une clé refusée en denied, pas en panne', async () => {
     const ai = localAi(() => new Response('{}', { status: 401 }));
 

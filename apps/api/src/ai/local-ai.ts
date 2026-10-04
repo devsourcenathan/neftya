@@ -66,7 +66,7 @@ export class LocalAI {
 
     await this.enforceQuota(request.organizationId);
 
-    const output = await this.complete(request.input, request.fields);
+    const { output, raw } = await this.complete(request.input, request.fields);
     const id = uuidv7();
     const status = output ? 'succeeded' : 'failed';
 
@@ -79,6 +79,7 @@ export class LocalAI {
         status,
         input: request.input,
         output,
+        raw_output: raw,
       })
       .onConflict((conflict) => conflict.doNothing())
       .execute();
@@ -135,7 +136,7 @@ export class LocalAI {
   private async complete(
     input: string,
     fields: readonly string[],
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<{ output: Record<string, unknown> | null; raw: string | null }> {
     let response: Response;
     try {
       response = await this.fetch(`${this.options.baseUrl}/chat/completions`, {
@@ -178,9 +179,9 @@ export class LocalAI {
       choices?: { message?: { content?: string } }[];
     } | null;
     const content = payload?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string') return null;
+    if (typeof content !== 'string') return { output: null, raw: null };
 
-    return parseJsonObject(content);
+    return { output: parseJsonObject(content), raw: content.slice(0, 4000) };
   }
 }
 

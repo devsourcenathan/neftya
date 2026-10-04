@@ -205,6 +205,8 @@ export interface AiGenerationsTable {
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
   input: string;
   output: unknown;
+  /** Brut du modèle, tronqué — le diagnostic quand `output` est nul. */
+  raw_output: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
