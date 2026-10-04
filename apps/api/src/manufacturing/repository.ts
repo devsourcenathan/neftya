@@ -110,6 +110,20 @@ export class ManufacturingRepository {
 
     return rows.map(toExport);
   }
+
+  /** Un export par son identifiant, cloisonné comme tout le reste. */
+  async findExport(
+    organizationId: string,
+    exportId: string,
+  ): Promise<ProjectExport | null> {
+    const row = await this.db
+      .selectFrom('project_exports')
+      .selectAll()
+      .where('organization_id', '=', organizationId)
+      .where('id', '=', exportId)
+      .executeTakeFirst();
+    return row ? toExport(row) : null;
+  }
 }
 
 function toExport(row: {

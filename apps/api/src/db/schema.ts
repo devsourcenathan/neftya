@@ -175,6 +175,23 @@ export interface OrganizationQuotasTable {
   updated_at: UpdatedAt;
 }
 
+/**
+ * Fichiers déposés localement — voir `0007_files.sql`.
+ *
+ * L'index pour retrouver, le disque pour les octets. `storage_object_id`
+ * de `project_exports` pointe vers `files.id` quand le dépôt est local.
+ */
+export interface FilesTable {
+  id: string;
+  organization_id: string;
+  owner_id: string;
+  name: string;
+  mime_type: string;
+  size_bytes: number;
+  created_by: string;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -187,4 +204,5 @@ export interface Database {
   refresh_sessions: RefreshSessionsTable;
   invitations: InvitationsTable;
   organization_quotas: OrganizationQuotasTable;
+  files: FilesTable;
 }

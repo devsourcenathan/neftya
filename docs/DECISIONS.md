@@ -1832,3 +1832,20 @@ ne change et le retour de Sekuu est une bascule, pas une réécriture.
 **Points de vigilance.** `NEFTYA_JWT_SECRET` refuse de démarrer si absent ou
 court. Rate-limit en mémoire : derrière plusieurs instances, passer à Redis.
 Pas de `citext` : les schémas de test isolés ne le voient pas.
+
+---
+
+## 2026-10-04 — Stockage local des exports
+
+**Décision.** Les exports sont déposés sur disque (`NEFTYA_DATA_DIR`) avec
+leur index en base (`files`), au lieu d'attendre une clé Sekuu que personne
+n'a. `FileStore` (déposer + relire) est l'interface ; `SekuuStorage` ne fait
+que déposer et reste branché quand une clé est présente.
+
+**Motif.** Un export non déposé est un plan qu'on ne retrouve pas. Le disque
+est le magasin le plus simple qui se sauvegarde avec la base — d'où la règle
+d'exploitation : dump et répertoire partagent leur horodatage.
+
+**Cloisonnement double** : filtre `organization_id` en SQL **et** segment de
+chemin. L'un sans l'autre suffirait ; les deux ensemble font qu'une régression
+de l'un ne fuit toujours rien.

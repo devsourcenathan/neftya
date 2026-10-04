@@ -18,14 +18,11 @@
  * @see docs/SEKUU.md §8
  */
 
-export const NEFTYA_OWNER_TYPE = 'neftya.export';
+import { StorageUnavailable } from '../storage/file-store.js';
 
-export class StorageUnavailable extends Error {
-  constructor(reason: string) {
-    super(`Dépôt Sekuu Storage impossible : ${reason}`);
-    this.name = 'StorageUnavailable';
-  }
-}
+export { StorageUnavailable };
+
+export const NEFTYA_OWNER_TYPE = 'neftya.export';
 
 export interface StorageOptions {
   baseUrl: string;

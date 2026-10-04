@@ -14,7 +14,8 @@ import { paperSizeFor, type Money } from '@neftya/units';
 import { forbidden, notFound, validationFailed } from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
-import { StorageUnavailable, type SekuuStorage } from '../sekuu/storage.js';
+import { StorageUnavailable } from '../sekuu/storage.js';
+import type { FileStore, Uploader } from '../storage/file-store.js';
 import type { ProjectRepository } from '../projects/repository.js';
 import type { SettingsRepository } from '../settings/repository.js';
 import type { ManufacturingRepository } from './repository.js';
@@ -42,8 +43,10 @@ export interface ManufacturingDependencies {
   projects: ProjectRepository;
   settings: SettingsRepository;
   manufacturing: ManufacturingRepository;
-  /** Absent quand aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
-  storage?: SekuuStorage;
+  /** Absent quand aucun dépôt n'est configuré : l'export reste possible, sans dépôt. */
+  storage?: Uploader;
+  /** Absent quand la relecture n'est pas câblée : le téléchargement rend 404. */
+  files?: Pick<FileStore, 'download'>;
 }
 
 /**
@@ -69,7 +72,7 @@ export function registerManufacturingRoutes(
   app: FastifyInstance,
   dependencies: ManufacturingDependencies,
 ): void {
-  const { projects, settings, manufacturing, storage } = dependencies;
+  const { projects, settings, manufacturing, storage, files } = dependencies;
 
   async function planFor(request: FastifyRequest) {
     const context = sekuuOf(request);
@@ -272,6 +275,37 @@ export function registerManufacturingRoutes(
         created_at: record.createdAt.toISOString(),
       })),
     );
+  });
+
+  /**
+   * Le fichier figé, tel qu'il est parti.
+   *
+   * L'instantané en base dit ce que le plan contenait ; celui-ci rend les
+   * octets eux-mêmes. Sans relecture câblée (dépôt distant non relu), 404 :
+   * un export reste consultable par son instantané, pas par son fichier.
+   */
+  app.get('/v1/exports/:id/file', async (request, reply) => {
+    const context = sekuuOf(request);
+    requirePermission(request, 'project.read');
+
+    const params = identifier.safeParse(request.params);
+    if (!params.success) throw notFound('Export introuvable.');
+    const record = await manufacturing.findExport(
+      context.organizationId,
+      params.data.id,
+    );
+    if (!record?.storageObjectId || !files) throw notFound('Export introuvable.');
+
+    const stored = await files.download(context.organizationId, record.storageObjectId);
+    if (!stored) throw notFound('Export introuvable.');
+
+    return reply
+      .header('content-type', stored.mimeType)
+      .header(
+        'content-disposition',
+        `attachment; filename="${stored.name.replace(/"/gu, '')}"`,
+      )
+      .send(Buffer.from(stored.bytes));
   });
 
   app.get('/v1/prices', async (request) => {

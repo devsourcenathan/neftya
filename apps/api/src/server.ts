@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { createDatabase, migrate } from './db/index.js';
 import { SekuuAI } from './sekuu/ai.js';
 import { SekuuStorage } from './sekuu/storage.js';
+import { LocalFileStore } from './storage/local-store.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
 
 function required(name: string): string {
@@ -19,10 +20,14 @@ const host = process.env['HOST'] ?? '0.0.0.0';
 
 const db = createDatabase(required('DATABASE_URL'));
 
-// Sans clé d'API, les exports restent produits et enregistrés ; ils ne sont simplement
-// pas déposés chez Storage. Refuser de démarrer pour cela empêcherait de travailler en
-// local, où personne n'a de clé.
+// Sans clé d'API Storage, les exports sont déposés sur disque (`NEFTYA_DATA_DIR`)
+// plutôt que chez Sekuu : le dépôt local est le défaut, pas la dégradation.
+// Avec une clé, l'ancien comportement revient — déposer chez la plateforme.
 const storageKey = process.env['SEKUU_STORAGE_API_KEY'];
+const dataDir = process.env['NEFTYA_DATA_DIR'] ?? './data';
+// Une seule instance pour déposer et relire : deux magasins qui divergent,
+// c'est un export qu'on ne retrouve pas.
+const localStore = new LocalFileStore({ dataDir, db });
 
 // Distincte de celle de Storage, delibérément : une clé d'IA dépense, et sa fuite coûte de
 // l'argent à chaque appel. Sans elle, l'assistant dit qu'il n'est pas configuré.
@@ -51,7 +56,10 @@ const app = buildApp({
           apiKey: storageKey,
         }),
       }
-    : {}),
+    : {
+        storage: localStore,
+        files: localStore,
+      }),
   ...(aiKey
     ? {
         ai: new SekuuAI({

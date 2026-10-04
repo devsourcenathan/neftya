@@ -38,8 +38,9 @@ manque : échouer à la première requête coûte plus cher que refuser de déma
 | `SEKUU_JWKS_URL` | clés publiques de la plateforme | refus de démarrer |
 | `SEKUU_ISSUER` | `https://identity.sekuu.com` | refus de démarrer |
 | `SEKUU_AUDIENCE` | `sekuu-platform` | refus de démarrer |
-| `SEKUU_STORAGE_URL` | dépôt des exports | dépôt désactivé |
-| `SEKUU_STORAGE_API_KEY` | clé `storage.write.delegated` | dépôt désactivé |
+| `SEKUU_STORAGE_URL` | dépôt des exports (si clé Sekuu) | dépôt local |
+| `SEKUU_STORAGE_API_KEY` | clé `storage.write.delegated` | dépôt local |
+| `NEFTYA_DATA_DIR` | fichiers déposés (`./data` par défaut) | `./data` |
 | `NEFTYA_ALLOWED_ORIGINS` | origines navigateur admises | **aucune** — l'interface ne peut pas appeler l'API |
 | `PORT`, `HOST` | écoute | 3000, `0.0.0.0` |
 
@@ -48,9 +49,11 @@ en-tête : une origine quelconque autorisée à l'envoyer est une page quelconqu
 nom de l'utilisateur. Vide par défaut, parce qu'une liste oubliée doit empêcher l'interface
 de fonctionner, pas ouvrir l'API à tout le monde.
 
-Sans clé Storage, **les exports sont produits et enregistrés quand même** ; ils ne sont
-simplement pas déposés, et leur `storage_object_id` reste nul. C'est visible, et c'est
-voulu : personne n'a de clé en local.
+Sans clé Storage, **les exports sont déposés sur disque** (`NEFTYA_DATA_DIR`) ;
+avec une clé, ils repartent chez Sekuu et `storage_object_id` redevient un
+identifiant distant. `GET /v1/exports/:id/file` rend les octets figés quand
+la relecture est câblée (dépôt local) — sinon 404, et l'instantané en base
+reste consultable.
 
 > **L'origine de Neftya doit figurer dans `SEKUU_ALLOWED_ORIGINS` de la plateforme.** Sinon
 > la redirection de connexion retombe silencieusement sur l'accueil de Sekuu, sans erreur —
@@ -147,9 +150,11 @@ CI installe le bon.
 
 ### Ce qui n'est pas sauvegardé, et pourquoi
 
-Rien d'autre que PostgreSQL. Les exports déposés chez Storage appartiennent à la
-plateforme, qui les sauvegarde ; les plans et listes de découpe sont **recalculés** à partir
-du modèle et n'ont pas à survivre.
+Les plans et listes de découpe sont **recalculés** à partir du modèle et n'ont
+pas à survivre. En revanche, **`NEFTYA_DATA_DIR` se sauvegarde avec la base** :
+un export figé dont les octets manquent rend 404. Même horodatage des deux
+côtés — un dump sans son répertoire (ou l'inverse) est une restauration à
+moitié.
 
 ---
 

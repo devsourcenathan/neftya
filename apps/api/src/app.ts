@@ -28,8 +28,8 @@ import {
 import { CompositeVerifier, LocalVerifier } from './auth/local-verifier.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
 import type { SekuuAI } from './sekuu/ai.js';
-import type { SekuuStorage } from './sekuu/storage.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
+import type { FileStore, Uploader } from './storage/file-store.js';
 
 /**
  * L'application, séparée du serveur : les tests l'instancient et l'interrogent par
@@ -43,8 +43,10 @@ export interface AppDependencies {
   verifier: TokenVerifier;
   /** Secret HS256 des jetons locaux. Absent : seule la vérification Sekuu est active. */
   jwtSecret?: string;
-  /** Absent tant qu'aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
-  storage?: SekuuStorage;
+  /** Absent quand aucun dépôt n'est configuré : l'export reste possible, sans dépôt. */
+  storage?: Uploader;
+  /** Absent quand la relecture n'est pas câblée : le téléchargement rend 404. */
+  files?: Pick<FileStore, 'download'>;
   /**
    * Absent tant qu'aucune clé d'IA n'est configurée.
    *
@@ -150,6 +152,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       settings,
       manufacturing,
       ...(dependencies.storage ? { storage: dependencies.storage } : {}),
+      ...(dependencies.files ? { files: dependencies.files } : {}),
     });
   });
 

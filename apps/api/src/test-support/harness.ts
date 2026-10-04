@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import pg from 'pg';
@@ -9,7 +10,9 @@ import { buildApp } from '../app.js';
 import type { Database } from '../db/schema.js';
 import type { LogSink } from '../observability/logging.js';
 import type { SekuuAI } from '../sekuu/ai.js';
+import type { FileStore, Uploader } from '../storage/file-store.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
+import { LocalFileStore } from '../storage/local-store.js';
 import type { SekuuLimits, SekuuRole } from '../sekuu/sekuu-context.js';
 
 /**
@@ -73,6 +76,14 @@ export interface HarnessOptions {
    */
   ai?: SekuuAI;
   /**
+   * Dépôt des exports. `'local'` branche le magasin sur disque (répertoire
+   * temporaire, nettoyé à la fermeture) **avec** sa relecture : c'est le
+   * montage de production, pas un doublon assemblé à la main.
+   */
+  storage?: Uploader | 'local';
+  /** Relecture des fichiers déposés. Absente par défaut : le téléchargement rend 404. */
+  files?: Pick<FileStore, 'download'>;
+  /**
    * Secret HS256 des jetons locaux. Fourni par défaut pour que les routes
    * `/v1/auth/*` soient montées dans tous les tests — sans lui, elles ne
    * le seraient pas, et chaque test d'auth devrait le réclamer.
@@ -132,6 +143,19 @@ export async function createHarness(
   const jwk: JWK = { ...(await exportJWK(publicKey)), kid: 'test-key', alg: 'RS256' };
   const keyStore = createLocalJWKSet({ keys: [jwk] });
 
+  let dataDir: string | null = null;
+  let storage =
+    options.storage && typeof options.storage !== 'string'
+      ? options.storage
+      : undefined;
+  let files = options.files;
+  if (options.storage === 'local') {
+    dataDir = mkdtempSync(join(tmpdir(), `neftya-${schema}-`));
+    const store = new LocalFileStore({ dataDir, db });
+    storage = store;
+    files = store;
+  }
+
   const app = buildApp({
     db,
     // Sans puits injecté, les tests écriraient des milliers de lignes JSON dans la sortie
@@ -139,6 +163,8 @@ export async function createHarness(
     logSink: options.logSink ?? (() => {}),
     ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}),
     ...(options.ai ? { ai: options.ai } : {}),
+    ...(storage ? { storage } : {}),
+    ...(files ? { files } : {}),
     jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
@@ -179,7 +205,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users CASCADE`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users, files CASCADE`.execute(
         db,
       );
     },
@@ -189,6 +215,7 @@ export async function createHarness(
       const cleanup = new pg.Pool({ connectionString: connection, max: 1 });
       await cleanup.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
       await cleanup.end();
+      if (dataDir) rmSync(dataDir, { recursive: true, force: true });
     },
   };
 }
