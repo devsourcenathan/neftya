@@ -77,13 +77,19 @@ describe('sauvegarde et restauration', () => {
    * et pas sur une machine chargée — ce qui produisait un échec intermittent sans rapport
    * avec la sauvegarde.
    *
+   * 180 s parce qu'un dump seul coûte déjà 20 s vers une base distante : chaque processus
+   * paie la poignée de main TLS et les allers-retours, et le va-et-vient en compte deux,
+   * plus la destruction et les requêtes de comparaison. Mesuré le 2026-10-04 (`pg_dump`
+   * d'un schéma vide : 21 s). En CI proche de la base, le test retombe en quelques
+   * secondes ; relever ici n'allonge rien là-bas.
+   *
    * Contrairement au test de placement, celui-ci ne peut pas être rendu rapide : sa lenteur
    * **est** ce qu'il mesure. Relever le délai est ici la bonne réponse, et c'est la seule
    * fois où elle l'est.
    */
   it(
     'restaure à l’identique après destruction du schéma',
-    { timeout: 60_000 },
+    { timeout: 180_000 },
     async () => {
       const headers = await harness.authorization();
 
