@@ -1810,3 +1810,25 @@ composant est vrai le jour où on l'écrit et faux au premier état ajouté.
 
 **Les problèmes sont rendus par champ.** « Données invalides » obligerait à deviner laquelle
 des trois cotes manque — et c'est exactement ce que l'API s'est donné la peine de dire.
+
+---
+
+## 2026-10-04 — Sekuu mis de côté : identité locale
+
+**Décision.** Neftya porte sa propre identité (comptes, organisations,
+sessions) au lieu d'attendre Sekuu Platform, indisponible pour une durée
+indéterminée. Six chantiers, dans l'ordre : auth, quotas, interface,
+stockage, IA, notifications.
+
+**Motif.** Attendre bloque tout ; recoupler au moteur serait pire. La
+frontière `apps/api/src/sekuu/` existait déjà : l'identité locale rend le
+**même contexte** (`sub/org/roles/products/limits`), donc aucune route métier
+ne change et le retour de Sekuu est une bascule, pas une réécriture.
+
+**Ce qui est abandonné consciemment** : session multi-produits,
+`billing_manager`, portail, spend-cap plateforme. Le périmètre est écrit dans
+`docs/AUTH_LOCAL.md` §4 pour qu'on ne le redécouvre pas dans six mois.
+
+**Points de vigilance.** `NEFTYA_JWT_SECRET` refuse de démarrer si absent ou
+court. Rate-limit en mémoire : derrière plusieurs instances, passer à Redis.
+Pas de `citext` : les schémas de test isolés ne le voient pas.

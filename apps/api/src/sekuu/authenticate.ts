@@ -1,7 +1,12 @@
 import type { FastifyRequest } from 'fastify';
 import { forbidden, unauthenticated } from '../http/errors.js';
 import type { SekuuContext } from './sekuu-context.js';
-import { InvalidSekuuToken, type TokenVerifier } from './token-verifier.js';
+import { InvalidSekuuToken } from './token-verifier.js';
+
+/** Tout vérifieur qui rend un contexte — Sekuu RS256, local HS256, ou composite. */
+export interface Verifier {
+  verify(token: string): Promise<SekuuContext>;
+}
 
 /** Le produit auquel l'organisation doit être abonnée pour entrer ici. */
 export const NEFTYA_PRODUCT = 'neftya';
@@ -16,7 +21,7 @@ declare module 'fastify' {
   }
 }
 
-export function makeAuthenticator(verifier: TokenVerifier) {
+export function makeAuthenticator(verifier: Verifier) {
   return async function authenticate(request: FastifyRequest): Promise<void> {
     const header = request.headers.authorization;
     if (typeof header !== 'string' || !header.startsWith('Bearer ')) {

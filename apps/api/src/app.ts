@@ -20,6 +20,12 @@ import {
   type LogSink,
 } from './observability/logging.js';
 import { registerAssistantRoutes } from './assistant/routes.js';
+import { AuthRepository } from './auth/repository.js';
+import {
+  registerProtectedAuthRoutes,
+  registerPublicAuthRoutes,
+} from './auth/routes.js';
+import { CompositeVerifier, LocalVerifier } from './auth/local-verifier.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
 import type { SekuuAI } from './sekuu/ai.js';
 import type { SekuuStorage } from './sekuu/storage.js';
@@ -35,6 +41,8 @@ import type { TokenVerifier } from './sekuu/token-verifier.js';
 export interface AppDependencies {
   db: Kysely<Database>;
   verifier: TokenVerifier;
+  /** Secret HS256 des jetons locaux. Absent : seule la vérification Sekuu est active. */
+  jwtSecret?: string;
   /** Absent tant qu'aucune clé d'API n'est configurée : l'export reste possible, sans dépôt. */
   storage?: SekuuStorage;
   /**
@@ -102,11 +110,29 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     return reply.status(report.status === 'ok' ? 200 : 503).send(success(report));
   });
 
+  // Authentification locale : les routes publiques vivent hors du contexte
+  // authentifié — exiger un jeton pour s'inscrire serait un cul-de-sac.
+  // `jwtSecret` absent : les routes répondent 503 plutôt qu'un 500 qui ferait
+  // chercher un défaut là où il manque une configuration.
+  const authRepository = new AuthRepository(dependencies.db);
+  const local = dependencies.jwtSecret
+    ? new LocalVerifier(dependencies.jwtSecret)
+    : null;
+  const verifier = new CompositeVerifier(local, dependencies.verifier);
+  const jwtSecret = dependencies.jwtSecret;
+
+  if (jwtSecret) {
+    const publicAuth = new AuthRepository(dependencies.db);
+    void app.register(async (publicScope) => {
+      registerPublicAuthRoutes(publicScope, publicAuth, { jwtSecret });
+    });
+  }
+
   // Toutes les routes métier passent par l'authentification. Elle est posée une fois, sur
   // un contexte encapsulé, plutôt que répétée route par route : une garde qu'on doit
   // penser à écrire est une garde qu'on finit par oublier une fois.
   app.register(async (authenticated) => {
-    authenticated.addHook('preHandler', makeAuthenticator(dependencies.verifier));
+    authenticated.addHook('preHandler', makeAuthenticator(verifier));
 
     const projects = new ProjectRepository(dependencies.db);
     const settings = new SettingsRepository(dependencies.db);
@@ -116,6 +142,9 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
     registerAssistantRoutes(authenticated, dependencies.ai);
     registerSettingsRoutes(authenticated, settings);
+    if (jwtSecret) {
+      registerProtectedAuthRoutes(authenticated, authRepository, { jwtSecret });
+    }
     registerManufacturingRoutes(authenticated, {
       projects,
       settings,

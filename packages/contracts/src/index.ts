@@ -10,4 +10,5 @@
  */
 export * from './envelope.js';
 export * from './localised.js';
+export * from './auth.js';
 export type { Millimetres } from '@neftya/engine';

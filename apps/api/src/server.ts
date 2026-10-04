@@ -28,6 +28,13 @@ const storageKey = process.env['SEKUU_STORAGE_API_KEY'];
 // l'argent à chaque appel. Sans elle, l'assistant dit qu'il n'est pas configuré.
 const aiKey = process.env['SEKUU_AI_API_KEY'];
 
+const jwtSecret = process.env['NEFTYA_JWT_SECRET'];
+if (!jwtSecret || jwtSecret.length < 32) {
+  throw new Error(
+    "Variable d'environnement manquante ou trop courte : NEFTYA_JWT_SECRET (32 caractères au moins).",
+  );
+}
+
 const app = buildApp({
   db,
   // Séparées par des virgules. Vide : aucune origine navigateur n'est admise, ce qui est
@@ -58,6 +65,7 @@ const app = buildApp({
     issuer: required('SEKUU_ISSUER'),
     audience: required('SEKUU_AUDIENCE'),
   }),
+  jwtSecret,
 });
 
 const applied = await migrate(db);

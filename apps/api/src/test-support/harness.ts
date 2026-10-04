@@ -72,6 +72,12 @@ export interface HarnessOptions {
    * un d'office.
    */
   ai?: SekuuAI;
+  /**
+   * Secret HS256 des jetons locaux. Fourni par défaut pour que les routes
+   * `/v1/auth/*` soient montées dans tous les tests — sans lui, elles ne
+   * le seraient pas, et chaque test d'auth devrait le réclamer.
+   */
+  jwtSecret?: string;
 }
 
 /**
@@ -133,6 +139,7 @@ export async function createHarness(
     logSink: options.logSink ?? (() => {}),
     ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}),
     ...(options.ai ? { ai: options.ai } : {}),
+    jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
       issuer: ISSUER,
@@ -172,7 +179,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organizations, users CASCADE`.execute(
         db,
       );
     },

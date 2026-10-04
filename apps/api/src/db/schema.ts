@@ -109,10 +109,70 @@ export interface TemplatesTable {
   deleted_at: DeletedAt;
 }
 
+/**
+ * Identité locale Neftya — voir `0005_auth.sql`.
+ *
+ * Ce n'est pas une copie de Sekuu : le mot de passe y vit, donc c'est la
+ * source. `organization_id` reste la frontière lue du jeton local.
+ */
+export interface UsersTable {
+  id: string;
+  email: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
+  language: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface OrganizationsTable {
+  id: string;
+  name: string;
+  slug: string;
+  created_by: string;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface MembershipsTable {
+  organization_id: string;
+  user_id: string;
+  role: 'owner' | 'admin' | 'member';
+  created_at: CreatedAt;
+}
+
+export interface RefreshSessionsTable {
+  id: string;
+  user_id: string;
+  organization_id: string | null;
+  token_hash: string;
+  expires_at: Date;
+  revoked_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface InvitationsTable {
+  id: string;
+  organization_id: string;
+  email: string;
+  role: 'admin' | 'member';
+  token_hash: string;
+  expires_at: Date;
+  accepted_at: Date | null;
+  created_by: string;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
   material_prices: MaterialPricesTable;
   project_exports: ProjectExportsTable;
   templates: TemplatesTable;
+  users: UsersTable;
+  organizations: OrganizationsTable;
+  memberships: MembershipsTable;
+  refresh_sessions: RefreshSessionsTable;
+  invitations: InvitationsTable;
 }

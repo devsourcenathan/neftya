@@ -30,6 +30,7 @@ manque : échouer à la première requête coûte plus cher que refuser de déma
 | Variable | Rôle | Absente |
 | --- | --- | --- |
 | `DATABASE_URL` | PostgreSQL | refus de démarrer |
+| `NEFTYA_JWT_SECRET` | jetons d'accès locaux (32 car. min) — voir `AUTH_LOCAL.md` | refus de démarrer |
 | `SEKUU_JWKS_URL` | clés publiques de la plateforme | refus de démarrer |
 | `SEKUU_ISSUER` | `https://identity.sekuu.com` | refus de démarrer |
 | `SEKUU_AUDIENCE` | `sekuu-platform` | refus de démarrer |
