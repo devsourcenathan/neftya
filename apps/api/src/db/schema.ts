@@ -192,6 +192,23 @@ export interface FilesTable {
   created_at: CreatedAt;
 }
 
+/**
+ * Générations d'IA locales — voir `0008_ai.sql`.
+ *
+ * La ligne est la facture : même clé d'idempotence = même ligne, et le quota
+ * du mois se compte en lignes, pas en appels.
+ */
+export interface AiGenerationsTable {
+  id: string;
+  organization_id: string;
+  idempotency_key: string;
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+  input: string;
+  output: unknown;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -205,4 +222,5 @@ export interface Database {
   invitations: InvitationsTable;
   organization_quotas: OrganizationQuotasTable;
   files: FilesTable;
+  ai_generations: AiGenerationsTable;
 }

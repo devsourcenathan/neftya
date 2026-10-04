@@ -42,6 +42,8 @@ export type AiRefusal =
   | 'spend_cap'
   /** La tâche n'est pas dans la liste blanche de la clé, ou la clé est refusée. */
   | 'denied'
+  /** Une génération inconnue — ou d'une autre organisation. */
+  | 'not_found'
   /** La plateforme n'a pas répondu, ou a répondu ce qu'on ne sait pas lire. */
   | 'unavailable';
 

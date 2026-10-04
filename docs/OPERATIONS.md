@@ -41,6 +41,8 @@ manque : échouer à la première requête coûte plus cher que refuser de déma
 | `SEKUU_STORAGE_URL` | dépôt des exports (si clé Sekuu) | dépôt local |
 | `SEKUU_STORAGE_API_KEY` | clé `storage.write.delegated` | dépôt local |
 | `NEFTYA_DATA_DIR` | fichiers déposés (`./data` par défaut) | `./data` |
+| `OPENAI_API_KEY` | modèle de l'assistant | assistant désactivé (`503`) |
+| `OPENAI_BASE_URL` / `OPENAI_MODEL` | relais et modèle | OpenAI, `gpt-4o-mini` |
 | `NEFTYA_ALLOWED_ORIGINS` | origines navigateur admises | **aucune** — l'interface ne peut pas appeler l'API |
 | `PORT`, `HOST` | écoute | 3000, `0.0.0.0` |
 

@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { createDatabase, migrate } from './db/index.js';
 import { SekuuAI } from './sekuu/ai.js';
+import { LocalAI } from './ai/local-ai.js';
 import { SekuuStorage } from './sekuu/storage.js';
 import { LocalFileStore } from './storage/local-store.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
@@ -29,8 +30,11 @@ const dataDir = process.env['NEFTYA_DATA_DIR'] ?? './data';
 // c'est un export qu'on ne retrouve pas.
 const localStore = new LocalFileStore({ dataDir, db });
 
-// Distincte de celle de Storage, delibérément : une clé d'IA dépense, et sa fuite coûte de
-// l'argent à chaque appel. Sans elle, l'assistant dit qu'il n'est pas configuré.
+// L'assistant : un modèle direct d'abord, Sekuu ensuite, rien sinon.
+//
+// Sans modèle, l'assistant dit qu'il n'est pas configuré — il n'y a rien à
+// dégrader, une interprétation n'a pas de version locale.
+const openaiKey = process.env['OPENAI_API_KEY'];
 const aiKey = process.env['SEKUU_AI_API_KEY'];
 
 const jwtSecret = process.env['NEFTYA_JWT_SECRET'];
@@ -60,14 +64,23 @@ const app = buildApp({
         storage: localStore,
         files: localStore,
       }),
-  ...(aiKey
+  ...(openaiKey
     ? {
-        ai: new SekuuAI({
-          baseUrl: process.env['SEKUU_AI_URL'] ?? 'https://ai.sekuu.com',
-          apiKey: aiKey,
+        ai: new LocalAI({
+          db,
+          baseUrl: process.env['OPENAI_BASE_URL'] ?? 'https://api.openai.com/v1',
+          apiKey: openaiKey,
+          model: process.env['OPENAI_MODEL'] ?? 'gpt-4o-mini',
         }),
       }
-    : {}),
+    : aiKey
+      ? {
+          ai: new SekuuAI({
+            baseUrl: process.env['SEKUU_AI_URL'] ?? 'https://ai.sekuu.com',
+            apiKey: aiKey,
+          }),
+        }
+      : {}),
   verifier: new TokenVerifier({
     jwksUrl: required('SEKUU_JWKS_URL'),
     issuer: required('SEKUU_ISSUER'),

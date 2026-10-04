@@ -1849,3 +1849,20 @@ d'exploitation : dump et répertoire partagent leur horodatage.
 **Cloisonnement double** : filtre `organization_id` en SQL **et** segment de
 chemin. L'un sans l'autre suffirait ; les deux ensemble font qu'une régression
 de l'un ne fuit toujours rien.
+
+---
+
+## 2026-10-04 — IA locale synchrone
+
+**Décision.** L'assistant appelle un modèle compatible OpenAI directement,
+en synchrone, avec ses générations persistées — au lieu d'attendre Sekuu AI.
+Même contrat HTTP, même idempotence, même `unusable`.
+
+**Motif.** L'interface sondait déjà : une extraction qui répond tout de suite
+reste une génération `succeeded` à la première lecture. La persistance rend
+l'idempotence réelle (même clé = même ligne) et le quota comptable en lignes
+du mois — sans table de compteur qui dériverait.
+
+**Ce qu'on reprend** : nommer un modèle (plus de registre plateforme),
+plafond de dépense à surveiller côté facture fournisseur. `temperature: 0`,
+sortie courte, pas de vision : comme avant, l'image reste hors périmètre.

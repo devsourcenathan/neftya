@@ -4,13 +4,15 @@ import { z } from 'zod';
 import { success } from '@neftya/contracts';
 import {
   forbidden,
+  notFound,
   serviceUnavailable,
   validationFailed,
   type HttpError,
 } from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
-import { AiUnavailable, type SekuuAI } from '../sekuu/ai.js';
+import { AiUnavailable } from '../sekuu/ai.js';
+import type { AiService } from '../ai/ai-service.js';
 import {
   EXTRACTED_FIELDS,
   MAX_DESCRIPTION_LENGTH,
@@ -44,7 +46,7 @@ const describeBody = z.object({
     ),
 });
 
-export function registerAssistantRoutes(app: FastifyInstance, ai?: SekuuAI): void {
+export function registerAssistantRoutes(app: FastifyInstance, ai?: AiService): void {
   app.post('/v1/assistant/interpretations', async (request, reply) => {
     const context = sekuuOf(request);
 
@@ -117,13 +119,13 @@ function pending(id: string, status: string) {
 }
 
 /**
- * Sans clé, l'assistant n'existe pas — et le dit.
+ * Sans modèle configuré, l'assistant n'existe pas — et le dit.
  *
  * Storage peut manquer sans empêcher un export : le PDF est produit, il n'est simplement pas
- * déposé. Ici il n'y a rien à dégrader — sans la plateforme, il n'y a pas d'interprétation.
+ * déposé. Ici il n'y a rien à dégrader — sans modèle, il n'y a pas d'interprétation.
  * Un `503` nommé vaut mieux qu'un `500` qui ferait chercher un défaut dans Neftya.
  */
-function configured(ai?: SekuuAI): SekuuAI {
+function configured(ai?: AiService): AiService {
   if (!ai) {
     throw serviceUnavailable("L'assistant n'est pas configuré sur cette installation.");
   }
@@ -136,6 +138,8 @@ async function guarded<T>(call: () => Promise<T>): Promise<T> {
     return await call();
   } catch (error) {
     if (!(error instanceof AiUnavailable)) throw error;
+
+    if (error.refusal === 'not_found') throw notFound('Interprétation introuvable.');
 
     throw serviceUnavailable(
       {

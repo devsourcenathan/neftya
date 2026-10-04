@@ -27,7 +27,7 @@ import {
 } from './auth/routes.js';
 import { CompositeVerifier, LocalVerifier } from './auth/local-verifier.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
-import type { SekuuAI } from './sekuu/ai.js';
+import type { AiService } from './ai/ai-service.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
 import type { FileStore, Uploader } from './storage/file-store.js';
 
@@ -48,12 +48,12 @@ export interface AppDependencies {
   /** Absent quand la relecture n'est pas câblée : le téléchargement rend 404. */
   files?: Pick<FileStore, 'download'>;
   /**
-   * Absent tant qu'aucune clé d'IA n'est configurée.
+   * Absent tant qu'aucun modèle n'est configuré.
    *
-   * Contrairement à Storage, il n'y a rien à dégrader : sans la plateforme, l'assistant
-   * répond qu'il n'est pas configuré. Une interprétation n'a pas de version locale.
+   * Il n'y a rien à dégrader : sans modèle, l'assistant répond qu'il n'est pas
+   * configuré. Une interprétation n'a pas de version locale.
    */
-  ai?: SekuuAI;
+  ai?: AiService;
   /** Injectable : les tests lisent ce qui a été journalisé au lieu de le voir passer. */
   logSink?: LogSink;
   /**

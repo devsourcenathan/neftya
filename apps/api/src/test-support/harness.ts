@@ -9,7 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import type { Database } from '../db/schema.js';
 import type { LogSink } from '../observability/logging.js';
-import type { SekuuAI } from '../sekuu/ai.js';
+import type { AiService } from '../ai/ai-service.js';
 import type { FileStore, Uploader } from '../storage/file-store.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
 import { LocalFileStore } from '../storage/local-store.js';
@@ -68,13 +68,15 @@ export interface HarnessOptions {
   /** Origines navigateur admises. Vide par défaut, comme en production. */
   allowedOrigins?: readonly string[];
   /**
-   * L'assistant. **Absent par défaut**, comme sur une installation sans clé.
+   * L'assistant. **Absent par défaut**, comme sur une installation sans modèle :
+   * celui qui vérifie qu'un assistant non configuré le dit n'aurait rien à
+   * vérifier si le banc d'essai en fournissait un d'office.
    *
-   * C'est le bon défaut : la plupart des tests n'en veulent pas, et celui qui vérifie qu'un
-   * assistant non configuré le dit n'aurait rien à vérifier si le banc d'essai en fournissait
-   * un d'office.
+   * Une fabrique `(db) => service` reçoit la base du banc : c'est ce qui permet
+   * de brancher l'IA locale, qui persiste ses générations, sur le même schéma
+   * que le reste du test.
    */
-  ai?: SekuuAI;
+  ai?: AiService | ((db: Kysely<Database>) => AiService);
   /**
    * Dépôt des exports. `'local'` branche le magasin sur disque (répertoire
    * temporaire, nettoyé à la fermeture) **avec** sa relecture : c'est le
@@ -156,13 +158,16 @@ export async function createHarness(
     files = store;
   }
 
+  const aiService =
+    typeof options.ai === 'function' ? options.ai(db) : (options.ai ?? undefined);
+
   const app = buildApp({
     db,
     // Sans puits injecté, les tests écriraient des milliers de lignes JSON dans la sortie
     // de la suite, où personne ne les lirait.
     logSink: options.logSink ?? (() => {}),
     ...(options.allowedOrigins ? { allowedOrigins: options.allowedOrigins } : {}),
-    ...(options.ai ? { ai: options.ai } : {}),
+    ...(aiService ? { ai: aiService } : {}),
     ...(storage ? { storage } : {}),
     ...(files ? { files } : {}),
     jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
@@ -205,7 +210,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users, files CASCADE`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users, files, ai_generations CASCADE`.execute(
         db,
       );
     },
