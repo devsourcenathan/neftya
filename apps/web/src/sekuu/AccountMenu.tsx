@@ -2,42 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { portalUrl, signOut, type Session } from './session.js';
+import type { Session } from './session.js';
 import { useSession } from './SessionContext.js';
 import { MoreIcon } from '../ui/icons.js';
 
 /**
- * Qui je suis, et les trois portes qui vont avec.
+ * Qui je suis, et les portes qui vont avec.
  *
- * ## Ce que Neftya montre, et ce qu'il ne montre pas
+ * Il montre **ce que la session porte déjà** : le nom, l'adresse,
+ * l'organisation active. Rien n'est demandé au serveur pour cela.
  *
- * Il montre **ce que le jeton porte déjà** : le nom, l'adresse, l'organisation active.
- * Rien n'est demandé au serveur pour cela — `refresh` l'a rendu, et une seconde copie
- * vieillirait dès que quelqu'un modifie son profil sur la plateforme.
- *
- * Il ne montre **ni le plan, ni la facture, ni l'échéance**. Ce sont les mêmes écrans pour
- * tous les produits Sekuu ; les recopier ici, c'est les voir diverger de la facturation le
- * jour où l'une des deux change. Le compte et l'abonnement sont donc des liens vers le
- * portail, pas des pages de Neftya.
+ * Il ne montre **ni plan, ni facture** : il n'y en a pas en local, et le
+ * jour où la facturation reviendra, ses écrans vivront à part — les recopier
+ * ici, c'est les voir diverger le jour où l'un des deux change.
  *
  * ## Changer d'organisation
  *
- * Trois gestes, dans cet ordre, et l'ordre est le sujet : activer l'organisation, **vider
- * le cache**, revenir à l'accueil. Tout ce qui est chargé — projets, réglages, modèles —
- * appartient à celle qu'on quitte, et l'écran d'un projet qui n'existe plus chez la
- * nouvelle répondrait `404` sans expliquer pourquoi.
- *
- * ## La déconnexion
- *
- * Elle part chez la plateforme. La session vit dans le cookie partagé de `.sekuu.test` :
- * l'effacer ici seulement laisserait la personne connectée sur tous les autres produits
- * pendant que celui-ci prétend le contraire.
- *
- * @see docs/SEKUU.md §7
+ * Trois gestes, dans cet ordre, et l'ordre est le sujet : activer
+ * l'organisation, **vider le cache**, revenir à l'accueil. Tout ce qui est
+ * chargé appartient à celle qu'on quitte.
  */
 export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   const { t } = useTranslation();
-  const { state, choose } = useSession();
+  const { state, choose, leave } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -67,7 +54,7 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
   }, [open]);
 
   // Le menu n'a de sens qu'une fois l'organisation active : avant, il n'y a ni nom ni
-  // abonnement à montrer, et l'écran qui s'affiche alors porte déjà ses propres actions.
+  // organisation à montrer, et l'écran qui s'affiche alors porte déjà ses propres actions.
   if (state.status !== 'ready') return null;
 
   const { session } = state;
@@ -92,6 +79,12 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
     setSwitching(null);
     if (ok) setOpen(false);
     else setFailed(true);
+  };
+
+  const quit = async () => {
+    queryClient.clear();
+    await leave();
+    await navigate({ to: '/' });
   };
 
   return (
@@ -157,17 +150,11 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
             {t('settings.title')}
           </Link>
 
-          {/* Deux liens, pas deux écrans : le portail détient le compte et l'abonnement. */}
-          <MenuLink href={portalUrl('account')}>{t('account.profile')}</MenuLink>
-          <MenuLink href={portalUrl('subscription')}>
-            {t('account.subscription')}
-          </MenuLink>
-
           <button
             type="button"
             role="menuitem"
             className="w-full rounded px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-surface-low"
-            onClick={() => void signOut(session)}
+            onClick={() => void quit()}
           >
             {t('account.signOut')}
           </button>
@@ -233,18 +220,6 @@ export async function switchTo(
   return true;
 }
 
-function MenuLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      role="menuitem"
-      className="block rounded px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-low"
-    >
-      {children}
-    </a>
-  );
-}
-
 /**
  * Le nom affichable.
  *
@@ -252,13 +227,13 @@ function MenuLink({ href, children }: { href: string; children: React.ReactNode 
  * même afficher quelque chose : son adresse fait l'affaire, et elle l'identifie.
  */
 export function displayName(session: Session): string {
-  const full = `${session.user.first_name} ${session.user.last_name}`.trim();
+  const full = `${session.user.firstName} ${session.user.lastName}`.trim();
   return full || session.user.email || '—';
 }
 
 /** Deux lettres, ou une seule. Jamais vide : un rond vide n'est pas un avatar. */
 export function initials(session: Session): string {
-  const letters = [session.user.first_name, session.user.last_name]
+  const letters = [session.user.firstName, session.user.lastName]
     .map((part) => part.trim()[0])
     .filter(Boolean);
 

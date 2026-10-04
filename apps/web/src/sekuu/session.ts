@@ -1,162 +1,141 @@
 /**
- * La session de la plateforme — **le seul module qui parle à Identity**.
+ * La session locale — **le seul module qui parle à `/v1/auth`**.
  *
- * C'est une exigence de la plateforme, pas une préférence de style : il n'existe pas
- * encore de flux délégué « Se connecter avec Sekuu », et le jour où il existera, seul ce
- * fichier devra changer.
+ * Neftya porte ses comptes au lieu de rediriger vers un portail : inscription,
+ * connexion et choix d'organisation sont des appels à sa propre API, et le
+ * jeton vit en mémoire. Le rafraîchissement, opaque, dort dans
+ * `localStorage` — lisible par un script de la page, comme tout ce qu'elle
+ * contient : la rotation à chaque usage et la révocation au rejouement
+ * bornent ce que sa fuite ouvre (voir `AUTH_LOCAL.md` §2).
  *
- * Neftya ne voit jamais de mot de passe : la connexion se fait sur le portail, qui rend la
- * main avec la session posée dans le cookie partagé. Neftya appelle `refresh` et obtient
- * un jeton.
+ * L'interface de ce module est volontairement proche de l'ancienne (Sekuu) :
+ * `SessionProvider` n'a pas à savoir qui a signé.
  *
- * @see Sekuu-Platform/docs/03-services/identity/04-integrer-un-produit.md §6
- * @see docs/SEKUU.md §7
+ * @see docs/AUTH_LOCAL.md
  */
 
-const IDENTITY_URL =
-  import.meta.env['VITE_SEKUU_IDENTITY_URL'] ?? 'https://identity.sekuu.com';
-const PORTAL_URL =
-  import.meta.env['VITE_SEKUU_PORTAL_URL'] ?? 'https://platform.sekuu.com';
+const API_URL = import.meta.env['VITE_API_URL'] ?? 'http://localhost:3000';
 
-/** L'organisation choisie survit à la fermeture de l'onglet ; le jeton, non. */
+/** Le rafraîchissement survit à la fermeture de l'onglet ; le jeton, non. */
+const REFRESH_TOKEN = 'neftya.refreshToken';
+/** L'organisation choisie survit elle aussi : c'est un confort, pas un secret. */
 const CHOSEN_ORGANIZATION = 'neftya.organization';
 
-export interface SekuuOrganization {
+export interface SessionOrganization {
   id: string;
   name: string;
   slug: string;
-  roles: string[];
+  role: string;
 }
 
-export interface SekuuUser {
+export interface SessionUser {
   id: string;
-  first_name: string;
-  last_name: string;
   email: string;
-  language: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface Session {
   accessToken: string;
   /** Fin de validité, en millisecondes epoch, lue dans le jeton. */
   expiresAt: number;
-  user: SekuuUser;
-  organizations: SekuuOrganization[];
-  /** `null` tant que `switch-organization` n'a pas été appelé. */
+  user: SessionUser;
+  organizations: SessionOrganization[];
+  /** `null` quand plusieurs organisations et aucun choix — l'écran tranche. */
   organizationId: string | null;
   language: string;
 }
 
 export class NotSignedIn extends Error {
   constructor() {
-    super('Aucune session Sekuu.');
+    super('Aucune session locale.');
     this.name = 'NotSignedIn';
   }
 }
 
 /**
- * La plateforme n'a pas répondu du tout.
+ * L'API n'a pas répondu du tout.
  *
- * À distinguer de `NotSignedIn` : l'un veut dire « connectez-vous », l'autre « réessayez ».
- * Les confondre enverrait au portail quelqu'un dont le réseau a simplement toussé — et,
- * sans distinction, `fetch` qui échoue laisse l'application sur son écran de chargement,
- * indéfiniment.
+ * À distinguer de `NotSignedIn` : l'un veut dire « connectez-vous », l'autre
+ * « réessayez ». Les confondre enverrait au formulaire quelqu'un dont le
+ * réseau a simplement toussé.
  */
-export class PlatformUnreachable extends Error {
+export class ApiUnreachable extends Error {
   constructor(cause: unknown) {
-    super('Sekuu Platform est injoignable.');
-    this.name = 'PlatformUnreachable';
+    super("L'API Neftya est injoignable.");
+    this.name = 'ApiUnreachable';
     this.cause = cause;
   }
 }
 
-/**
- * Envoie l'utilisateur se connecter sur le portail, et revenir ici.
- *
- * Le portail valide `redirect` contre la liste des origines de produits. Si celle de
- * Neftya n'y figure pas, l'utilisateur atterrit sur l'accueil de la plateforme — sans
- * erreur, ce qui rend le symptôme déroutant : ajouter l'origine à `SEKUU_ALLOWED_ORIGINS`.
- */
-export function redirectToPortal(
-  path: 'login' | 'register' | 'subscribe' = 'login',
-): void {
-  window.location.href = portalUrl(path);
-}
-
-/**
- * Le produit, tel que le portail le connaît.
- *
- * Doit correspondre au slug enregistré dans le catalogue de la plateforme : l'un décide
- * quel abonnement proposer, l'autre quel abonnement exiger. S'ils divergent, le portail
- * vend un produit que Neftya n'ouvre pas.
- */
-const PRODUCT = 'neftya';
-
-/**
- * Une adresse du portail, avec le retour vers ici.
- *
- * `account` mène à l'aperçu du compte, `subscription` à l'abonnement en cours. **Neftya
- * n'affiche ni l'un ni l'autre lui-même** : ce sont les mêmes écrans pour tous les
- * produits, et les recopier ici, c'est les voir diverger de la facturation le jour où l'un
- * des deux change. Neftya ne lit ni plan, ni facture, ni échéance — tout son contrôle
- * d'abonnement tient dans le claim `products`.
- */
-export function portalUrl(
-  path: 'login' | 'register' | 'subscribe' | 'subscription' | 'account',
-  target = window.location.href,
-): string {
-  const redirect = `redirect=${encodeURIComponent(target)}`;
-
-  // L'aperçu du compte est la racine du portail : il n'a pas de chemin à lui.
-  if (path === 'account') return `${PORTAL_URL}/?${redirect}`;
-
-  // `product` mène jusqu'au choix du plan ; sans lui le portail connecte la personne,
-  // la laisse créer une organisation, puis s'arrête — et Neftya répond 403 à un compte
-  // qui vient pourtant d'être créé pour lui.
-  const carriesProduct = path === 'subscribe' || path === 'subscription';
-
-  return carriesProduct
-    ? `${PORTAL_URL}/${path}?product=${encodeURIComponent(PRODUCT)}&${redirect}`
-    : `${PORTAL_URL}/${path}?${redirect}`;
-}
-
-/**
- * Se déconnecter, **chez la plateforme**.
- *
- * Neftya ne détient rien à effacer au-delà du jeton en mémoire : la session vit dans le
- * cookie partagé de `.sekuu.test`. L'effacer ici seulement laisserait la personne connectée
- * sur tous les autres produits Sekuu, pendant que celui-ci prétend le contraire — et c'est
- * précisément ce qu'une déconnexion doit empêcher.
- *
- * Vers `/login` sans `redirect` : renvoyer quelqu'un qui vient de se déconnecter là d'où
- * il vient le reconnecterait aussitôt, tant que le cookie de l'appareil est encore valide.
- */
-export async function signOut(session: Session | null): Promise<void> {
-  try {
-    await fetch(`${IDENTITY_URL}/api/v1/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        accept: 'application/json',
-        ...(session ? { authorization: `Bearer ${session.accessToken}` } : {}),
-      },
-    });
-  } catch {
-    // La plateforme injoignable ne doit pas retenir quelqu'un sur un écran connecté : on
-    // le renvoie quand même. Le cookie survit, il se reconnectera — ce qui vaut mieux que
-    // de rester bloqué sur un bouton qui ne fait rien.
-  } finally {
-    window.location.href = `${PORTAL_URL}/login`;
+/** Ce que l'API rend quand un identifiant ou un jeton est refusé. */
+export class CredentialsRejected extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CredentialsRejected';
   }
+}
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  organizationName: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export async function register(input: RegisterInput): Promise<Session> {
+  return toSession(
+    await call('/v1/auth/register', {
+      method: 'POST',
+      body: {
+        email: input.email,
+        password: input.password,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        organizationName: input.organizationName,
+      },
+    }),
+  );
+}
+
+export async function login(input: LoginInput): Promise<Session> {
+  const session = toSession(
+    await call('/v1/auth/login', {
+      method: 'POST',
+      body: { email: input.email, password: input.password },
+    }),
+  );
+
+  // Une seule organisation : l'appel l'a déjà activée. Plusieurs : reprendre
+  // le choix précédent s'il est toujours valide, sinon laisser l'écran trancher.
+  if (!session.organizationId) {
+    const remembered = window.localStorage.getItem(CHOSEN_ORGANIZATION);
+    const chosen = session.organizations.find(
+      (organization) => organization.id === remembered,
+    );
+    const single =
+      chosen ??
+      (session.organizations.length === 1 ? session.organizations[0] : undefined);
+    if (single) return switchOrganization(session, single.id);
+  } else {
+    window.localStorage.setItem(CHOSEN_ORGANIZATION, session.organizationId);
+  }
+
+  return session;
 }
 
 /**
  * Un seul rafraîchissement à la fois.
  *
- * Un jeton de rafraîchissement **ne se rejoue pas** : le rejouer révoque la session
- * entière — c'est la détection de vol, et elle est volontairement brutale. Deux appels
- * concurrents déconnecteraient l'utilisateur, ce qui se produit dès qu'une page lance deux
- * requêtes au chargement.
+ * Le jeton de rafraîchissement **tourne à chaque usage** : deux appels
+ * concurrents dont le second rejoue l'ancien révoqueraient toute la session.
+ * C'est la détection de vol, et elle est volontairement brutale.
  */
 let inFlight: Promise<Session> | null = null;
 
@@ -169,47 +148,49 @@ export function refresh(): Promise<Session> {
 }
 
 async function performRefresh(): Promise<Session> {
-  // `credentials: 'include'` : le jeton de rafraîchissement est un cookie HttpOnly du
-  // domaine de la plateforme. Le JavaScript de Neftya ne le lit jamais, et c'est le but.
-  let response: Response;
+  const refreshToken = window.localStorage.getItem(REFRESH_TOKEN);
+  if (!refreshToken) throw new NotSignedIn();
 
+  let response: Response;
   try {
-    response = await fetch(`${IDENTITY_URL}/api/v1/auth/refresh`, {
+    response = await fetch(`${API_URL}/v1/auth/refresh`, {
       method: 'POST',
-      credentials: 'include',
-      headers: { accept: 'application/json' },
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ refreshToken }),
     });
   } catch (error) {
-    // `fetch` ne rejette que sur un échec réseau : serveur éteint, DNS, CORS. Un 401 passe
-    // par le chemin normal en dessous.
-    throw new PlatformUnreachable(error);
+    throw new ApiUnreachable(error);
   }
 
-  if (!response.ok) throw new NotSignedIn();
+  if (!response.ok) {
+    if (response.status === 401) {
+      forgetSession();
+      throw new NotSignedIn();
+    }
+    throw new ApiUnreachable(`refresh : réponse ${response.status}`);
+  }
 
   return toSession(await response.json());
 }
 
-/**
- * Le piège numéro un : un jeton frais **ne porte pas d'organisation**.
- *
- * Sans cet appel, Neftya voit un jeton valide, signé, non expiré, et refuse tout. Il rend
- * un **nouveau** jeton, celui qui porte `org`, `roles` et `products`.
- */
 export async function switchOrganization(
   session: Session,
   organizationId: string,
 ): Promise<Session> {
-  const response = await fetch(`${IDENTITY_URL}/api/v1/auth/switch-organization`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      authorization: `Bearer ${session.accessToken}`,
-      'content-type': 'application/json',
-      accept: 'application/json',
-    },
-    body: JSON.stringify({ organization_id: organizationId }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/v1/auth/switch`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({ organizationId }),
+    });
+  } catch (error) {
+    throw new ApiUnreachable(error);
+  }
 
   if (!response.ok) throw new NotSignedIn();
 
@@ -222,9 +203,8 @@ export async function switchOrganization(
 /**
  * Ouvre une session utilisable, en enchaînant ce qui doit l'être.
  *
- * Une seule organisation : les deux appels s'enchaînent sans rien demander. Plusieurs :
- * le choix précédent est repris s'il est toujours valide, sinon c'est à l'utilisateur de
- * trancher — et `organizationId` reste `null` jusque-là.
+ * Sans jeton de rafraîchissement stocké, il n'y a pas de session — c'est
+ * l'écran de connexion qui prend la suite, pas une erreur.
  */
 export async function openSession(): Promise<Session> {
   const session = await refresh();
@@ -238,16 +218,40 @@ export async function openSession(): Promise<Session> {
   return chosen ? switchOrganization(session, chosen.id) : session;
 }
 
+export async function signOut(session: Session | null): Promise<void> {
+  const refreshToken = window.localStorage.getItem(REFRESH_TOKEN);
+  if (refreshToken) {
+    try {
+      await fetch(`${API_URL}/v1/auth/logout`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {
+      // L'API injoignable ne doit pas retenir quelqu'un sur un écran connecté :
+      // le jeton local est effacé de toute façon, ci-dessous.
+    }
+  }
+  void session;
+  forgetSession();
+}
+
 export function forgetOrganization(): void {
+  window.localStorage.removeItem(CHOSEN_ORGANIZATION);
+}
+
+function forgetSession(): void {
+  window.localStorage.removeItem(REFRESH_TOKEN);
   window.localStorage.removeItem(CHOSEN_ORGANIZATION);
 }
 
 /**
  * Lit les claims sans vérifier la signature.
  *
- * **La vérification est le travail du serveur**, qui la fait hors ligne contre le JWKS.
- * Le navigateur ne lit ces claims que pour savoir quoi afficher et quand rafraîchir ; s'y
- * fier pour autoriser quoi que ce soit reviendrait à faire confiance au client.
+ * **La vérification est le travail du serveur**, qui la fait contre son
+ * secret. Le navigateur ne lit ces claims que pour savoir quoi afficher et
+ * quand rafraîchir ; s'y fier pour autoriser quoi que ce soit reviendrait
+ * à faire confiance au client.
  */
 export function readClaims(token: string): Record<string, unknown> {
   const payload = token.split('.')[1];
@@ -261,35 +265,90 @@ export function readClaims(token: string): Record<string, unknown> {
   }
 }
 
-function toSession(body: unknown, previous?: Session): Session {
-  const data = (body as { data?: Record<string, unknown> }).data ?? {};
-  const accessToken = String(data['access_token'] ?? '');
-  const claims = readClaims(accessToken);
+async function call(
+  path: string,
+  init: { method: string; body: unknown },
+): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: init.method,
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(init.body),
+    });
+  } catch (error) {
+    throw new ApiUnreachable(error);
+  }
 
-  const organizationId = typeof claims['org'] === 'string' ? claims['org'] : null;
-  const expirySeconds = typeof claims['exp'] === 'number' ? claims['exp'] : null;
+  const payload = (await response.json().catch(() => null)) as {
+    success?: boolean;
+    data?: unknown;
+    error?: { code?: string; message?: string };
+  } | null;
 
-  return {
-    accessToken,
-    // À défaut de `exp` — un jeton illisible —, on considère la durée annoncée, et à
-    // défaut de celle-ci les 900 secondes du contrat.
-    expiresAt: expirySeconds
-      ? expirySeconds * 1000
-      : Date.now() + Number(data['expires_in'] ?? 900) * 1000,
-    user: (data['user'] as SekuuUser | undefined) ?? previous?.user ?? EMPTY_USER,
-    organizations:
-      (data['organizations'] as SekuuOrganization[] | undefined) ??
-      previous?.organizations ??
-      [],
-    organizationId,
-    language: typeof claims['lang'] === 'string' ? claims['lang'] : 'fr',
-  };
+  if (!response.ok || !payload?.success) {
+    const code = payload?.error?.code;
+    const message = payload?.error?.message ?? `réponse ${response.status}`;
+    if (code === 'CONFLICT' || response.status === 401 || response.status === 422) {
+      throw new CredentialsRejected(message);
+    }
+    throw new ApiUnreachable(message);
+  }
+
+  return payload;
 }
 
-const EMPTY_USER: SekuuUser = {
-  id: '',
-  first_name: '',
-  last_name: '',
-  email: '',
-  language: 'fr',
-};
+function toSession(body: unknown, previous?: Session): Session {
+  const data = (body as { data?: Record<string, unknown> }).data ?? {};
+  const accessToken = String(data['accessToken'] ?? data['access_token'] ?? '');
+  const claims = readClaims(accessToken);
+
+  const organizationId =
+    typeof claims['org'] === 'string'
+      ? claims['org']
+      : typeof data['organizationId'] === 'string'
+        ? data['organizationId']
+        : null;
+  const expirySeconds = typeof claims['exp'] === 'number' ? claims['exp'] : null;
+
+  const rawUser = (data['user'] as Record<string, unknown> | undefined) ?? {};
+  const rawOrganizations =
+    (data['organizations'] as Record<string, unknown>[] | undefined) ?? [];
+
+  const session: Session = {
+    accessToken,
+    expiresAt: expirySeconds
+      ? expirySeconds * 1000
+      : Date.now() + Number(data['expiresIn'] ?? data['expires_in'] ?? 900) * 1000,
+    user: {
+      id: String(rawUser['id'] ?? previous?.user.id ?? ''),
+      email: String(rawUser['email'] ?? previous?.user.email ?? ''),
+      firstName: String(
+        rawUser['firstName'] ?? rawUser['first_name'] ?? previous?.user.firstName ?? '',
+      ),
+      lastName: String(
+        rawUser['lastName'] ?? rawUser['last_name'] ?? previous?.user.lastName ?? '',
+      ),
+    },
+    organizations: rawOrganizations.map((organization) => ({
+      id: String(organization['id'] ?? ''),
+      name: String(organization['name'] ?? ''),
+      slug: String(organization['slug'] ?? ''),
+      role: String(
+        organization['role'] ??
+          (Array.isArray(organization['roles']) ? organization['roles'][0] : '') ??
+          '',
+      ),
+    })),
+    organizationId,
+    language:
+      typeof claims['lang'] === 'string'
+        ? claims['lang']
+        : (previous?.language ?? 'fr'),
+  };
+
+  const stored = String(data['refreshToken'] ?? data['refresh_token'] ?? '');
+  if (stored) window.localStorage.setItem(REFRESH_TOKEN, stored);
+
+  return session;
+}

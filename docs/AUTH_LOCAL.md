@@ -42,7 +42,6 @@ pas couvert, `null` = illimité, entier = plafond (`0` bloque tout).
 Un changement prend effet au prochain rafraîchissement (15 min au plus
 pour le jeton d'accès). Pas de facturation : les plafonds sont des
 garde-fous, pas des plans.
-
 ## 5. Ce qui n'existe pas (et ne manque pas encore)
 - Session unique entre produits, cookie partagé : un seul produit tourne.
 - `billing_manager` : pas de facturation ; `owner`/`admin` couvrent.
@@ -55,6 +54,19 @@ garde-fous, pas des plans.
 | Variable | Rôle |
 |---|---|
 | `NEFTYA_JWT_SECRET` | HS256 local, 32 caractères au moins. Refus de démarrer sinon. |
+
+## 6. Côté interface
+
+`apps/web/src/sekuu/session.ts` est le seul module qui appelle `/v1/auth` :
+inscription, connexion, rafraîchissement sérialisé, changement
+d'organisation, déconnexion. Le jeton d'accès vit en mémoire, le
+rafraîchissement dans `localStorage` (`neftya.refreshToken`), l'organisation
+choisie aussi (`neftya.organization`).
+
+`SessionProvider` expose `state/choose/token/enter/leave` : l'arbre ne sait
+pas d'où vient la session. Sans organisation active et sans choix mémorisé,
+l'écran de choix tranche — `organizationId` reste `null` jusque-là, et
+aucun appel métier ne part.
 
 ## 6. Limites assumées
 

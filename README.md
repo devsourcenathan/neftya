@@ -15,7 +15,7 @@ de découpe, matériaux, instructions d'assemblage et estimation de coût.
 | **Cible primaire (V1)** | Menuisiers et artisans                                                              |
 | **Cœur technique**      | Neftya Engine — moteur paramétrique, en TypeScript, exécuté navigateur _et_ serveur |
 | **Stack**               | TypeScript de bout en bout · React 19 · PostgreSQL · Three.js                       |
-| **Socle transverse**    | Sekuu Platform (identité, organisations, facturation, stockage, IA, notifications)  |
+| **Socle transverse**    | Identité, quotas, stockage, IA et notifications **locaux** (Sekuu Platform mise de côté, voir `docs/AUTH_LOCAL.md`) |
 | **Intégration**         | Produit à part entière, consommant les API de la plateforme — comme DealerOS        |
 | **État**                | Spécification. Aucun code à ce jour.                                                |
 
@@ -59,16 +59,13 @@ Voir [I18N.md](docs/I18N.md).
 
 ## Démarrer
 
-Neftya s'appuie sur **Sekuu Platform** pour l'identité. En local, un Identity de poche la
-remplace : il fabrique une paire de clés, publie le JWKS et rend des jetons — les trois
-choses dont l'API a besoin.
-
-Trois terminaux :
+Neftya porte sa propre identité (voir `docs/AUTH_LOCAL.md`) : un compte se
+crée dans l'interface, avec son atelier. Sekuu Platform est mise de côté
+tant qu'elle n'est pas disponible.
 
 ```bash
 docker compose up -d          # PostgreSQL sur le port 5442
 npm install
-npm run dev:identity          # Identity de démonstration, port 4000
 ```
 
 `docker compose` est **une** façon d'avoir la base, pas la seule : n'importe quel
@@ -81,102 +78,38 @@ fichier de test travaille dans son propre schéma, passé en paramètre de déma
 pooler rejette ce paramètre. Voir `.env.example`.
 
 ```bash
-cp .env.example .env          # une fois, puis pointer SEKUU_* sur localhost:4000
+cp .env.example .env          # une fois, puis renseigner NEFTYA_JWT_SECRET
 npm run dev:api               # API sur http://localhost:3000
 ```
+
+`NEFTYA_JWT_SECRET` signe les jetons d'accès (32 caractères au moins,
+`openssl rand -hex 32`). Le serveur refuse de démarrer sans lui.
 
 `dev:api` construit puis lance : Node ne sait pas résoudre les imports `.js` d'un fichier
 `.ts` en mode dépouillement de types. Après une modification du code de l'API, relancer la
 commande.
 
 ```bash
-npm run dev                   # interface sur http://localhost:5173
+npm run dev                   # interface sur http://127.0.0.1:5174
 ```
 
 L'interface a besoin de `apps/web/.env.local` :
 
 ```
 VITE_API_URL=http://localhost:3000
-VITE_SEKUU_IDENTITY_URL=http://localhost:4000
-VITE_SEKUU_PORTAL_URL=http://localhost:4000
 ```
 
-Pour le développement local, `.env` doit pointer sur l'Identity de poche :
+Créer un compte dans l'interface, et l'atelier avec : la session ouvre sur
+l'organisation créée. Pour essayer les refus sans toucher au code, inviter
+un membre (`member` ne peut pas supprimer) ou poser un plafond
+(`PUT /v1/auth/quotas` avec `{"projectsMax": 1}` → `409` au deuxième projet).
 
-```
-SEKUU_JWKS_URL=http://localhost:4000/.well-known/jwks.json
-SEKUU_ISSUER=http://localhost:4000
-NEFTYA_ALLOWED_ORIGINS=http://localhost:5173
-```
+### Contre Sekuu Platform (en attente)
 
-> **Lancer l'Identity en premier, et ne plus y toucher.** Chaque démarrage fabrique une
-> nouvelle paire de clés : les jetons déjà émis — celui que garde l'onglet ouvert, par
-> exemple — restent signés par l'ancienne. Recharger la page suffit à en obtenir un neuf.
-
-> **L'Identity de poche n'est pas une porte dérobée.** Aucun code de production ne le
-> connaît : l'API lit trois variables d'environnement, et il suffit de les pointer ailleurs.
-> Le jour où l'on branche la vraie plateforme, ce script ne sert plus.
-
-Pour essayer les refus sans toucher au code :
-
-```bash
-curl -s "http://localhost:4000/token?roles=member"       # ne peut pas supprimer
-curl -s "http://localhost:4000/token?products=autre"     # 403, pas abonné
-curl -s "http://localhost:4000/token?projects_max=1"     # 409 au deuxième projet
-```
-
-### Contre la vraie plateforme
-
-L'Identity de poche sert à travailler hors ligne. Pour éprouver l'intégration réelle —
-session unique entre produits, abonnement, quotas — Neftya se branche sur une Sekuu
-Platform locale.
-
-**Un nom d'hôte partagé est obligatoire.** Le jeton de rafraîchissement est un cookie posé
-sur `.sekuu.test` : une page servie depuis `localhost` ne le verra jamais, et l'application
-bouclera sur la connexion sans dire pourquoi. Dans le fichier `hosts` :
-
-```
-127.0.0.1 platform.sekuu.test neftya.sekuu.test
-```
-
-| | Adresse |
-| --- | --- |
-| Plateforme | `http://platform.sekuu.test:8000` |
-| API Neftya | `http://neftya.sekuu.test:3000` |
-| Interface Neftya | `http://neftya.sekuu.test:5174` |
-
-**5174 et non 5173** : DealerOS occupe le 5173, et les deux produits doivent pouvoir
-tourner ensemble — c'est la seule façon de vérifier qu'une session ouverte sur l'un ouvre
-l'autre.
-
-`.env` :
-
-```
-SEKUU_JWKS_URL=http://platform.sekuu.test:8000/.well-known/jwks.json
-SEKUU_ISSUER=https://identity.sekuu.com
-SEKUU_AUDIENCE=sekuu-platform
-NEFTYA_ALLOWED_ORIGINS=http://neftya.sekuu.test:5174
-```
-
-`apps/web/.env.local` :
-
-```
-VITE_API_URL=http://neftya.sekuu.test:3000
-VITE_SEKUU_IDENTITY_URL=http://platform.sekuu.test:8000
-VITE_SEKUU_PORTAL_URL=http://platform.sekuu.test:8000
-```
-
-`SEKUU_ISSUER` reste `https://identity.sekuu.com`, y compris en local : c'est le claim
-`iss` que la plateforme écrit dans ses jetons, une chaîne comparée et non une adresse
-appelée. Le JWKS, lui, se lit à l'adresse locale.
-
-Côté plateforme, deux choses sans lesquelles rien ne fonctionne :
-
-- l'origine de l'interface dans `SEKUU_ALLOWED_ORIGINS` — c'est la même liste qui gouverne
-  le CORS **et** la validation du `redirect` après connexion. Absente, la redirection
-  retombe silencieusement sur l'accueil de Sekuu, sans erreur ;
-- le produit `neftya` accordé à l'organisation. Sans lui, le claim `products` ne le porte
-  pas et l'API répond `403` à un compte qui vient pourtant d'être créé pour lui.
+Le branchement plateforme est conservé (`CompositeVerifier`, `dev:identity`,
+`docs/SEKUU.md`) mais inactif : Sekuu n'est pas disponible pour une durée
+indéterminée. Le jour où elle revient, re-pointer `SEKUU_*` et `AUTH_PROVIDER`
+— voir `docs/AUTH_LOCAL.md` §3.
 
 ### Exploiter
 

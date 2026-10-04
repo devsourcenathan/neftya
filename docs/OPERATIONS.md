@@ -12,7 +12,11 @@
 | API | Node 22, Fastify, un processus sans état |
 | Interface | fichiers statiques, servis par n'importe quoi |
 | Base | PostgreSQL 18 |
-| Identité, facturation, fichiers | **Sekuu Platform** — Neftya n'héberge rien de tout cela |
+| Identité, quotas, fichiers | **Neftya lui-même** — Sekuu Platform est mise de côté (voir `AUTH_LOCAL.md`) |
+
+L'API est sans état : les sessions sont des lignes de `refresh_sessions`, pas de
+la mémoire (seul le rate-limit d'auth est en mémoire). Un processus se remplace
+par un autre sans précaution, et se multiplie sans coordination.
 
 L'API est sans état : aucune session en mémoire, aucun fichier écrit, aucun travail de fond.
 Un processus se remplace par un autre sans précaution, et se multiplie sans coordination.
@@ -104,9 +108,9 @@ plainte à une ligne.
 - **le jeton**, ni aucun en-tête `authorization` ;
 - **le corps des requêtes** — un modèle de meuble n'apprend rien aujourd'hui, mais un jour
   un corps portera autre chose, et le journal le gardera des années ;
-- **l'email ou le nom** de qui appelle. Neftya ne les détient pas, et un journal est
-  exactement l'endroit où une copie d'utilisateur réapparaît sans que personne ne l'ait
-  décidé.
+- **l'email ou le nom** de qui appelle. L'identité étant locale, ils vivent en
+  base — et c'est une raison de plus pour ne pas les recopier dans les
+  journaux, où une copie finit par survivre à l'effacement du compte.
 
 Le `sub` de la plateforme y est, sous `user_id` : c'est un pseudonyme, il ne dit rien de la
 personne, et sans lui aucune enquête n'aboutit.
@@ -167,14 +171,14 @@ quelques kilooctets. Un fichier vide est le symptôme classique d'une sauvegarde
 
 | Symptôme | Première chose à regarder |
 | --- | --- |
-| Tout répond `401` | Le jeton porte-t-il `org` ? `switch-organization` a-t-il été appelé après `login` ? |
-| Tout répond `403` | L'organisation est-elle abonnée au produit `neftya` ? |
+| Tout répond `401` | Le jeton porte-t-il `org` ? Sinon, choisir une organisation (`POST /v1/auth/switch`). Un 401 répété après reconnexion : session révoquée (rejeu détecté) — se reconnecter. |
+| Tout répond `403` | Le rôle le permet-il ? `member` ne supprime pas, ne voit pas les coûts, n'invite pas. |
 | Un client ne voit pas ses projets | Le jeton porte-t-il **la bonne** organisation ? Le cloisonnement rend `404`, jamais les données d'autrui. |
 | `404` sur une ressource qui existe | C'est le comportement attendu entre organisations. Vérifier `organization_id` dans les journaux. |
 | `409` à la création | Quota `neftya_projects_max` atteint. En local : `organization_quotas`, modifiable par le propriétaire (`PUT /v1/auth/quotas`). |
 | `/ready` en `503` | La base. `/health` reste vert : le processus va bien. |
 | Un export sans `storage_object_id` | Storage était indisponible, ou aucune clé n'est configurée. L'export est intact. |
-| Déconnexions aléatoires | Deux rafraîchissements simultanés. Le rejeu d'un jeton de rafraîchissement révoque **toute** la session : c'est la détection de vol de la plateforme. |
+| Déconnexions aléatoires | Deux rafraîchissements simultanés : le second rejoue un jeton déjà tourné, et toute la session est révoquée. L'interface sérialise les siens ; deux onglets qui expirent ensemble peuvent encore se marcher dessus — se reconnecter suffit. |
 
 ### La révocation a quinze minutes de retard
 

@@ -6,8 +6,7 @@ import { ApiProvider, FileProvider, getSettings, useApi } from './api/projects.j
 import { createApiClient, createFileClient } from './api/client.js';
 import { PreferencesProvider } from './preferences/PreferencesContext.js';
 import { SessionProvider, useSession } from './sekuu/SessionContext.js';
-import { redirectToPortal } from './sekuu/session.js';
-import { Landing } from './landing/Landing.js';
+import { AuthScreens } from './sekuu/AuthScreens.js';
 import { Button, Card } from './ui/index.js';
 import { router } from './router.js';
 
@@ -46,7 +45,7 @@ export function App() {
 
 function Authenticated() {
   const { t } = useTranslation();
-  const { state, choose, token } = useSession();
+  const { state, choose, token, leave } = useSession();
 
   const api = useMemo(() => createApiClient(token), [token]);
   const files = useMemo(() => createFileClient(token), [token]);
@@ -59,9 +58,9 @@ function Authenticated() {
     );
   }
 
-  // Un visiteur non connecté voit la page publique, pas un message d'erreur. La connexion
-  // et l'inscription vivent sur le portail de la plateforme.
-  if (state.status === 'anonymous') return <Landing />;
+  // Un visiteur non connecté voit l'entrée — connexion ou inscription — pas un
+  // message d'erreur. Les deux vivent ici, en local.
+  if (state.status === 'anonymous') return <AuthScreens />;
 
   if (state.status === 'unreachable') {
     return (
@@ -98,12 +97,8 @@ function Authenticated() {
           </ul>
 
           {state.session.organizations.length === 0 && (
-            <Button
-              tone="primary"
-              className="mt-4 w-full"
-              onClick={() => redirectToPortal('subscribe')}
-            >
-              {t('auth.subscribe')}
+            <Button tone="primary" className="mt-4 w-full" onClick={() => void leave()}>
+              {t('account.signOut')}
             </Button>
           )}
         </Card>

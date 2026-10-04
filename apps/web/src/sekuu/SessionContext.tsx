@@ -8,10 +8,11 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import {
+  ApiUnreachable,
   NotSignedIn,
-  PlatformUnreachable,
   openSession,
   refresh,
+  signOut,
   switchOrganization,
   type Session,
 } from './session.js';
@@ -45,6 +46,10 @@ interface SessionApi {
   choose: (organizationId: string) => Promise<boolean>;
   /** Rend un jeton frais, en rafraîchissant s'il est sur le point d'expirer. */
   token: () => Promise<string>;
+  /** Adopte une session issue de l'inscription ou de la connexion. */
+  enter: (session: Session) => void;
+  /** Se déconnecter : révoque côté API, oublie ici, retombe anonyme. */
+  leave: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionApi | null>(null);
@@ -74,7 +79,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
         // Sans ce cas, un `fetch` en échec laissait l'application sur « Chargement… »
         // indéfiniment, sans rien dire.
-        if (error instanceof PlatformUnreachable) {
+        if (error instanceof ApiUnreachable) {
           setState({
             status: 'unreachable',
             retry: () => setAttempt((previous) => previous + 1),
@@ -106,7 +111,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           return false;
         }
 
-        if (error instanceof PlatformUnreachable) return false;
+        if (error instanceof ApiUnreachable) return false;
 
         throw error;
       }
@@ -133,7 +138,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const api = useMemo<SessionApi>(
-    () => ({ state, choose, token }),
+    () => ({
+      state,
+      choose,
+      token,
+      enter: (session: Session) => setState(settle(session)),
+      leave: async () => {
+        const current =
+          state.status === 'ready' || state.status === 'choosing'
+            ? state.session
+            : null;
+        await signOut(current);
+        setState({ status: 'anonymous' });
+      },
+    }),
     [state, choose, token],
   );
 

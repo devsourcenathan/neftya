@@ -12,13 +12,20 @@
     "redo": "Redo"
   },
   "auth": {
-    "required": "Sign in to Sekuu to use Neftya.",
+    "required": "Sign in to use Neftya.",
     "signIn": "Sign in",
     "chooseOrganization": "Choose your organisation.",
-    "subscribe": "Subscribe to Neftya",
     "chooseHint": "Your projects belong to an organisation.",
-    "unreachable": "Sekuu is unreachable",
-    "unreachableHint": "Check your connection. Your session has not expired — the platform did not answer."
+    "unreachable": "The API is unreachable",
+    "unreachableHint": "Check your connection. Your session has not expired; the server did not answer.",
+    "tagline": "Your furniture, your plans, your workshop.",
+    "createAccount": "Create an account",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "Twelve characters at least.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "organizationName": "Workshop name"
   },
   "state": {
     "loading": "Loading…",
@@ -273,33 +280,6 @@
     "CA": "Canada",
     "US": "United States"
   },
-  "landing": {
-    "createAccount": "Create an account",
-    "start": "Get started",
-    "haveAccount": "I already have an account",
-    "headline": "From the piece your client shows you to the cut plan, without modelling anything.",
-    "subhead": "Set the dimensions and Neftya recomputes the part sizes, the cut plan, the hardware and the quote. Whole millimetres throughout, and everything recalculates.",
-    "platformNote": "Signing in happens on the Sekuu portal: Neftya never sees your password.",
-    "previewNote": "This drawing is computed live by the engine, not a screenshot.",
-    "previewAlt": "Dimensioned front view of a bookcase",
-    "features": {
-      "dimensions": {
-        "title": "Dimensions that add up",
-        "body": "Every inner width, thickness and clearance: the chain sums to the overall size, to the millimetre, checked by tests across thousands of configurations."
-      },
-      "cutplan": {
-        "title": "A cut plan a saw can follow",
-        "body": "Through cuts, kerf reserved, 10 mm trimmed off each edge: what comes out is what a panel saw can actually do."
-      },
-      "quote": {
-        "title": "A quote that does not lie",
-        "body": "Neftya invents no prices. You enter yours once; while any is missing, no total is shown."
-      }
-    },
-    "honestTitle": "What Neftya does not do yet",
-    "honestBody": "No image analysis, no assistant: you start from a template and adjust it. The engine builds carcasses — shelves, drawers, doors — and nothing else: no curves, no angles, no drilling positions. No piece designed here has been cut by a joiner yet; that is the next step, and it will decide the rest.",
-    "footer": "Neftya — a Sekuu product."
-  },
   "nav": {
     "projects": "Projects",
     "tagline": "Technical design",
@@ -347,8 +327,6 @@
     "pull_shell": "shell recess"
   },
   "account": {
-    "profile": "My account",
-    "subscription": "My subscription",
     "signOut": "Sign out",
     "switchTo": "Switch organisation",
     "switchFailed": "Could not switch. Your access may have been revoked."

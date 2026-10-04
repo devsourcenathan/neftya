@@ -1,21 +1,25 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { openSession, refresh, forgetOrganization } from './session.js';
+import {
+  forgetOrganization,
+  login,
+  openSession,
+  refresh,
+  register,
+  signOut,
+  switchOrganization,
+} from './session.js';
 
 /**
- * L'ouverture de session — les deux pièges du contrat Identity.
+ * La session locale — inscription, connexion, rotation, choix d'organisation.
  *
- * Ces deux points figuraient dans la liste de contrôle de SEKUU.md §10 sans test, donc
- * sans preuve. Ils sont tous les deux du genre qui marche à la main et casse en charge :
+ * Deux invariants portent tout, comme avant avec Sekuu :
  *
- * 1. **Un seul rafraîchissement à la fois.** Le jeton de rafraîchissement ne se rejoue
- *    pas — le rejouer révoque la session entière, c'est la détection de vol et elle est
- *    volontairement brutale. Deux appels concurrents déconnectent l'utilisateur, ce qui
- *    arrive dès qu'une page lance deux requêtes au chargement.
- * 2. **`switch-organization` enchaîné.** Un jeton frais ne porte pas d'organisation.
- *    Sans l'enchaînement, Neftya voit un jeton valide, signé, non expiré, et refuse tout.
- *
- * @see docs/SEKUU.md §10
+ * 1. **Un seul rafraîchissement à la fois.** Le jeton tourne à chaque usage :
+ *    deux appels concurrents dont le second rejoue l'ancien révoqueraient
+ *    toute la session côté API.
+ * 2. **Le choix d'organisation survit, le jeton non.** Le rafraîchissement
+ *    dort dans `localStorage`, l'accès en mémoire.
  */
 
 const originalFetch = globalThis.fetch;
@@ -31,23 +35,9 @@ function token(claims: Record<string, unknown>): string {
 }
 
 const ORGANIZATIONS = [
-  { id: 'org-1', name: 'Atelier Ngo', slug: 'ngo', roles: ['owner'] },
-  { id: 'org-2', name: 'Atelier Fouda', slug: 'fouda', roles: ['member'] },
+  { id: 'org-1', name: 'Atelier Ngo', slug: 'ngo', role: 'owner' },
+  { id: 'org-2', name: 'Atelier Fouda', slug: 'fouda', role: 'member' },
 ];
-
-const body = (accessToken: string, organizations = ORGANIZATIONS) => ({
-  data: {
-    access_token: accessToken,
-    organizations,
-    user: {
-      id: 'u1',
-      first_name: 'Amina',
-      last_name: 'Ngo',
-      email: 'amina@example.test',
-      language: 'fr',
-    },
-  },
-});
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -55,21 +45,47 @@ const json = (payload: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   });
 
-/** Compte les appels par point d'accès, pour pouvoir dire « une fois », pas « au moins une ». */
-function identity(options: {
+function api(options: {
+  register?: () => Response | Promise<Response>;
+  login?: () => Response | Promise<Response>;
   refresh?: () => Response | Promise<Response>;
   switch?: () => Response | Promise<Response>;
+  logout?: () => Response | Promise<Response>;
 }) {
-  const calls = { refresh: 0, switch: 0 };
+  const calls = { register: 0, login: 0, refresh: 0, switch: 0, logout: 0 };
   const fetcher = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.includes('/auth/refresh')) {
-      calls.refresh += 1;
-      return options.refresh?.() ?? json(body(token({})));
+    if (url.includes('/v1/auth/register')) {
+      calls.register += 1;
+      return (
+        options.register?.() ??
+        json({ success: true, data: freshSession('org-1', [ORGANIZATIONS[0]!]) })
+      );
     }
-    if (url.includes('/auth/switch-organization')) {
+    if (url.includes('/v1/auth/login')) {
+      calls.login += 1;
+      return (
+        options.login?.() ??
+        json({ success: true, data: freshSession(null, ORGANIZATIONS) })
+      );
+    }
+    if (url.includes('/v1/auth/refresh')) {
+      calls.refresh += 1;
+      return (
+        options.refresh?.() ??
+        json({ success: true, data: freshSession('org-1', [ORGANIZATIONS[0]!]) })
+      );
+    }
+    if (url.includes('/v1/auth/switch')) {
       calls.switch += 1;
-      return options.switch?.() ?? json(body(token({ org: 'org-1' })));
+      return (
+        options.switch?.() ??
+        json({ success: true, data: freshSession('org-1', ORGANIZATIONS) })
+      );
+    }
+    if (url.includes('/v1/auth/logout')) {
+      calls.logout += 1;
+      return options.logout?.() ?? json({ success: true, data: { loggedOut: true } });
     }
     throw new Error(`Appel inattendu : ${url}`);
   });
@@ -77,14 +93,25 @@ function identity(options: {
   return calls;
 }
 
-/**
- * Un `localStorage` de substitution, posé à la main.
- *
- * Celui de happy-dom est inutilisable sous Node 25, qui expose son propre `localStorage`
- * expérimental et le laisse sans méthodes quand aucun fichier n'est configuré. Le stocker
- * ici dans une `Map` rend le test indépendant de ce différend, et le choix d'organisation
- * est de toute façon la seule chose qu'on y lit.
- */
+function freshSession(
+  organizationId: string | null,
+  organizations: typeof ORGANIZATIONS,
+) {
+  return {
+    accessToken: token({ org: organizationId }),
+    refreshToken: 'rafraichissement-opaque',
+    expiresIn: 900,
+    user: {
+      id: 'u1',
+      email: 'amina@example.test',
+      firstName: 'Amina',
+      lastName: 'Ngo',
+    },
+    organizations,
+    organizationId,
+  };
+}
+
 beforeEach(() => {
   const store = new Map<string, string>();
   Object.defineProperty(window, 'localStorage', {
@@ -106,10 +133,49 @@ afterEach(async () => {
   // Le rafraîchissement en cours est un état de module : le laisser en vol ferait réussir
   // ou échouer le test suivant selon l'ordre, ce qui est la pire espèce de test.
   //
-  // **Avant** de rendre le vrai `fetch`, sans quoi ce drainage sort sur le réseau et va
-  // chercher `identity.sekuu.com` pour de bon — ce qu'aucun test ne doit faire.
+  // **Avant** de rendre le vrai `fetch`, sans quoi ce drainage sort sur le réseau.
+  window.localStorage.setItem('neftya.refreshToken', 'drainage');
   await refresh().catch(() => {});
+  window.localStorage.clear();
   globalThis.fetch = originalFetch;
+});
+
+describe('inscription et connexion', () => {
+  it('adopte la session rendue par l’inscription', async () => {
+    api({});
+    const session = await register({
+      email: 'amina@example.test',
+      password: 'mot-de-passe-long',
+      firstName: 'Amina',
+      lastName: 'Ngo',
+      organizationName: 'Atelier Ngo',
+    });
+
+    expect(session.organizationId).toBe('org-1');
+    expect(window.localStorage.getItem('neftya.refreshToken')).toBe(
+      'rafraichissement-opaque',
+    );
+  });
+
+  it('rejette des identifiants refusés avec le message de l’API', async () => {
+    api({
+      login: () =>
+        json(
+          {
+            success: false,
+            error: {
+              code: 'UNAUTHENTICATED',
+              message: 'Email ou mot de passe incorrect.',
+            },
+          },
+          401,
+        ),
+    });
+
+    await expect(
+      login({ email: 'amina@example.test', password: 'mauvais-mot-de-passe' }),
+    ).rejects.toThrow('Email ou mot de passe incorrect.');
+  });
 });
 
 describe('un seul rafraîchissement à la fois', () => {
@@ -119,13 +185,17 @@ describe('un seul rafraîchissement à la fois', () => {
       release = resolve;
     });
 
-    const calls = identity({
+    const calls = api({
       refresh: async () => {
         await held;
-        return json(body(token({ org: 'org-1' })));
+        return json({
+          success: true,
+          data: freshSession('org-1', [ORGANIZATIONS[0]!]),
+        });
       },
     });
 
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-stocke');
     const [first, second] = [refresh(), refresh()];
     release?.();
     const [a, b] = await Promise.all([first, second]);
@@ -136,7 +206,8 @@ describe('un seul rafraîchissement à la fois', () => {
   });
 
   it('rafraîchit de nouveau une fois le précédent retombé', async () => {
-    const calls = identity({});
+    const calls = api({});
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-stocke');
 
     await refresh();
     await refresh();
@@ -145,71 +216,90 @@ describe('un seul rafraîchissement à la fois', () => {
     expect(calls.refresh).toBe(2);
   });
 
-  it('ne reste pas bloqué après un échec', async () => {
-    const calls = identity({ refresh: () => json({ message: 'non' }, 401) });
+  it('retombe anonyme quand l’API révoque, et oublie le jeton', async () => {
+    api({ refresh: () => json({ message: 'non' }, 401) });
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-vole');
 
     await expect(refresh()).rejects.toThrow();
-    await expect(refresh()).rejects.toThrow();
-
-    // Un verrou qu'un échec ne libère pas interdirait toute reconnexion sans recharger
-    // la page.
-    expect(calls.refresh).toBe(2);
+    expect(window.localStorage.getItem('neftya.refreshToken')).toBeNull();
   });
 });
 
-describe('switch-organization enchaîné après le rafraîchissement', () => {
-  it('enchaîne quand il n’y a qu’une organisation', async () => {
-    const calls = identity({
-      refresh: () => json(body(token({}), [ORGANIZATIONS[0]!])),
+describe('choix d’organisation', () => {
+  it('reprend le choix précédent quand il est toujours valide', async () => {
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-stocke');
+    window.localStorage.setItem('neftya.organization', 'org-2');
+    const calls = api({
+      refresh: () => json({ success: true, data: freshSession(null, ORGANIZATIONS) }),
+      switch: () => json({ success: true, data: freshSession('org-2', ORGANIZATIONS) }),
     });
 
     const session = await openSession();
 
-    // Sans cet appel, le jeton est valide et l'API refuse tout — le piège numéro un.
     expect(calls.switch).toBe(1);
-    expect(session.organizationId).toBe('org-1');
-  });
-
-  it('n’enchaîne pas quand le jeton porte déjà une organisation', async () => {
-    const calls = identity({ refresh: () => json(body(token({ org: 'org-2' }))) });
-
-    const session = await openSession();
-
-    // Un appel de trop écrirait un choix que personne n'a fait.
-    expect(calls.switch).toBe(0);
     expect(session.organizationId).toBe('org-2');
   });
 
   it('laisse le choix à l’utilisateur quand il y en a plusieurs', async () => {
-    const calls = identity({});
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-stocke');
+    const calls = api({
+      refresh: () => json({ success: true, data: freshSession(null, ORGANIZATIONS) }),
+    });
 
     const session = await openSession();
 
     expect(calls.switch).toBe(0);
-    // `null` est la bonne réponse : choisir pour quelqu'un l'enfermerait dans une
-    // organisation qu'il n'a pas demandée.
     expect(session.organizationId).toBeNull();
   });
 
-  it('reprend le choix précédent quand il est toujours valide', async () => {
-    window.localStorage.setItem('neftya.organization', 'org-2');
-    const calls = identity({ switch: () => json(body(token({ org: 'org-2' }))) });
+  it('est anonyme sans jeton stocké', async () => {
+    api({});
+    await expect(openSession()).rejects.toThrow('Aucune session locale.');
+  });
 
-    const session = await openSession();
+  it('change d’organisation et mémorise le choix', async () => {
+    const calls = api({});
+    const current = await register({
+      email: 'amina@example.test',
+      password: 'mot-de-passe-long',
+      firstName: 'Amina',
+      lastName: 'Ngo',
+      organizationName: 'Atelier Ngo',
+    });
+
+    const next = await switchOrganization(current, 'org-2');
 
     expect(calls.switch).toBe(1);
-    expect(session.organizationId).toBe('org-2');
+    expect(next.organizationId).toBe('org-1');
+    expect(window.localStorage.getItem('neftya.organization')).toBe('org-2');
+  });
+});
+
+describe('déconnexion', () => {
+  it('révoque côté API puis oublie tout', async () => {
+    const calls = api({});
+    const current = await register({
+      email: 'amina@example.test',
+      password: 'mot-de-passe-long',
+      firstName: 'Amina',
+      lastName: 'Ngo',
+      organizationName: 'Atelier Ngo',
+    });
+    await signOut(current);
+
+    expect(calls.logout).toBe(1);
+    expect(window.localStorage.getItem('neftya.refreshToken')).toBeNull();
   });
 
-  it('ignore un choix qui n’est plus dans la liste', async () => {
-    window.localStorage.setItem('neftya.organization', 'org-partie');
-    const calls = identity({});
+  it('oublie quand même si l’API ne répond pas', async () => {
+    api({
+      logout: () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+    window.localStorage.setItem('neftya.refreshToken', 'jeton-stocke');
 
-    const session = await openSession();
-
-    // Quitter une organisation ne doit pas enfermer dans une erreur au prochain
-    // chargement.
-    expect(calls.switch).toBe(0);
-    expect(session.organizationId).toBeNull();
+    await expect(signOut(null)).resolves.toBeUndefined();
+    expect(window.localStorage.getItem('neftya.refreshToken')).toBeNull();
   });
 });
