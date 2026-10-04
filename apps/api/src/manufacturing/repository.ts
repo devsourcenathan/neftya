@@ -124,6 +124,32 @@ export class ManufacturingRepository {
       .executeTakeFirst();
     return row ? toExport(row) : null;
   }
+
+  /** Enregistre l'issue d'un envoi — y compris l'échec, qui se renvoie. */
+  async recordNotification(input: {
+    organizationId: string;
+    projectId: string;
+    createdBy: string;
+    toEmail: string;
+    subject: string;
+    status: 'sent' | 'failed';
+    error?: string;
+  }): Promise<void> {
+    await this.db
+      .insertInto('notifications_outbox')
+      .values({
+        id: uuidv7(),
+        organization_id: input.organizationId,
+        project_id: input.projectId,
+        created_by: input.createdBy,
+        to_email: input.toEmail,
+        subject: input.subject,
+        status: input.status,
+        error: input.error ?? null,
+        sent_at: input.status === 'sent' ? new Date() : null,
+      })
+      .execute();
+  }
 }
 
 function toExport(row: {

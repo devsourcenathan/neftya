@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { createDatabase, migrate } from './db/index.js';
 import { SekuuAI } from './sekuu/ai.js';
 import { LocalAI } from './ai/local-ai.js';
+import { SmtpMailer } from './notify/mailer.js';
 import { SekuuStorage } from './sekuu/storage.js';
 import { LocalFileStore } from './storage/local-store.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
@@ -43,6 +44,10 @@ if (!jwtSecret || jwtSecret.length < 32) {
     "Variable d'environnement manquante ou trop courte : NEFTYA_JWT_SECRET (32 caractères au moins).",
   );
 }
+
+// Sans SMTP, l'envoi de devis répond 503 — comme l'assistant sans modèle.
+// Un devis non envoyé n'est pas un devis perdu : la route ne fait rien sans mailer.
+const smtpHost = process.env['NEFTYA_SMTP_HOST'];
 
 const app = buildApp({
   db,
@@ -87,6 +92,18 @@ const app = buildApp({
     audience: required('SEKUU_AUDIENCE'),
   }),
   jwtSecret,
+  ...(smtpHost
+    ? {
+        mailer: new SmtpMailer({
+          host: smtpHost,
+          port: Number(process.env['NEFTYA_SMTP_PORT'] ?? 587),
+          secure: process.env['NEFTYA_SMTP_SECURE'] === 'true',
+          user: required('NEFTYA_SMTP_USER'),
+          password: required('NEFTYA_SMTP_PASSWORD'),
+          from: process.env['NEFTYA_SMTP_FROM'] ?? required('NEFTYA_SMTP_USER'),
+        }),
+      }
+    : {}),
 });
 
 const applied = await migrate(db);

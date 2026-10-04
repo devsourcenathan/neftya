@@ -208,7 +208,13 @@
     "panelsUsed_other": "{{count}} boards",
     "drilling": "Drilling",
     "noDrilling": "Nothing to drill on this piece: no adjustable shelf, no door, no drawer, no divider.",
-    "downloadDrilling": "Download the drilling plan (DXF)"
+    "downloadDrilling": "Download the drilling plan (DXF)",
+    "emailTitle": "Send to the client",
+    "emailTo": "Client email",
+    "emailMessage": "Attached message",
+    "emailSend": "Send the quotation",
+    "emailSent": "Quotation sent to {{to}}.",
+    "emailFailed": "Could not send."
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",

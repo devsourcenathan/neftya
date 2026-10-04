@@ -28,6 +28,7 @@ import {
 import { CompositeVerifier, LocalVerifier } from './auth/local-verifier.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
 import type { AiService } from './ai/ai-service.js';
+import type { Mailer } from './notify/mailer.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
 import type { FileStore, Uploader } from './storage/file-store.js';
 
@@ -47,6 +48,8 @@ export interface AppDependencies {
   storage?: Uploader;
   /** Absent quand la relecture n'est pas câblée : le téléchargement rend 404. */
   files?: Pick<FileStore, 'download'>;
+  /** Absent quand l'envoi n'est pas configuré : la route rend 503, comme l'assistant. */
+  mailer?: Mailer;
   /**
    * Absent tant qu'aucun modèle n'est configuré.
    *
@@ -153,6 +156,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       manufacturing,
       ...(dependencies.storage ? { storage: dependencies.storage } : {}),
       ...(dependencies.files ? { files: dependencies.files } : {}),
+      ...(dependencies.mailer ? { mailer: dependencies.mailer } : {}),
     });
   });
 

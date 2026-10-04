@@ -208,7 +208,13 @@
     "panelsUsed_other": "{{count}} panneaux",
     "drilling": "Perçages",
     "noDrilling": "Ce meuble n'a rien à percer : ni étagère amovible, ni porte, ni tiroir, ni séparateur.",
-    "downloadDrilling": "Télécharger le plan de perçage (DXF)"
+    "downloadDrilling": "Télécharger le plan de perçage (DXF)",
+    "emailTitle": "Envoyer au client",
+    "emailTo": "Email du client",
+    "emailMessage": "Message joint",
+    "emailSend": "Envoyer le devis",
+    "emailSent": "Devis envoyé à {{to}}.",
+    "emailFailed": "Envoi impossible."
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",

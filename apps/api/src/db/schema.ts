@@ -209,6 +209,25 @@ export interface AiGenerationsTable {
   updated_at: UpdatedAt;
 }
 
+/**
+ * Notifications sortantes — voir `0009_outbox.sql`.
+ *
+ * La ligne est l'audit : un envoi raté s'y relit et s'y renvoie, il ne s'y
+ * perd pas.
+ */
+export interface NotificationsOutboxTable {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  created_by: string;
+  to_email: string;
+  subject: string;
+  status: 'sent' | 'failed';
+  error: string | null;
+  created_at: CreatedAt;
+  sent_at: Date | null;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -223,4 +242,5 @@ export interface Database {
   organization_quotas: OrganizationQuotasTable;
   files: FilesTable;
   ai_generations: AiGenerationsTable;
+  notifications_outbox: NotificationsOutboxTable;
 }

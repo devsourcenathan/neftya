@@ -16,6 +16,7 @@ import {
 import { DownloadButton } from '../components/DownloadButton.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
+import { QuotationEmail } from './QuotationEmail.js';
 import { accessoryLabel } from './accessory-label.js';
 import { usePreferences } from '../preferences/PreferencesContext.js';
 import { DataPoint, Pipeline, SectionTitle } from '../ui/index.js';
@@ -269,6 +270,8 @@ export function Manufacturing({ projectId }: { projectId: string }) {
                   count: data.quotation.missing.length,
                 })}
           </p>
+
+          <QuotationEmail projectId={projectId} />
         </section>
       )}
 

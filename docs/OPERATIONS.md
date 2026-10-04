@@ -43,6 +43,10 @@ manque : échouer à la première requête coûte plus cher que refuser de déma
 | `NEFTYA_DATA_DIR` | fichiers déposés (`./data` par défaut) | `./data` |
 | `OPENAI_API_KEY` | modèle de l'assistant | assistant désactivé (`503`) |
 | `OPENAI_BASE_URL` / `OPENAI_MODEL` | relais et modèle | OpenAI, `gpt-4o-mini` |
+| `NEFTYA_SMTP_HOST` | relais SMTP des devis | envoi désactivé (`503`) |
+| `NEFTYA_SMTP_PORT` / `NEFTYA_SMTP_SECURE` | port et TLS | `587`, `false` |
+| `NEFTYA_SMTP_USER` / `NEFTYA_SMTP_PASSWORD` | authentification SMTP | refus de démarrer **si** `HOST` est posé |
+| `NEFTYA_SMTP_FROM` | expéditeur affiché | `NEFTYA_SMTP_USER` |
 | `NEFTYA_ALLOWED_ORIGINS` | origines navigateur admises | **aucune** — l'interface ne peut pas appeler l'API |
 | `PORT`, `HOST` | écoute | 3000, `0.0.0.0` |
 

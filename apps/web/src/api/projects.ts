@@ -140,6 +140,12 @@ export const savePrice = (
   body: { reference: string; amountMinor: number; currency: string },
 ) => api<{ reference: string }>('/v1/prices', { method: 'PUT', body });
 
+export const sendQuotationEmail = (
+  api: ApiClient,
+  id: string,
+  body: { to: string; message?: string },
+) => api<{ to: string; status: 'sent' }>(`/v1/projects/${id}/quotation/email`, { method: 'POST', body });
+
 /** Un nom de fichier sans accent ni espace : il traverse des systèmes qui n'aiment ni l'un ni l'autre. */
 export function fileNameOf(projectName: string, suffix: string): string {
   const ascii = projectName

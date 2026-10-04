@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { success } from '@neftya/contracts';
+import { quotationEmailBody, success } from '@neftya/contracts';
 import {
   cutPlanPdf,
   drillPlanDxf,
@@ -10,11 +10,18 @@ import {
   type ViewName,
 } from '@neftya/drawing';
 import { build } from '@neftya/engine';
-import { paperSizeFor, type Money } from '@neftya/units';
-import { forbidden, notFound, validationFailed } from '../http/errors.js';
+import { formatMoney, paperSizeFor, type Money } from '@neftya/units';
+import {
+  forbidden,
+  notFound,
+  serviceUnavailable,
+  validationFailed,
+} from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
 import { StorageUnavailable } from '../sekuu/storage.js';
+import type { Mailer } from '../notify/mailer.js';
+import { MailerUnavailable } from '../notify/mailer.js';
 import type { FileStore, Uploader } from '../storage/file-store.js';
 import type { ProjectRepository } from '../projects/repository.js';
 import type { SettingsRepository } from '../settings/repository.js';
@@ -47,6 +54,8 @@ export interface ManufacturingDependencies {
   storage?: Uploader;
   /** Absent quand la relecture n'est pas câblée : le téléchargement rend 404. */
   files?: Pick<FileStore, 'download'>;
+  /** Absent quand l'envoi n'est pas configuré : la route rend 503, comme l'assistant. */
+  mailer?: Mailer;
 }
 
 /**
@@ -72,7 +81,7 @@ export function registerManufacturingRoutes(
   app: FastifyInstance,
   dependencies: ManufacturingDependencies,
 ): void {
-  const { projects, settings, manufacturing, storage, files } = dependencies;
+  const { projects, settings, manufacturing, storage, files, mailer } = dependencies;
 
   async function planFor(request: FastifyRequest) {
     const context = sekuuOf(request);
@@ -350,6 +359,83 @@ export function registerManufacturingRoutes(
       currency: price.currency,
     });
   });
+
+  /**
+   * Envoyer le devis au client, avec le plan en pièce jointe.
+   *
+   * Le destinataire est le **client de l'artisan** : aucun compte, aucune
+   * invitation — un email. D'où la permission `costs.read` : un devis porte
+   * les prix, et qui ne les voit pas ne les envoie pas.
+   *
+   * L'envoi est synchrone et son issue est enregistrée, y compris l'échec :
+   * un devis non parti se renvoie, il ne se perd pas.
+   */
+  app.post('/v1/projects/:id/quotation/email', async (request, reply) => {
+    const context = sekuuOf(request);
+    requirePermission(request, 'costs.read');
+
+    if (!mailer) {
+      throw serviceUnavailable(
+        "L'envoi d'emails n'est pas configuré sur cette installation.",
+      );
+    }
+
+    const body = quotationEmailBody.safeParse(request.body);
+    if (!body.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of body.error.issues) {
+        (details[issue.path.join('.') || '_'] ??= []).push(issue.message);
+      }
+      throw validationFailed(details);
+    }
+
+    const { plan, project, settings: organizationSettings } = await planFor(request);
+    const pdf = renderPlan(plan.nesting, project.name, organizationSettings.country);
+    const locale = context.language === 'en' ? 'en' : 'fr';
+    const subject =
+      locale === 'en' ? `Quotation — ${project.name}` : `Devis — ${project.name}`;
+    const text = quotationText(plan.quotation, project.name, body.data.message, locale);
+
+    try {
+      await mailer.send({
+        to: body.data.to,
+        subject,
+        text,
+        attachments: [
+          {
+            filename: `${fileNameOf(project.name)}.pdf`,
+            content: pdf,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+    } catch (error) {
+      await manufacturing.recordNotification({
+        organizationId: context.organizationId,
+        projectId: project.id,
+        createdBy: context.userId,
+        toEmail: body.data.to,
+        subject,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'raison inconnue',
+      });
+      if (!(error instanceof MailerUnavailable)) throw error;
+      throw serviceUnavailable("Le devis n'a pas pu être envoyé. Réessayez.");
+    }
+
+    await manufacturing.recordNotification({
+      organizationId: context.organizationId,
+      projectId: project.id,
+      createdBy: context.userId,
+      toEmail: body.data.to,
+      subject,
+      status: 'sent',
+    });
+
+    return reply
+      .status(201)
+      .send(success({ to: body.data.to, status: 'sent' as const }));
+  });
 }
 
 function renderPlan(
@@ -386,6 +472,42 @@ function parseId(request: FastifyRequest): string {
   const params = identifier.safeParse(request.params);
   if (!params.success) throw notFound('Projet introuvable.');
   return params.data.id;
+}
+
+/**
+ * Le devis en texte brut : une ligne par poste, puis le total — ou l'aveu
+ * qu'il manque des prix. Un total partiel se lirait comme un total, et un
+ * client ne relit pas un nombre qui a l'air rond.
+ */
+function quotationText(
+  quotation: {
+    lines: { reference: string; quantity: number; total: Money | null }[];
+    total: Money | null;
+    currency: string;
+    missing: string[];
+  },
+  projectName: string,
+  message: string | undefined,
+  locale: string,
+): string {
+  const lines = quotation.lines.map((line) =>
+    line.total
+      ? `- ${line.reference} × ${line.quantity} : ${formatMoney(line.total, locale)}`
+      : `- ${line.reference} × ${line.quantity} : ${locale === 'en' ? 'price missing' : 'prix manquant'}`,
+  );
+  const total = quotation.total
+    ? `${locale === 'en' ? 'Total' : 'Total'} : ${formatMoney(quotation.total, locale)}`
+    : locale === 'en'
+      ? 'Incomplete quotation: some prices are missing.'
+      : 'Devis incomplet : il manque des prix.';
+  return [
+    locale === 'en' ? `Quotation for ${projectName}` : `Devis pour ${projectName}`,
+    '',
+    ...lines,
+    '',
+    total,
+    ...(message ? ['', message] : []),
+  ].join('\n');
 }
 
 /** Un nom de fichier sans accent ni espace : il traverse des systèmes qui n'aiment ni l'un ni l'autre. */

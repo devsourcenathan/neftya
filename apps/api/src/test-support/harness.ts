@@ -10,6 +10,7 @@ import { buildApp } from '../app.js';
 import type { Database } from '../db/schema.js';
 import type { LogSink } from '../observability/logging.js';
 import type { AiService } from '../ai/ai-service.js';
+import type { Mailer } from '../notify/mailer.js';
 import type { FileStore, Uploader } from '../storage/file-store.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
 import { LocalFileStore } from '../storage/local-store.js';
@@ -85,6 +86,8 @@ export interface HarnessOptions {
   storage?: Uploader | 'local';
   /** Relecture des fichiers déposés. Absente par défaut : le téléchargement rend 404. */
   files?: Pick<FileStore, 'download'>;
+  /** Envoi des devis. Absent par défaut : la route rend 503, comme sans SMTP. */
+  mailer?: Mailer;
   /**
    * Secret HS256 des jetons locaux. Fourni par défaut pour que les routes
    * `/v1/auth/*` soient montées dans tous les tests — sans lui, elles ne
@@ -170,6 +173,7 @@ export async function createHarness(
     ...(aiService ? { ai: aiService } : {}),
     ...(storage ? { storage } : {}),
     ...(files ? { files } : {}),
+    ...(options.mailer ? { mailer: options.mailer } : {}),
     jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
     verifier: new TokenVerifier({
       jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
@@ -210,7 +214,7 @@ export async function createHarness(
       authorization: `Bearer ${await token(options)}`,
     }),
     truncate: async () => {
-      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users, files, ai_generations CASCADE`.execute(
+      await sql`TRUNCATE projects, organization_settings, material_prices, project_exports, templates, refresh_sessions, invitations, memberships, organization_quotas, organizations, users, files, ai_generations, notifications_outbox CASCADE`.execute(
         db,
       );
     },

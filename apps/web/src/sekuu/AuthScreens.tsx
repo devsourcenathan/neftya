@@ -142,7 +142,7 @@ export function AuthScreens() {
             </p>
           )}
 
-          <Button tone="primary" className="w-full" disabled={busy}>
+          <Button tone="primary" className="w-full" disabled={busy} type="submit">
             {busy
               ? t('state.loading')
               : t(mode === 'login' ? 'auth.signIn' : 'auth.createAccount')}

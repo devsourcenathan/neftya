@@ -1866,3 +1866,20 @@ du mois — sans table de compteur qui dériverait.
 **Ce qu'on reprend** : nommer un modèle (plus de registre plateforme),
 plafond de dépense à surveiller côté facture fournisseur. `temperature: 0`,
 sortie courte, pas de vision : comme avant, l'image reste hors périmètre.
+
+---
+
+## 2026-10-04 — Devis envoyés en local, avec outbox
+
+**Décision.** `POST /v1/projects/:id/quotation/email` envoie le devis et le
+plan joint par SMTP (nodemailer), avec une ligne d'outbox par tentative —
+`sent` comme `failed`. Permission `costs.read` : qui ne voit pas les prix ne
+les envoie pas.
+
+**Motif.** Notify n'a jamais été câblé : rien à remplacer, tout à écrire.
+L'outbox synchrone plutôt qu'une file : pas de travailleur à opérer, et un
+échec se relit et se renvoie au lieu de se perdre. Le jour où le volume
+l'exige, la table est déjà la file.
+
+**Sans SMTP, 503** — le même dégradé que l'assistant sans modèle. Le faux en
+mémoire dans les tests : aucun réseau, et tout est relisible.
