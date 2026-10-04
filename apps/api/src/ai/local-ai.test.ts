@@ -152,6 +152,55 @@ describe('extraire', () => {
       ai.read('01924f00-0000-7000-8000-00000000000b', generation.id),
     ).rejects.toBeInstanceOf(AiUnavailable);
   });
+
+  it('budgete large et bride la réflexion quand on le lui demande', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const ai = new LocalAI({
+      db: harness.db,
+      baseUrl: 'https://modele.test/v1',
+      apiKey: 'cle-de-test',
+      model: 'modele-de-test',
+      reasoningEffort: 'minimal',
+      fetch: (async (_input: unknown, init?: { body?: unknown }) => {
+        bodies.push(
+          JSON.parse(String((init as { body: string }).body)) as Record<
+            string,
+            unknown
+          >,
+        );
+        return completion(EXTRACTION);
+      }) as typeof globalThis.fetch,
+    });
+
+    await ai.extract(REQUEST);
+
+    // 500 a déjà fait perdre une réponse : la réflexion avait tout brûlé.
+    expect(bodies[0]?.['max_tokens']).toBe(2000);
+    expect(bodies[0]?.['reasoning_effort']).toBe('minimal');
+  });
+
+  it('omet la bride quand le relais ne la connaîtrait pas', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const ai = new LocalAI({
+      db: harness.db,
+      baseUrl: 'https://modele.test/v1',
+      apiKey: 'cle-de-test',
+      model: 'modele-de-test',
+      fetch: (async (_input: unknown, init?: { body?: unknown }) => {
+        bodies.push(
+          JSON.parse(String((init as { body: string }).body)) as Record<
+            string,
+            unknown
+          >,
+        );
+        return completion(EXTRACTION);
+      }) as typeof globalThis.fetch,
+    });
+
+    await ai.extract(REQUEST);
+
+    expect(bodies[0]).not.toHaveProperty('reasoning_effort');
+  });
 });
 
 describe('quota mensuel', () => {
@@ -224,7 +273,11 @@ describe('bout en bout par l’API', () => {
         headers: await wired.authorization(),
         payload: { text: 'une bibliothèque de 1800 sur 2000, deux compartiments' },
       });
-      expect(submit.statusCode).toBe(202);
+      // `200` et non `202` : l'extraction locale est synchrone, donc il ne reste rien à
+      // attendre — et la réponse porte déjà le modèle.
+      expect(submit.statusCode).toBe(200);
+      expect(submit.json().data.status).toBe('succeeded');
+      expect(submit.json().data.model).not.toBeNull();
 
       const read = await wired.app.inject({
         method: 'GET',

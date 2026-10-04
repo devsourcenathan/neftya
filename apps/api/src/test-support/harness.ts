@@ -79,6 +79,11 @@ export interface HarnessOptions {
    */
   ai?: AiService | ((db: Kysely<Database>) => AiService);
   /**
+   * Monter l'application **sans** vérifieur de plateforme, comme une installation qui a mis
+   * Sekuu de côté. Les jetons locaux restent reconnus, ceux de la plateforme non.
+   */
+  withoutSekuu?: boolean;
+  /**
    * Dépôt des exports. `'local'` branche le magasin sur disque (répertoire
    * temporaire, nettoyé à la fermeture) **avec** sa relecture : c'est le
    * montage de production, pas un doublon assemblé à la main.
@@ -175,12 +180,16 @@ export async function createHarness(
     ...(files ? { files } : {}),
     ...(options.mailer ? { mailer: options.mailer } : {}),
     jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
-    verifier: new TokenVerifier({
-      jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
-      issuer: ISSUER,
-      audience: AUDIENCE,
-      keyStore,
-    }),
+    ...(options.withoutSekuu
+      ? {}
+      : {
+          verifier: new TokenVerifier({
+            jwksUrl: 'https://identity.sekuu.test/.well-known/jwks.json',
+            issuer: ISSUER,
+            audience: AUDIENCE,
+            keyStore,
+          }),
+        }),
   });
   await app.ready();
 

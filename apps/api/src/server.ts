@@ -38,6 +38,11 @@ const localStore = new LocalFileStore({ dataDir, db });
 const openaiKey = process.env['OPENAI_API_KEY'];
 const aiKey = process.env['SEKUU_AI_API_KEY'];
 
+// Sekuu est facultatif : sans JWKS, seuls les jetons locaux sont reconnus. Exiger trois
+// variables de plateforme pour démarrer obligeait à en inventer, ce qui est pire que de
+// s'en passer — on ne sait plus si elles servent.
+const sekuuJwks = process.env['SEKUU_JWKS_URL'];
+
 const jwtSecret = process.env['NEFTYA_JWT_SECRET'];
 if (!jwtSecret || jwtSecret.length < 32) {
   throw new Error(
@@ -76,6 +81,7 @@ const app = buildApp({
           baseUrl: process.env['OPENAI_BASE_URL'] ?? 'https://api.openai.com/v1',
           apiKey: openaiKey,
           model: process.env['OPENAI_MODEL'] ?? 'gpt-4o-mini',
+          reasoningEffort: process.env['OPENAI_REASONING_EFFORT'] ?? 'minimal',
         }),
       }
     : aiKey
@@ -86,11 +92,15 @@ const app = buildApp({
           }),
         }
       : {}),
-  verifier: new TokenVerifier({
-    jwksUrl: required('SEKUU_JWKS_URL'),
-    issuer: required('SEKUU_ISSUER'),
-    audience: required('SEKUU_AUDIENCE'),
-  }),
+  ...(sekuuJwks
+    ? {
+        verifier: new TokenVerifier({
+          jwksUrl: sekuuJwks,
+          issuer: required('SEKUU_ISSUER'),
+          audience: required('SEKUU_AUDIENCE'),
+        }),
+      }
+    : {}),
   jwtSecret,
   ...(smtpHost
     ? {

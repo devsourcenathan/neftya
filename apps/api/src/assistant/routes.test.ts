@@ -73,6 +73,64 @@ describe('soumettre une description', () => {
     expect(response.json().data.model).toBeNull();
   });
 
+  it('rend le modèle tout de suite quand l’extraction est synchrone', async () => {
+    // Une extraction locale répond `succeeded` dès la soumission. Annoncer la réussite
+    // sans la porter obligeait l'appelant à sonder une génération déjà terminée — ou, s'il
+    // croyait la réponse, à n'afficher rien du tout.
+    answer = () => succeeded(USABLE);
+
+    const response = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/assistant/interpretations',
+      headers: await harness.authorization(),
+      payload: { text: 'une bibliothèque de 1800 sur 2000' },
+    });
+
+    // `200`, pas `202` : il n'y a plus rien à attendre.
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.status).toBe('succeeded');
+    expect(response.json().data.model.dimensions).toEqual({
+      widthMm: 1800,
+      heightMm: 2000,
+      depthMm: 400,
+    });
+  });
+
+  it('dit « inutilisable » dès la soumission, et pas « réussi »', async () => {
+    answer = () => succeeded({ ...USABLE, heightMm: 2 });
+
+    const response = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/assistant/interpretations',
+      headers: await harness.authorization(),
+      payload: { text: 'une bibliothèque de 1,80 m' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.status).toBe('unusable');
+    expect(response.json().data.problems).toHaveProperty('heightMm');
+  });
+
+  it('rend exactement la même ressource aux deux routes', async () => {
+    answer = () => succeeded(USABLE);
+
+    const submitted = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/assistant/interpretations',
+      headers: await harness.authorization(),
+      payload: { text: 'une bibliothèque de 1800 sur 2000, pour comparer' },
+    });
+
+    const read = await harness.app.inject({
+      method: 'GET',
+      url: `/v1/assistant/interpretations/${submitted.json().data.id}`,
+      headers: await harness.authorization(),
+    });
+
+    // Deux sérialisations d'une même ressource divergent toujours ; une seule ne peut pas.
+    expect(read.json().data).toEqual(submitted.json().data);
+  });
+
   it('facture une fois la même question, deux fois une autre', async () => {
     const keys: (string | undefined)[] = [];
     const ai = new SekuuAI({
@@ -237,7 +295,7 @@ describe('relire une interprétation', () => {
 });
 
 describe('ce que la plateforme refuse', () => {
-  it('traduit un quota épuisé en 503 qui nomme l’abonnement', async () => {
+  it('traduit un quota épuisé en 409, comme celui des projets', async () => {
     answer = () => json({ error: { code: 'AI_QUOTA_EXCEEDED' } }, 429);
 
     const response = await harness.app.inject({
@@ -247,7 +305,14 @@ describe('ce que la plateforme refuse', () => {
       payload: { text: 'une bibliothèque de 1800' },
     });
 
-    expect(response.statusCode).toBe(503);
+    /*
+     * Ce test disait `503`, et c'était le défaut : le message annonçait un quota épuisé
+     * pendant que le code annonçait un service indisponible. L'un invite à relever le
+     * plafond, l'autre à attendre — et une interface ne peut pas traiter deux fois le même
+     * refus si l'API le nomme de deux façons.
+     */
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('CONFLICT');
     expect(response.json().error.message).toContain('abonnement');
   });
 

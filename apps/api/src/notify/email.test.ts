@@ -167,3 +167,65 @@ describe('envoyer un devis', () => {
     }
   });
 });
+
+/**
+ * L'ordre des gardes **est** le message d'erreur.
+ *
+ * Le refus « l'envoi n'est pas configuré » venait en premier : une faute de frappe dans
+ * l'adresse recevait cette réponse-là, et le projet d'un autre atelier aussi. C'est vrai,
+ * et cela envoie chercher une configuration là où il y a une faute de frappe.
+ */
+describe('ce qui est signalé en premier, sans mailer', () => {
+  let bare: Harness;
+  let projectId: string;
+
+  beforeAll(async () => {
+    bare = await createHarness('test_envoi_ordre');
+    const created = await bare.app.inject({
+      method: 'POST',
+      url: '/v1/projects',
+      headers: await bare.authorization(),
+      payload: { name: 'Bibliothèque', model: MODEL },
+    });
+    projectId = created.json().data.id as string;
+  });
+
+  afterAll(async () => {
+    await bare.close();
+  });
+
+  it('une adresse malformée est une faute de l’appelant, pas une panne', async () => {
+    const response = await bare.app.inject({
+      method: 'POST',
+      url: `/v1/projects/${projectId}/quotation/email`,
+      headers: await bare.authorization(),
+      payload: { to: 'pas-une-adresse' },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('un projet qu’on ne possède pas reste introuvable', async () => {
+    const response = await bare.app.inject({
+      method: 'POST',
+      url: '/v1/projects/01924f00-0000-7000-8000-00000000dead/quotation/email',
+      headers: await bare.authorization(),
+      payload: { to: 'cliente@example.test' },
+    });
+
+    // Et toujours `404`, jamais `403` : un refus qui distingue confirmerait l'existence.
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('le 503 ne vient qu’en dernier', async () => {
+    const response = await bare.app.inject({
+      method: 'POST',
+      url: `/v1/projects/${projectId}/quotation/email`,
+      headers: await bare.authorization(),
+      payload: { to: 'cliente@example.test' },
+    });
+
+    expect(response.statusCode).toBe(503);
+  });
+});

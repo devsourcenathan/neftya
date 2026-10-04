@@ -27,6 +27,7 @@ import {
 } from './auth/routes.js';
 import { CompositeVerifier, LocalVerifier } from './auth/local-verifier.js';
 import { makeAuthenticator } from './sekuu/authenticate.js';
+import { LocalQuotas } from './sekuu/quota.js';
 import type { AiService } from './ai/ai-service.js';
 import type { Mailer } from './notify/mailer.js';
 import type { TokenVerifier } from './sekuu/token-verifier.js';
@@ -41,7 +42,15 @@ import type { FileStore, Uploader } from './storage/file-store.js';
  */
 export interface AppDependencies {
   db: Kysely<Database>;
-  verifier: TokenVerifier;
+  /**
+   * Le vérifieur de la plateforme. **Optionnel** : depuis que l'identité est locale,
+   * Neftya se vérifie tout seul, et exiger trois variables Sekuu pour démarrer les rendait
+   * obligatoires à une installation qui n'en veut pas.
+   *
+   * Absent, seuls les jetons locaux sont reconnus — et un jeton de plateforme devient un
+   * jeton invalide, ce qu'il est.
+   */
+  verifier?: TokenVerifier;
   /** Secret HS256 des jetons locaux. Absent : seule la vérification Sekuu est active. */
   jwtSecret?: string;
   /** Absent quand aucun dépôt n'est configuré : l'export reste possible, sans dépôt. */
@@ -123,7 +132,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
   const local = dependencies.jwtSecret
     ? new LocalVerifier(dependencies.jwtSecret)
     : null;
-  const verifier = new CompositeVerifier(local, dependencies.verifier);
+  const verifier = new CompositeVerifier(local, dependencies.verifier ?? null);
   const jwtSecret = dependencies.jwtSecret;
 
   if (jwtSecret) {
@@ -143,7 +152,8 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     const settings = new SettingsRepository(dependencies.db);
     const manufacturing = new ManufacturingRepository(dependencies.db);
 
-    registerProjectRoutes(authenticated, projects);
+    // Une seule source de plafonds, partagée : la table, et le jeton en repli.
+    registerProjectRoutes(authenticated, projects, new LocalQuotas(dependencies.db));
     registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
     registerAssistantRoutes(authenticated, dependencies.ai);
     registerSettingsRoutes(authenticated, settings);

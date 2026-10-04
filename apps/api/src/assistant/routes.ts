@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { success } from '@neftya/contracts';
 import {
+  conflict,
   forbidden,
   notFound,
   serviceUnavailable,
@@ -77,8 +78,16 @@ export function registerAssistantRoutes(app: FastifyInstance, ai?: AiService): v
       }),
     );
 
-    // `202` et non `200` : l'extraction est acceptée, pas faite.
-    return reply.status(202).send(success(pending(generation.id, generation.status)));
+    /*
+     * `202` seulement s'il reste quelque chose à attendre.
+     *
+     * Le contrat à deux temps tient toujours — l'appelant peut sonder — mais il n'a plus à
+     * le faire pour rien : une extraction synchrone répond déjà `succeeded`, et annoncer
+     * `202` sur une réponse complète ferait sonder une génération terminée.
+     */
+    return reply
+      .status(settled(generation.status) ? 200 : 202)
+      .send(success(resource(generation)));
   });
 
   app.get('/v1/assistant/interpretations/:id', async (request) => {
@@ -92,30 +101,50 @@ export function registerAssistantRoutes(app: FastifyInstance, ai?: AiService): v
 
     const generation = await guarded(() => service.read(context.organizationId, id));
 
-    if (generation.status !== 'succeeded') {
-      return success(pending(generation.id, generation.status));
-    }
-
-    const interpretation = interpret(generation.output ?? {});
-
-    /*
-     * Un refus de composition n'est **pas** une erreur HTTP.
-     *
-     * La génération a réussi, elle a coûté, et son résultat est lisible : dire `422` ferait
-     * croire à un appel mal formé, alors que c'est la phrase de l'utilisateur qui ne disait
-     * pas de quoi faire un meuble. Il doit la reformuler, pas réessayer.
-     */
-    return success({
-      id: generation.id,
-      status: interpretation.ok ? 'succeeded' : 'unusable',
-      model: interpretation.ok ? interpretation.model : null,
-      problems: interpretation.ok ? null : interpretation.problems,
-    });
+    return success(resource(generation));
   });
 }
 
-function pending(id: string, status: string) {
-  return { id, status, model: null, problems: null };
+/** Reste-t-il quelque chose à attendre ? */
+function settled(status: string): boolean {
+  return status !== 'queued' && status !== 'running';
+}
+
+/**
+ * Une interprétation, telle qu'elle se rend — **le même objet aux deux routes**.
+ *
+ * Il y avait ici deux sérialisations : le `POST` rendait toujours `model: null`, le `GET`
+ * composait. C'était cohérent tant que l'extraction était asynchrone, puisque le `POST`
+ * répondait `queued`. Depuis qu'elle est synchrone, il annonçait `succeeded` les mains
+ * vides, et un appelant qui le croyait n'affichait rien.
+ *
+ * Deux sérialisations d'une même ressource divergent toujours ; une seule ne peut pas.
+ *
+ * Un refus de composition n'est **pas** une erreur HTTP : la génération a réussi, elle a
+ * coûté, et son résultat est lisible. Dire `422` ferait croire à un appel mal formé, alors
+ * que c'est la phrase qui ne disait pas de quoi faire un meuble — il faut la reformuler,
+ * pas réessayer.
+ */
+function resource(generation: { id: string; status: string; output: unknown }) {
+  if (generation.status !== 'succeeded') {
+    return {
+      id: generation.id,
+      status: generation.status,
+      model: null,
+      problems: null,
+    };
+  }
+
+  const interpretation = interpret(
+    (generation.output as Record<string, unknown> | null) ?? {},
+  );
+
+  return {
+    id: generation.id,
+    status: interpretation.ok ? 'succeeded' : 'unusable',
+    model: interpretation.ok ? interpretation.model : null,
+    problems: interpretation.ok ? null : interpretation.problems,
+  };
 }
 
 /**
@@ -141,11 +170,24 @@ async function guarded<T>(call: () => Promise<T>): Promise<T> {
 
     if (error.refusal === 'not_found') throw notFound('Interprétation introuvable.');
 
+    /*
+     * Un quota épuisé rend **409**, comme celui des projets.
+     *
+     * Il rendait `503`. Le message était juste — « votre quota est épuisé » — et le code
+     * disait « service indisponible » : l'un invite à relever le plafond, l'autre à
+     * attendre. Une interface ne peut pas traiter les deux refus de la même façon si l'API
+     * les nomme différemment, et c'est le même refus.
+     *
+     * Le reste demeure `503` : là, il n'y a rien que le client puisse relever. Le plafond
+     * de dépense est celui de l'installation, pas celui de l'abonné — l'inviter à payer
+     * plus serait mensonger.
+     */
+    if (error.refusal === 'quota') {
+      throw conflict("Le quota d'IA de votre abonnement est épuisé.");
+    }
+
     throw serviceUnavailable(
       {
-        // Le seul des quatre qu'un changement de plan résout. Les autres non, et le
-        // suggérer serait mensonger.
-        quota: "Le quota d'IA de votre abonnement est épuisé.",
         spend_cap: "L'assistant est momentanément indisponible.",
         denied: "L'assistant n'est pas autorisé sur cette installation.",
         unavailable: "L'assistant est momentanément indisponible.",

@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import { sql } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { AiUnavailable, type ExtractRequest, type Generation } from '../sekuu/ai.js';
+import { AI_QUOTA_KEY, LocalQuotas } from '../sekuu/quota.js';
 
 /**
  * L'IA locale : la tâche `extract`, exécutée ici.
@@ -26,6 +27,16 @@ export interface LocalAiOptions {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /**
+   * Profondeur de raisonnement (`minimal`…`xhigh`).
+   *
+   * Les modèles à raisonnement brûlent des jetons avant de répondre : sans
+   * borne, une extraction triviale consomme 700 jetons de réflexion et, pire,
+   * peut ne plus avoir de budget pour la réponse (`finish_reason: length`,
+   * contenu nul). `minimal` divise par quatre. Absent : champ omis — les
+   * relais qui rejetteraient un paramètre inconnu restent utilisables.
+   */
+  reasoningEffort?: string;
   /** Injectable : les tests n'appellent pas de modèle. */
   fetch?: typeof globalThis.fetch;
   timeoutMs?: number;
@@ -45,7 +56,7 @@ export class LocalAI {
 
   constructor(private readonly options: LocalAiOptions) {
     this.fetch = options.fetch ?? globalThis.fetch;
-    this.timeoutMs = options.timeoutMs ?? 30_000;
+    this.timeoutMs = options.timeoutMs ?? 60_000;
   }
 
   /** Soumet une extraction — et l'exécute. @throws {AiUnavailable} */
@@ -109,14 +120,21 @@ export class LocalAI {
     return { id: row.id, status: row.status, output: asRecord(row.output) };
   }
 
+  /**
+   * Le plafond se lit **par le même résolveur que celui des projets**.
+   *
+   * Il y avait ici une lecture de `organization_quotas` écrite à la main, et une autre
+   * dans les routes de projets qui lisait les revendications du jeton. Deux chemins pour
+   * la même famille de règle, dont l'un mordait tout de suite et l'autre au bout de
+   * quinze minutes.
+   */
   private async enforceQuota(organizationId: string): Promise<void> {
-    const quotas = await this.options.db
-      .selectFrom('organization_quotas')
-      .select('ai_month_max')
-      .where('organization_id', '=', organizationId)
-      .executeTakeFirst();
-    const max = quotas?.ai_month_max ?? null;
-    if (max === null) return;
+    const max = await new LocalQuotas(this.options.db).limit(
+      organizationId,
+      AI_QUOTA_KEY,
+    );
+    // Non couvert comme explicitement illimité : on ne plafonne pas.
+    if (max === undefined || max === null) return;
 
     const { count } = await this.options.db
       .selectFrom('ai_generations')
@@ -149,7 +167,13 @@ export class LocalAI {
         body: JSON.stringify({
           model: this.options.model,
           temperature: 0,
-          max_tokens: 500,
+          // Réflexion comprise : un modèle à raisonnement dépense des centaines
+          // de jetons avant d'écrire, et un budget trop court rend `length`
+          // avec un contenu nul. 500 a déjà fait perdre une réponse.
+          max_tokens: 2000,
+          ...(this.options.reasoningEffort
+            ? { reasoning_effort: this.options.reasoningEffort }
+            : {}),
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },

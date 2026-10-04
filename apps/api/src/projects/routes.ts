@@ -5,7 +5,7 @@ import { build, cutList, furnitureInput } from '@neftya/engine';
 import { forbidden, notFound, validationFailed } from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
-import { enforceLimit } from '../sekuu/quota.js';
+import { enforceLimit, PROJECTS_QUOTA_KEY, type QuotaSource } from '../sekuu/quota.js';
 import type { Project, ProjectRepository } from './repository.js';
 
 /**
@@ -36,11 +36,13 @@ const updateBody = z
 
 const identifier = z.object({ id: z.uuid() });
 
-export const PROJECTS_LIMIT_KEY = 'neftya_projects_max';
+/** Conservé pour les appelants : la clé vit maintenant dans `quota.ts`, avec les autres. */
+export const PROJECTS_LIMIT_KEY = PROJECTS_QUOTA_KEY;
 
 export function registerProjectRoutes(
   app: FastifyInstance,
   repository: ProjectRepository,
+  quotas?: QuotaSource,
 ): void {
   app.get('/v1/projects', async (request) => {
     const context = sekuuOf(request);
@@ -81,9 +83,10 @@ export function registerProjectRoutes(
 
     await enforceLimit(
       context,
-      PROJECTS_LIMIT_KEY,
+      PROJECTS_QUOTA_KEY,
       () => repository.countActive(context.organizationId),
       'Le nombre de projets de votre abonnement est atteint.',
+      quotas,
     );
 
     const project = await repository.create({

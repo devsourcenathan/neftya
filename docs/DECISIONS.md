@@ -1883,3 +1883,162 @@ l'exige, la table est déjà la file.
 
 **Sans SMTP, 503** — le même dégradé que l'assistant sans modèle. Le faux en
 mémoire dans les tests : aucun réseau, et tout est relisible.
+
+---
+
+## 2026-10-04 — Une ressource, une sérialisation
+
+**Décision.** Les deux routes de l'assistant rendent le **même objet**, construit par une
+seule fonction. `202` n'est rendu que s'il reste quelque chose à attendre ; sinon `200`.
+
+**Motif.** Il y avait deux sérialisations : le `POST` rendait toujours `model: null`, le `GET`
+composait. C'était cohérent tant que l'extraction était asynchrone — le `POST` répondait
+`queued`. Depuis qu'elle est synchrone, il annonçait `succeeded` les mains vides, et un
+appelant qui le croyait n'affichait rien. L'interface survivait par accident, parce que sa
+requête de relecture partait de toute façon.
+
+**La leçon n'est pas « il manquait un test ».** Deux sérialisations d'une même ressource
+divergent toujours ; une seule ne peut pas. C'est le passage au synchrone qui a invalidé un
+code qui ne mentionnait nulle part l'hypothèse dont il dépendait.
+
+---
+
+## 2026-10-04 — L'ordre des gardes est le message d'erreur
+
+**Décision.** Sur l'envoi d'un devis : ce que l'appelant a mal fait (`422`), puis ce qu'il
+n'a pas le droit de voir (`404`), puis ce que l'installation ne sait pas faire (`503`). Le
+plan n'est calculé qu'après.
+
+**Motif.** Le refus « l'envoi d'emails n'est pas configuré » venait en premier. Une adresse
+mal tapée recevait cette réponse-là, et le projet d'un autre atelier aussi. Elle est vraie,
+et elle envoie chercher une configuration là où il y a une faute de frappe.
+
+**Pas une fuite** — la réponse était uniforme —, mais un diagnostic faux coûte le même temps
+qu'un bogue.
+
+---
+
+## 2026-10-04 — Un seul endroit où se lisent les plafonds
+
+**Décision.** `quota.ts` porte les clés, le résolveur et les trois états. La table
+`organization_quotas` décide ; les revendications du jeton ne sont plus que le repli, pour un
+jeton signé par une plateforme qui ne partage pas notre base. Un plafond atteint rend **409**,
+des deux côtés.
+
+**Motif.** Il y en avait deux. Les projets lisaient le jeton — donc un plafond réglé par le
+patron ne mordait qu'au jeton suivant, jusqu'à quinze minutes plus tard. L'IA lisait la base,
+donc tout de suite. Même famille de règle, deux latences : aucune n'était fausse, c'est
+l'écart qui l'était.
+
+**Et deux codes pour un même refus.** Le quota d'IA rendait `503` avec le message « votre
+quota est épuisé » : le message invitait à relever le plafond, le code à attendre. Une
+interface ne peut pas traiter deux fois le même refus si l'API le nomme de deux façons.
+
+**Trois états, et ils ne se confondent pas.** Pas de ligne = non couvert, on laisse le jeton
+décider ; `null` = illimité **explicitement**, et plus rien n'est consulté ; un entier =
+le plafond. Confondre les deux premiers ferait d'un réglage « illimité » une porte ouverte au
+plafond d'un jeton périmé.
+
+**Une revendication morte est tombée au passage** : le jeton portait le plafond d'IA sous
+`neftya_ai_analyses_max`, que personne ne lisait. Elle aurait fait croire à un repli là où il
+n'y en avait pas.
+
+---
+
+## 2026-10-04 — Sekuu mis de côté ne doit plus être obligatoire
+
+**Décision.** Le vérifieur de plateforme est **optionnel**. Sans `SEKUU_JWKS_URL`, l'API
+démarre et ne reconnaît que les jetons locaux. `NEFTYA_JWT_SECRET` et les variables SMTP
+entrent dans `.env.example`.
+
+**Motif.** Le serveur exigeait trois variables Sekuu pour démarrer alors que l'identité est
+locale : il fallait en inventer trois pointant dans le vide, ce qui est pire que de s'en
+passer — on ne sait plus lesquelles servent. Et `.env.example` ne portait pas
+`NEFTYA_JWT_SECRET`, sans laquelle le serveur refuse de démarrer : un clone frais ne partait
+pas, et le défaut ne se voyait qu'au premier essai.
+
+**Conséquence assumée.** Sans vérifieur, un jeton de plateforme devient un jeton invalide.
+C'est ce qu'il est.
+
+---
+
+## 2026-10-04 — Réessayer d'ouvrir une connexion, jamais une requête
+
+**Décision.** Le pool réessaie **l'ouverture** d'une connexion, trois fois, à 250 puis
+500 ms. Les requêtes, elles, ne sont jamais rejouées.
+
+**Motif.** Une base serverless s'endort. Au réveil, plusieurs ouvertures simultanées se font
+fermer au nez — « Connection terminated unexpectedly » — et la requête rend `500` alors que la
+base répond une seconde plus tard. Observé sur une inscription : `500` au bout de cent
+secondes, puis `201` à l'essai suivant.
+
+**Pourquoi l'ouverture seulement.** Rejouer une écriture dont on ne sait pas si elle a abouti
+est le genre de remède qui crée deux projets pour un clic. Ouvrir une connexion n'a aucun
+effet de bord.
+
+**Trois essais, écrits en clair dans le test.** Le test disait d'abord
+`toBe(CONNECT_ATTEMPTS)` : il lisait la constante, donc il suivait n'importe quelle valeur.
+Porter le plafond à cinquante le laissait passer — et un réessai sans fin masque une panne au
+lieu de la rattraper.
+
+**Ce que l'enveloppe a cassé en chemin.** `pool.query()` appelle `connect(callback)`
+par-dessous. La première version ignorait ce rappel : les soixante `beforeAll` du banc
+d'essai ont dépassé leur délai d'un coup, dix-huit fichiers en échec. La forme à rappel passe
+maintenant telle quelle, et un test la tient.
+
+---
+
+## 2026-10-04 — Trois lectures indépendantes ne s'enchaînent pas
+
+**Décision.** `accessFor` et `/v1/auth/me` lisent en parallèle ce qui ne dépend de rien.
+
+**Motif.** Sur une base locale, trois allers-retours à la file ne se voient pas ; sur une base
+distante, ils s'additionnent — et `accessFor` est sur le chemin de l'inscription, de la
+connexion, du rafraîchissement et du changement d'organisation.
+
+**Mesuré, à chaud, contre une base distante :**
+
+| | avant | après |
+|---|---|---|
+| `/v1/auth/me` | 490–520 ms | **261 ms** |
+| `POST /v1/auth/register` | 3 782 ms | **1 800 ms** |
+| `POST /v1/auth/login` | 1 480 ms | 1 095 ms |
+| `POST /v1/auth/refresh` | 1 956 ms | 1 575 ms |
+
+**Ce que la parallélisation a révélé.** Trois ouvertures simultanées sur une base endormie,
+et un `500`. Le gain était réel, la fragilité préexistante : c'est le réessai à l'ouverture
+qui la couvre, pas le retour au séquentiel.
+
+---
+
+## 2026-10-04 — L'intermittence de la suite vient de la base, et rien dans le dépôt ne la corrige
+
+**Décision.** **Aucun changement.** Ni plafond de parallélisme, ni réessai dans le banc
+d'essai : les deux ont été essayés, mesurés, et retirés parce qu'ils aggravaient les choses.
+
+**Ce qui a été mesuré**, sur la même base distante, à chaque fois la suite entière :
+
+| | fichiers en échec | durée |
+|---|---|---|
+| état d'origine | 1 à 2, parfois 0 | 60 à 181 s |
+| six fichiers en parallèle | 1 à 2 | 110 s |
+| trois fichiers en parallèle | **6** | 313 s |
+| pools du banc d'essai avec réessai et `keepAlive` | **6** | 240 s |
+| retour à l'état d'origine | 2, **aucun test** en échec | 124 s |
+
+Le réessai dans le banc d'essai se retourne contre lui : `connectionTimeoutMillis` à 20 s,
+trois fois, dépasse le délai de trente secondes du `beforeAll`. Une attente qu'on allonge
+pour éviter un échec finit par le provoquer ailleurs.
+
+**La cause.** Soixante fichiers, chacun supprimant et recréant son schéma puis rejouant dix
+migrations : plus de sept cents instructions DDL, sérialisées par les verrous de catalogue,
+sur un lien à 250 ms. En local c'est invisible ; à distance, c'est la durée de la suite et
+toute sa variance.
+
+**Le remède est dans `DATABASE_URL`, pas dans le code.** La suite veut une base locale. Un
+PostgreSQL 18 tourne déjà sur la machine de développement, port 5432, et `docker compose`
+en fournit un. C'est écrit dans le README. Faute d'identifiants, ce n'est pas démontré ici —
+annoncé comme une hypothèse étayée, pas comme un fait vérifié.
+
+**Ce qui reste acquis**, et qui n'a rien à voir avec les tests : le réessai à l'ouverture
+dans `createDatabase`, qui retire un `500` réel en production.

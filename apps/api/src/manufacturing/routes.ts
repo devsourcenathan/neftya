@@ -374,12 +374,17 @@ export function registerManufacturingRoutes(
     const context = sekuuOf(request);
     requirePermission(request, 'costs.read');
 
-    if (!mailer) {
-      throw serviceUnavailable(
-        "L'envoi d'emails n'est pas configuré sur cette installation.",
-      );
-    }
-
+    /*
+     * L'ordre des gardes **est** le message d'erreur.
+     *
+     * Le refus « l'envoi n'est pas configuré » venait d'abord : une adresse malformée, et
+     * même un projet qui n'était pas le vôtre, recevaient cette réponse-là. Elle est vraie
+     * et elle égare — on cherche une configuration là où il y a une faute de frappe.
+     *
+     * Donc : ce que l'appelant a mal fait, puis ce qu'il n'a pas le droit de voir, puis ce
+     * que l'installation ne sait pas faire. Le plan n'est calculé qu'après, parce qu'il
+     * coûte un passage du moteur et un placement sur panneaux.
+     */
     const body = quotationEmailBody.safeParse(request.body);
     if (!body.success) {
       const details: Record<string, string[]> = {};
@@ -387,6 +392,16 @@ export function registerManufacturingRoutes(
         (details[issue.path.join('.') || '_'] ??= []).push(issue.message);
       }
       throw validationFailed(details);
+    }
+
+    if (!(await projects.find(context.organizationId, parseId(request)))) {
+      throw notFound('Projet introuvable.');
+    }
+
+    if (!mailer) {
+      throw serviceUnavailable(
+        "L'envoi d'emails n'est pas configuré sur cette installation.",
+      );
     }
 
     const { plan, project, settings: organizationSettings } = await planFor(request);

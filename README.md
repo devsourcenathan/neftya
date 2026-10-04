@@ -77,6 +77,12 @@ Sur une base hébergée, prendre le **point d'accès direct** et non le pooler :
 fichier de test travaille dans son propre schéma, passé en paramètre de démarrage, et un
 pooler rejette ce paramètre. Voir `.env.example`.
 
+**La suite de tests, elle, veut une base locale.** Soixante fichiers y recréent chacun leur
+schéma et rejouent les migrations : plus de sept cents instructions DDL, que les verrous de
+catalogue sérialisent. En local c'est invisible ; sur une base distante, la suite passe de
+une à cinq minutes et devient intermittente — un fichier non collecté ici, un délai dépassé
+là, jamais le même. Pointer `DATABASE_URL` sur un PostgreSQL local avant `npm run test`.
+
 ```bash
 cp .env.example .env          # une fois, puis renseigner NEFTYA_JWT_SECRET
 npm run dev:api               # API sur http://localhost:3000

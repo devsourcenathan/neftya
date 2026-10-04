@@ -27,6 +27,7 @@ import {
   REFRESH_TTL_SECONDS,
   signAccess,
 } from './tokens.js';
+import { AI_QUOTA_KEY, PROJECTS_QUOTA_KEY } from '../sekuu/quota.js';
 import { hashPassword, verifyPassword } from './password.js';
 import type { AuthRepository } from './repository.js';
 
@@ -195,8 +196,11 @@ export function registerProtectedAuthRoutes(
 ): void {
   app.get('/v1/auth/me', async (request) => {
     const context = sekuuOf(request);
-    const memberships = await repository.membershipsOf(context.userId);
-    const user = await repository.findUserById(context.userId);
+    // Deux lectures indépendantes : les enchaîner doublait l'attente pour rien.
+    const [memberships, user] = await Promise.all([
+      repository.membershipsOf(context.userId),
+      repository.findUserById(context.userId),
+    ]);
     if (!user) throw unauthenticated();
     return success({
       id: user.id,
@@ -311,7 +315,22 @@ async function accessFor(
   organizationId: string | null,
   refreshToken: string,
 ) {
-  const memberships = await repository.membershipsOf(userId);
+  /*
+   * Trois lectures **indépendantes**, donc parallèles.
+   *
+   * Elles s'enchaînaient. Sur une base locale, trois fois rien ; sur une base distante,
+   * trois allers-retours à la file — et cette fonction est sur le chemin de l'inscription,
+   * de la connexion, du rafraîchissement et du changement d'organisation.
+   *
+   * Aucune des trois n'a besoin du résultat des autres : les enchaîner ne faisait
+   * qu'additionner des latences.
+   */
+  const [memberships, user, quotas] = await Promise.all([
+    repository.membershipsOf(userId),
+    repository.findUserById(userId),
+    organizationId ? repository.getQuotas(organizationId) : Promise.resolve(null),
+  ]);
+
   const roles = new Map(
     memberships.map((membership) => [membership.organizationId, membership.role]),
   );
@@ -319,13 +338,17 @@ async function accessFor(
     organizationId && roles.has(organizationId)
       ? [roles.get(organizationId) as OrganizationRole]
       : [];
-  const user = await repository.findUserById(userId);
-  const quotas = organizationId ? await repository.getQuotas(organizationId) : null;
+
+  /*
+   * Les clés sont celles que `quota.ts` lit. Le plafond d'IA partait sous
+   * `neftya_ai_analyses_max`, que **personne ne lisait** : une revendication morte, qui
+   * aurait fait croire à un repli là où il n'y en avait pas.
+   */
   const limits: Record<string, number | null> = {
-    ...(quotas?.projectsMax != null ? { neftya_projects_max: quotas.projectsMax } : {}),
-    ...(quotas?.aiMonthMax != null
-      ? { neftya_ai_analyses_max: quotas.aiMonthMax }
+    ...(quotas?.projectsMax != null
+      ? { [PROJECTS_QUOTA_KEY]: quotas.projectsMax }
       : {}),
+    ...(quotas?.aiMonthMax != null ? { [AI_QUOTA_KEY]: quotas.aiMonthMax } : {}),
   };
   const { token, expiresIn } = await signAccess(jwtSecret, {
     userId,

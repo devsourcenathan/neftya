@@ -68,6 +68,31 @@ describe('quotas de projets', () => {
     }
   });
 
+  it('mord sans attendre un nouveau jeton', async () => {
+    const session = await register();
+
+    await harness.app.inject({
+      method: 'PUT',
+      url: '/v1/auth/quotas',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      payload: { projectsMax: 1 },
+    });
+
+    /*
+     * **Le même jeton qu'avant le réglage.**
+     *
+     * Le plafond se lisait dans les revendications du jeton : un patron qui réglait le
+     * sien ne voyait rien pendant un quart d'heure, alors que le plafond d'IA, lu en base,
+     * mordait tout de suite. La table est la source de vérité ; le jeton n'est plus que le
+     * repli, pour un jeton signé par une plateforme qui ne partage pas notre base.
+     */
+    expect((await createProject(session.accessToken, 'Premier')).statusCode).toBe(201);
+
+    const blocked = await createProject(session.accessToken, 'Second');
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().error.code).toBe('CONFLICT');
+  });
+
   it('plafonne à l’entier configuré, puis libère après suppression', async () => {
     const session = await register();
 
@@ -79,7 +104,8 @@ describe('quotas de projets', () => {
     });
     expect(saved.statusCode).toBe(200);
 
-    // Le jeton d'inscription précède le plafond : se reconnecter pour le voir.
+    // Se reconnecter n'est plus nécessaire depuis que le plafond se lit en base ; on le
+    // fait quand même ici, pour que le chemin « jeton frais » reste couvert.
     const login = await harness.app.inject({
       method: 'POST',
       url: '/v1/auth/login',
