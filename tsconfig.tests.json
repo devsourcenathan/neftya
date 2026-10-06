@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist-types/tests",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"],
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "include": [
+    "packages/*/src/**/*.test.ts",
+    "apps/*/src/**/*.test.ts",
+    "apps/*/src/**/*.test.tsx",
+    "apps/*/src/test-support/**/*",
+    "tests/**/*.ts"
+  ],
+  "references": [
+    { "path": "./packages/engine" },
+    { "path": "./packages/units" },
+    { "path": "./packages/drawing" },
+    { "path": "./packages/contracts" },
+    { "path": "./apps/api" },
+    { "path": "./apps/web" }
+  ]
+}

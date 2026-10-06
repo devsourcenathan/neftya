@@ -312,13 +312,18 @@ Elle est lue **à la compilation**, pas à l'exécution : la changer demande un 
 non un redémarrage.
 
 **`npm ci --include=dev`, et pas `npm ci`.** Vercel pose `NODE_ENV=production` pendant la
-construction, et `npm ci` omet alors les dépendances de développement — dont `vitest`, dont
-les types sont lus par les fichiers de test que `tsc --build` vérifie. Le symptôme est
-déroutant : « Cannot find module 'vitest' » dans une construction qui ne lance aucun test.
+construction, et `npm ci` omet alors les dépendances de développement — or `vite`,
+`typescript` et `tailwindcss` en sont. Sans elles il n'y a rien pour construire.
 
-L'alternative aurait été de retirer les tests du graphe de construction de l'interface. Elle a
-été écartée : ils en sortiraient aussi du `typecheck`, et une vérification qu'on déplace pour
-faire passer un déploiement est une vérification qu'on perd.
+**Les tests, eux, ne sont plus dans le graphe de construction.** Un paquet de production n'a
+aucune raison d'exiger les types de `vitest` : le symptôme était « Cannot find module
+'vitest' » dans une construction qui ne lance aucun test. Chaque projet exclut désormais ses
+tests, et un projet unique — `tsconfig.tests.json`, à la racine — les reprend tous.
+
+Ce n'est pas une vérification déplacée pour faire passer un déploiement : la solution racine
+le construit, donc `npm run typecheck` les vérifie exactement comme avant. Ce qui change est
+que `npm run build` ne les regarde plus — et c'est la bonne frontière, parce qu'un hébergeur
+qui n'installe pas `vitest` a raison de ne pas l'installer.
 
 La réécriture renvoie toute route inconnue sur `index.html`. Sans elle, ouvrir
 `/projects/<id>` directement — un signet, un rafraîchissement — rend un 404 : c'est le routeur
