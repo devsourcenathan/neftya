@@ -8,3 +8,7 @@ coverage/
 .DS_Store
 Thumbs.db
 dist-types/
+
+# Les fichiers déposés par le magasin local — `NEFTYA_DATA_DIR`, `./data` par défaut.
+# Ce sont les exports des organisations : des données d'exécution, pas du dépôt.
+data/
