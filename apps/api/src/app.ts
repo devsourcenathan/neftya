@@ -78,6 +78,22 @@ export interface AppDependencies {
   allowedOrigins?: readonly string[];
 }
 
+/**
+ * Une origine, telle qu'un navigateur l'envoie.
+ *
+ * Un en-tête `Origin` est un schéma, un hôte et au plus un port — **jamais un chemin**, donc
+ * jamais de barre oblique finale. Mais la valeur qu'on configure se copie depuis une barre
+ * d'adresse, qui en affiche toujours une : `https://neftya.sekuu.com/` ne correspondait à
+ * rien, et le symptôme était un refus CORS sans la moindre explication.
+ *
+ * On enlève donc ce que l'en-tête ne peut pas porter, et on compare en minuscules : le
+ * schéma et l'hôte sont insensibles à la casse par définition. Rien n'est élargi — une
+ * origine reste un hôte exact.
+ */
+export function normaliseOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/u, '').toLowerCase();
+}
+
 export function buildApp(dependencies: AppDependencies): FastifyInstance {
   const sink = dependencies.logSink ?? jsonSink;
   // Le journal de Fastify est désactivé au profit du nôtre : deux formats de journal dans
@@ -89,7 +105,9 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
   // L'interface vit sur une autre origine que l'API — en développement comme en production.
   // Sans cet en-tête, le navigateur refuse la réponse avant même que le code la voie, et le
   // symptôme ne ressemble en rien à sa cause.
-  const allowedOrigins = dependencies.allowedOrigins ?? [];
+  const allowedOrigins = new Set(
+    (dependencies.allowedOrigins ?? []).map(normaliseOrigin),
+  );
 
   void app.register(cors, {
     origin: (origin, callback) => {
@@ -101,7 +119,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
 
       // Une origine inconnue reçoit une réponse sans en-tête, pas une erreur : c'est au
       // navigateur de refuser, et c'est ce qu'il fait.
-      callback(null, allowedOrigins.includes(origin));
+      callback(null, allowedOrigins.has(normaliseOrigin(origin)));
     },
     credentials: true,
     // À défaut, la bibliothèque n'annonce que GET, HEAD et POST : un `PUT` de réglages ou

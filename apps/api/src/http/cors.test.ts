@@ -36,6 +36,77 @@ const preflight = (origin: string, method = 'GET') =>
 /** Les verbes réellement servis par l'API. */
 const VERBS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
+/**
+ * La barre oblique de trop.
+ *
+ * Un en-tête `Origin` est un schéma, un hôte et au plus un port — jamais un chemin. Mais la
+ * valeur qu'on configure se copie depuis une barre d'adresse, qui affiche toujours
+ * `https://exemple.test/`. La comparaison étant une égalité de chaîne, elle échouait, et le
+ * navigateur refusait tout sans dire pourquoi.
+ */
+describe('ce qu’on configure et ce que le navigateur envoie', () => {
+  const origin = 'https://neftya.sekuu.com';
+
+  it('admet une origine configurée avec une barre oblique finale', async () => {
+    const tolerant = await createHarness('test_cors_slash', {
+      allowedOrigins: [`${origin}/`],
+    });
+
+    try {
+      const response = await tolerant.app.inject({
+        method: 'OPTIONS',
+        url: '/v1/projects',
+        headers: { origin, 'access-control-request-method': 'GET' },
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+    } finally {
+      await tolerant.close();
+    }
+  });
+
+  it('admet une origine configurée en majuscules', async () => {
+    const tolerant = await createHarness('test_cors_casse', {
+      allowedOrigins: ['HTTPS://Neftya.Sekuu.com'],
+    });
+
+    try {
+      const response = await tolerant.app.inject({
+        method: 'OPTIONS',
+        url: '/v1/projects',
+        headers: { origin, 'access-control-request-method': 'GET' },
+      });
+
+      // Le schéma et l'hôte sont insensibles à la casse par définition.
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+    } finally {
+      await tolerant.close();
+    }
+  });
+
+  it('n’élargit rien : un autre hôte reste refusé', async () => {
+    const tolerant = await createHarness('test_cors_voisin', {
+      allowedOrigins: [`${origin}/`],
+    });
+
+    try {
+      const response = await tolerant.app.inject({
+        method: 'OPTIONS',
+        url: '/v1/projects',
+        headers: {
+          // Un sous-domaine voisin, et un hôte qui commence pareil : ni l'un ni l'autre.
+          origin: 'https://neftya.sekuu.com.attaquant.test',
+          'access-control-request-method': 'GET',
+        },
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    } finally {
+      await tolerant.close();
+    }
+  });
+});
+
 describe('origines', () => {
   it('laisse passer une origine de la liste', async () => {
     const response = await preflight('http://localhost:5173');

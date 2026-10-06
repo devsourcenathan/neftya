@@ -273,12 +273,17 @@ quelqu'un s'en serve.
 | `NODE_VERSION` | `22` | Render choisit, et peut changer d'avis |
 | `DATABASE_URL` | l'URL Neon, **point d'accès direct** | refus de démarrer |
 | `NEFTYA_JWT_SECRET` | 32 caractères au moins, tirés au hasard | refus de démarrer |
-| `NEFTYA_ALLOWED_ORIGINS` | le domaine Vercel, à l'étape 3 | aucune page n'appelle l'API |
+| `NEFTYA_ALLOWED_ORIGINS` | le domaine du front, **sans barre oblique finale** | aucune page n'appelle l'API |
 | `NEFTYA_DATA_DIR` | `/opt/render/project/data` | `./data`, relatif au répertoire courant |
 | `OPENAI_API_KEY` | facultative | l'assistant dit qu'il n'est pas configuré |
 | `OPENAI_MODEL` | `gpt-4o-mini` | `gpt-4o-mini` |
 | `OPENAI_REASONING_EFFORT` | `minimal` | champ omis |
 | `NEFTYA_SMTP_HOST`, `_USER`, `_PASSWORD` | facultatives | l'envoi de devis répond `503` |
+
+**Une origine n'a pas de chemin.** `https://neftya.sekuu.com`, jamais
+`https://neftya.sekuu.com/` : c'est ce qu'un navigateur envoie dans l'en-tête `Origin`. La
+barre oblique finale est tolérée depuis le 6 octobre 2026 — elle se copie avec l'adresse — mais
+rien d'autre ne l'est : pas de chemin, pas de caractère générique.
 
 Le secret se tire une fois :
 
