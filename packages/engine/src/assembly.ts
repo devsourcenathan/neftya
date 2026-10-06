@@ -97,22 +97,30 @@ export function assemblySteps(
 
   return resolved.map((step, index) => {
     const fastener = step.template.fastener;
+
+    /*
+     * **Toutes les pièces du rôle, pas la première.**
+     *
+     * C'était un `find` : la visserie était comptée sur la première pièce trouvée, et les
+     * autres ne comptaient pas. Ça tombait juste tant qu'un rôle n'avait qu'une pièce —
+     * deux côtés identiques sont **une** pièce en quantité deux. Il suffit que deux
+     * compartiments n'aient pas la même largeur pour que les étagères deviennent deux
+     * pièces distinctes : l'apprenti recevait alors la moitié des taquets, et s'en
+     * apercevait au montage.
+     */
     const fastened = fastener
-      ? step.parts.find((part) => part.role === fastener.per)
-      : undefined;
+      ? step.parts
+          .filter((part) => part.role === fastener.per)
+          .reduce((total, part) => total + part.quantity, 0)
+      : 0;
 
     return {
       index: index + 1,
       total: resolved.length,
       key: step.template.key,
       parts: step.parts,
-      ...(fastener && fastened
-        ? {
-            fastener: {
-              key: fastener.key,
-              quantity: fastener.count * fastened.quantity,
-            },
-          }
+      ...(fastener && fastened > 0
+        ? { fastener: { key: fastener.key, quantity: fastener.count * fastened } }
         : {}),
     };
   });
