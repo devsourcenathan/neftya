@@ -27,7 +27,13 @@ import {
   REFRESH_TTL_SECONDS,
   signAccess,
 } from './tokens.js';
-import { AI_QUOTA_KEY, PROJECTS_QUOTA_KEY } from '../sekuu/quota.js';
+import {
+  AI_QUOTA_KEY,
+  enforceLimit,
+  MEMBERS_QUOTA_KEY,
+  PROJECTS_QUOTA_KEY,
+  type QuotaSource,
+} from '../sekuu/quota.js';
 import { hashPassword, verifyPassword } from './password.js';
 import type { AuthRepository } from './repository.js';
 
@@ -193,6 +199,7 @@ export function registerProtectedAuthRoutes(
   app: FastifyInstance,
   repository: AuthRepository,
   options: AuthOptions,
+  quotas?: QuotaSource,
 ): void {
   app.get('/v1/auth/me', async (request) => {
     const context = sekuuOf(request);
@@ -254,6 +261,24 @@ export function registerProtectedAuthRoutes(
       throw forbidden("Votre rôle ne permet pas d'inviter.");
     }
     const body = parse(inviteBody, request.body);
+
+    /*
+     * Le plafond compte les membres **et les invitations en attente**.
+     *
+     * Sans les secondes, un atelier au plafond envoie dix invitations et se retrouve à
+     * onze : chacune est acceptée plus tard, séparément, et aucune ne voit les autres. Le
+     * plafond serait vérifié dix fois sans être tenu une seule.
+     */
+    await enforceLimit(
+      context,
+      MEMBERS_QUOTA_KEY,
+      async () =>
+        (await repository.countMembers(context.organizationId)) +
+        (await repository.countPendingInvitations(context.organizationId)),
+      'Le nombre de membres de votre abonnement est atteint.',
+      quotas,
+    );
+
     const token = randomBytes(32).toString('hex');
     await repository.createInvitation({
       organizationId: context.organizationId,
@@ -274,6 +299,7 @@ export function registerProtectedAuthRoutes(
     return success({
       projectsMax: quotas?.projectsMax ?? null,
       aiMonthMax: quotas?.aiMonthMax ?? null,
+      membersMax: quotas?.membersMax ?? null,
     });
   });
 
@@ -287,8 +313,9 @@ export function registerProtectedAuthRoutes(
     const quotas = await repository.saveQuotas(context.organizationId, {
       ...(body.projectsMax !== undefined ? { projectsMax: body.projectsMax } : {}),
       ...(body.aiMonthMax !== undefined ? { aiMonthMax: body.aiMonthMax } : {}),
+      ...(body.membersMax !== undefined ? { membersMax: body.membersMax } : {}),
     });
-    return success({ projectsMax: quotas.projectsMax, aiMonthMax: quotas.aiMonthMax });
+    return success(quotas);
   });
 }
 

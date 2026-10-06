@@ -28,6 +28,33 @@ export interface MembershipRow {
   role: OrganizationRole;
 }
 
+/**
+ * Le palier gratuit, décidé le 6 octobre 2026.
+ *
+ * Trois projets : assez pour éprouver le moteur sur de vrais meubles, trop peu pour faire
+ * tourner un atelier. Cinq analyses par mois, parce que l'IA est la seule fonction qui
+ * dépense de l'argent réel à chaque appel. Un membre, parce que le collectif est ce que
+ * vendent les paliers supérieurs.
+ *
+ * **Les exports ne sont pas bridés**, contrairement à ce qu'annonçait le brief : le plan de
+ * découpe est exactement ce qu'on veut faire essayer à un menuisier, et brider le seul
+ * livrable qui prouve la justesse du moteur, c'est brider la démonstration.
+ *
+ * @see docs/BRIEF.md section 5
+ */
+export const FREE_TIER = {
+  projects_max: 3,
+  ai_month_max: 5,
+  members_max: 1,
+} as const;
+
+/** Les trois plafonds d'une organisation. `null` vaut illimité. */
+export interface Quotas {
+  projectsMax: number | null;
+  aiMonthMax: number | null;
+  membersMax: number | null;
+}
+
 export class AuthRepository {
   constructor(private readonly db: Kysely<Database>) {}
 
@@ -90,6 +117,25 @@ export class AuthRepository {
       .insertInto('memberships')
       .values({ organization_id: id, user_id: input.createdBy, role: 'owner' })
       .execute();
+
+    /*
+     * **Une organisation naît au palier gratuit.**
+     *
+     * Sans ligne de quotas, elle serait non couverte, donc illimitée — et le palier gratuit
+     * du brief ne serait qu'une ligne dans un tableau. Il est posé ici plutôt qu'à
+     * l'inscription parce que `createOrganization` est le seul passage obligé : l'inscription
+     * et la création d'un second atelier y arrivent toutes les deux.
+     *
+     * Les organisations créées avant cette décision gardent leur absence de ligne, donc leur
+     * absence de plafond. Les plafonner après coup aurait fermé des projets déjà créés, et un
+     * quota qui se retourne contre l'existant est la leçon de SEKUU.md section 5.
+     */
+    await this.db
+      .insertInto('organization_quotas')
+      .values({ organization_id: id, ...FREE_TIER })
+      .onConflict((conflict) => conflict.column('organization_id').doNothing())
+      .execute();
+
     return { id, name: input.name, slug };
   }
 
@@ -312,49 +358,80 @@ export class AuthRepository {
    * Plafonds d'une organisation. `null` = pas de ligne, donc ressource non
    * couverte : ne pas plafonner (trois états, comme les claims Sekuu).
    */
-  async getQuotas(
-    organizationId: string,
-  ): Promise<{ projectsMax: number | null; aiMonthMax: number | null } | null> {
+  async getQuotas(organizationId: string): Promise<Quotas | null> {
     const row = await this.db
       .selectFrom('organization_quotas')
-      .select(['projects_max', 'ai_month_max'])
+      .select(['projects_max', 'ai_month_max', 'members_max'])
       .where('organization_id', '=', organizationId)
       .executeTakeFirst();
     if (!row) return null;
-    return { projectsMax: row.projects_max, aiMonthMax: row.ai_month_max };
+    return {
+      projectsMax: row.projects_max,
+      aiMonthMax: row.ai_month_max,
+      membersMax: row.members_max,
+    };
   }
 
-  async saveQuotas(
-    organizationId: string,
-    quotas: { projectsMax?: number | null; aiMonthMax?: number | null },
-  ): Promise<{ projectsMax: number | null; aiMonthMax: number | null }> {
+  async saveQuotas(organizationId: string, quotas: Partial<Quotas>): Promise<Quotas> {
     const existing = await this.getQuotas(organizationId);
-    const next = {
-      projectsMax:
-        quotas.projectsMax !== undefined
-          ? quotas.projectsMax
-          : (existing?.projectsMax ?? null),
-      aiMonthMax:
-        quotas.aiMonthMax !== undefined
-          ? quotas.aiMonthMax
-          : (existing?.aiMonthMax ?? null),
+    // Un champ absent ne change rien ; `null` le rend illimité. Les deux sont des
+    // intentions différentes, et les confondre effacerait un plafond qu'on n'a pas touché.
+    const keep = <K extends keyof Quotas>(key: K): number | null =>
+      quotas[key] !== undefined
+        ? (quotas[key] as number | null)
+        : (existing?.[key] ?? null);
+
+    const next: Quotas = {
+      projectsMax: keep('projectsMax'),
+      aiMonthMax: keep('aiMonthMax'),
+      membersMax: keep('membersMax'),
     };
+
+    const columns = {
+      projects_max: next.projectsMax,
+      ai_month_max: next.aiMonthMax,
+      members_max: next.membersMax,
+    };
+
     await this.db
       .insertInto('organization_quotas')
-      .values({
-        organization_id: organizationId,
-        projects_max: next.projectsMax,
-        ai_month_max: next.aiMonthMax,
-      })
+      .values({ organization_id: organizationId, ...columns })
       .onConflict((conflict) =>
-        conflict.column('organization_id').doUpdateSet({
-          projects_max: next.projectsMax,
-          ai_month_max: next.aiMonthMax,
-          updated_at: new Date(),
-        }),
+        conflict
+          .column('organization_id')
+          .doUpdateSet({ ...columns, updated_at: new Date() }),
       )
       .execute();
+
     return next;
+  }
+
+  /** Combien de membres compte l'organisation, propriétaire compris. */
+  async countMembers(organizationId: string): Promise<number> {
+    const { count } = await this.db
+      .selectFrom('memberships')
+      .select(sql<number>`count(*)::int`.as('count'))
+      .where('organization_id', '=', organizationId)
+      .executeTakeFirstOrThrow();
+    return count;
+  }
+
+  /**
+   * Les invitations en attente comptent **comme des membres**.
+   *
+   * Sans cela, un atelier au plafond envoie dix invitations et se retrouve à onze : chacune
+   * est acceptée plus tard, une par une, et aucune ne voit les autres. Le plafond se
+   * vérifierait dix fois sans être tenu une seule.
+   */
+  async countPendingInvitations(organizationId: string): Promise<number> {
+    const { count } = await this.db
+      .selectFrom('invitations')
+      .select(sql<number>`count(*)::int`.as('count'))
+      .where('organization_id', '=', organizationId)
+      .where('accepted_at', 'is', null)
+      .where('expires_at', '>', new Date())
+      .executeTakeFirstOrThrow();
+    return count;
   }
 
   private async uniqueSlug(name: string): Promise<string> {

@@ -110,6 +110,11 @@ export type SessionResource = z.infer<typeof sessionResource>;
 export const quotasBody = z.object({
   projectsMax: z.number().int().nonnegative().nullable().optional(),
   aiMonthMax: z.number().int().nonnegative().nullable().optional(),
+  /**
+   * Au moins un : celui qui crée l'organisation en est le propriétaire, et un plafond de
+   * zéro la rendrait invalide à l'instant de sa création.
+   */
+  membersMax: z.number().int().min(1).nullable().optional(),
 });
 
 export type QuotasBody = z.infer<typeof quotasBody>;
@@ -117,6 +122,7 @@ export type QuotasBody = z.infer<typeof quotasBody>;
 export const quotasResource = z.object({
   projectsMax: z.number().int().nonnegative().nullable(),
   aiMonthMax: z.number().int().nonnegative().nullable(),
+  membersMax: z.number().int().nonnegative().nullable(),
 });
 
 export type QuotasResource = z.infer<typeof quotasResource>;

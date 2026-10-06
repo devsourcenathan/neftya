@@ -31,7 +31,18 @@ export default defineConfig({
      * Les deux valeurs restent **courtes devant un blocage réel** : une requête qui ne
      * revient pas échoue toujours, elle met seulement plus longtemps à le dire.
      */
-    testTimeout: 30_000,
-    hookTimeout: 30_000,
+    testTimeout: 60_000,
+    /**
+     * Le crochet a plus de marge que le test, parce qu'il en fait plus.
+     *
+     * Ouvrir un banc d'essai coûte un `DROP SCHEMA`, un `CREATE SCHEMA` et onze migrations :
+     * une douzaine d'allers-retours, soit six secondes sur une base distante **quand elle va
+     * bien**. Sa latence varie d'un facteur dix, et trente secondes tombaient au milieu de
+     * cette variance — d'où des échecs qui changeaient de place à chaque passage.
+     *
+     * Soixante secondes restent courtes devant un blocage réel : une requête qui ne revient
+     * pas échoue toujours, elle met seulement plus longtemps à le dire.
+     */
+    hookTimeout: 60_000,
   },
 });

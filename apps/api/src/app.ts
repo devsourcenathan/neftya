@@ -128,6 +128,8 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
   // authentifié — exiger un jeton pour s'inscrire serait un cul-de-sac.
   // `jwtSecret` absent : les routes répondent 503 plutôt qu'un 500 qui ferait
   // chercher un défaut là où il manque une configuration.
+  // Une seule source de plafonds pour tout le monde : la table, et le jeton en repli.
+  const quotas = new LocalQuotas(dependencies.db);
   const authRepository = new AuthRepository(dependencies.db);
   const local = dependencies.jwtSecret
     ? new LocalVerifier(dependencies.jwtSecret)
@@ -152,13 +154,12 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     const settings = new SettingsRepository(dependencies.db);
     const manufacturing = new ManufacturingRepository(dependencies.db);
 
-    // Une seule source de plafonds, partagée : la table, et le jeton en repli.
-    registerProjectRoutes(authenticated, projects, new LocalQuotas(dependencies.db));
+    registerProjectRoutes(authenticated, projects, quotas);
     registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
     registerAssistantRoutes(authenticated, dependencies.ai);
     registerSettingsRoutes(authenticated, settings);
     if (jwtSecret) {
-      registerProtectedAuthRoutes(authenticated, authRepository, { jwtSecret });
+      registerProtectedAuthRoutes(authenticated, authRepository, { jwtSecret }, quotas);
     }
     registerManufacturingRoutes(authenticated, {
       projects,

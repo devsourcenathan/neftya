@@ -2042,3 +2042,85 @@ annoncé comme une hypothèse étayée, pas comme un fait vérifié.
 
 **Ce qui reste acquis**, et qui n'a rien à voir avec les tests : le réessai à l'ouverture
 dans `createDatabase`, qui retire un `500` réel en production.
+
+---
+
+## 2026-10-06 — Sekuu est mis de côté, provisoirement, et voici à quoi on revient
+
+**Décision.** Neftya porte son identité, ses organisations, ses rôles, ses invitations, ses
+quotas, son stockage, son IA et son envoi d'emails. La mise de côté est **provisoire**, et
+les chemins Sekuu restent en place.
+
+**Motif.** Avancer sans dépendre d'une plateforme encore en chantier. Chaque brique de Sekuu
+que Neftya attendait — l'IA à entrée image, le palier gratuit, la clé déléguée à émettre en
+console — ajoutait un aller-retour humain avant la moindre vérification.
+
+**Ce que cela renverse.** Le brief disait : *« Les plans appartiennent à Sekuu Billing, pas à
+Neftya. Il ne connaît ni plan, ni facture, ni échéance. »* Et la liste de contrôle de
+SEKUU.md portait **« Aucune table `users` »**. Il y en a une, plus `memberships`,
+`organizations`, `invitations`, `refresh_sessions`, `organization_quotas`. Quinze tables là
+où il y en avait cinq.
+
+**Pourquoi ce n'est pas une impasse.** Les jetons locaux sont signés en HS256 mais rendent
+**un contexte de la même forme** que celui de Sekuu : `sekuuOf`, `can` et `enforceLimit` ne
+savent pas qui a signé. Le retour coûte un vérifieur, pas des contrôleurs. Le
+`CompositeVerifier` accepte déjà les deux, et l'absence de plateforme n'est plus une erreur
+de démarrage depuis le 4 octobre.
+
+**La condition de retour, écrite pour qu'on n'en débatte pas deux fois.** On rebranche Sekuu
+quand les trois tiennent ensemble :
+
+1. la **facturation** devient nécessaire — c'est-à-dire qu'un client paie ; aucune raison de
+   porter un module de facturation avant d'avoir une facture à émettre ;
+2. un **second produit** doit partager la session — la session unique était le motif
+   d'origine, et elle ne vaut qu'à deux ;
+3. la plateforme sait faire ce que Neftya fait déjà sans elle, **sans régression** : les
+   quotas à trois états, le stockage des exports, et une tâche d'IA à entrée image.
+
+**Ce qu'il faudra réconcilier ce jour-là**, et qu'il vaut mieux savoir maintenant :
+
+- `members` est appliqué en local avec **la clé de la plateforme**, délibérément : au retour,
+  c'est la même qui est lue.
+- Les plafonds locaux vivent dans `organization_quotas`, les plafonds Sekuu dans les
+  revendications du jeton. `resolveLimit` lit déjà la table d'abord et le jeton ensuite :
+  l'ordre est le bon, il n'y aura rien à inverser.
+- La table `users` ne migre pas vers Sekuu. Les comptes créés localement y resteront, comme
+  les médias de DealerOS sont restés sur leur ancien chemin : le risque d'une migration de
+  comptes est réel, le gain nul.
+
+**Si rien de tout cela n'arrive**, la mise de côté devient définitive sans qu'on ait rien à
+défaire — et c'est aussi pour cela qu'elle est écrite comme provisoire plutôt que comme un
+reniement.
+
+---
+
+## 2026-10-06 — Le palier gratuit, et la grille arbitrée
+
+**Décision.** Quatre paliers : Gratuit, Solo 5 000, Pro 15 000, Max 40 000 XAF par mois.
+Gratuit à **trois projets, cinq analyses d'IA par mois, un membre, tous les exports**.
+
+**Motif.** Le brief annonçait un freemium ; les plans semés le 4 septembre n'avaient aucun
+palier gratuit. J'avais recopié les tarifs de DealerOS sans les confronter au brief, et
+personne ne l'avait relevé pendant un mois. L'écart le plus net du projet n'était pas
+technique.
+
+**Les exports ne sont pas bridés sur le gratuit**, contrairement à ce que disait le brief. Le
+plan de découpe est exactement ce qu'on veut faire essayer à un menuisier : brider le seul
+livrable qui prouve la justesse du moteur, c'est brider la démonstration. Et le brider aurait
+demandé une notion de droit par fonction, qui n'existe pas — le quota, lui, existe.
+
+**Le frein du gratuit est donc quantitatif, et c'est assumé** : trois projets suffisent à
+éprouver le moteur sur de vrais meubles, pas à faire tourner un atelier.
+
+**Mille analyses sur Max plutôt qu'illimité.** L'IA est la seule fonction qui dépense de
+l'argent réel à chaque appel. Les autres paliers reprennent les chiffres du brief — 5, 50,
+200 — décalés d'un cran par l'arrivée du gratuit.
+
+**Une organisation naît au palier gratuit.** La garde est dans `createOrganization`, le seul
+passage obligé : l'inscription et la création d'un second atelier y arrivent toutes les deux.
+Les organisations antérieures gardent leur absence de plafond — les plafonner après coup
+aurait fermé des projets déjà créés.
+
+**Le tarif ne se réécrit pas.** Une migration de plus ajoute le gratuit et le quota d'IA qui
+manquait aux trois payants ; celle du 4 septembre a tourné, et un tarif se cite dans une
+facture.

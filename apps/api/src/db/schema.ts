@@ -172,6 +172,7 @@ export interface OrganizationQuotasTable {
   organization_id: string;
   projects_max: number | null;
   ai_month_max: number | null;
+  members_max: number | null;
   updated_at: UpdatedAt;
 }
 

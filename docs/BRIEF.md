@@ -116,54 +116,99 @@ Ces besoins reposent largement sur les organisations et les rôles fournis par
 > claim `limits` (quels plafonds ?). Il ne connaît ni plan, ni facture, ni échéance.
 > Voir [SEKUU.md](SEKUU.md) §5.
 
-Modèle **freemium** à trois paliers.
+Modèle **freemium** à quatre paliers. Les noms et les tarifs sont ceux du catalogue de
+facturation ; la grille complète est au §5.4, et c'est elle qui fait foi depuis le
+6 octobre 2026.
 
-### Free
+### Gratuit
 
-- Nombre limité de projets
-- Modèles basiques
-- Visualisation limitée
-- Exports limités
+- **Trois projets**
+- Tous les modèles prédéfinis
+- **Tous les exports**, PDF, CSV et DXF compris
+- Cinq analyses d'IA par mois
 
-### Pro — l'artisan indépendant
+> **Les exports ne sont pas bridés, contrairement à la première version de ce brief.**
+> Le plan de découpe est exactement ce qu'on veut faire essayer à un menuisier : brider le
+> seul livrable qui prouve la justesse du moteur, c'est brider la démonstration. Le frein du
+> gratuit, ce sont les trois projets.
 
-**L'outil métier complet, pour un utilisateur.**
+### Solo — l'artisan seul
 
-- Projets illimités
-- Visualisation 3D complète
-- Optimisation de découpe
-- Exports techniques (PDF, CSV)
-- **Devis**
-- Assistant IA
-- Historique
+**L'outil métier complet, pour une ou deux personnes.**
 
-### Professional — ateliers
+- Dix projets
+- Exports techniques, DXF compris
+- **Devis, envoyé au client**
+- Assistant IA, cinquante analyses par mois
 
-**Tout Pro, plus le collectif.**
+### Pro — l'atelier et son équipe
 
-- Multi-utilisateurs et organisations
+**Tout Solo, plus le collectif.**
+
+- Cent projets, dix membres
 - Gestion d'équipe et des rôles
-- Gestion des clients
-- Branding personnalisé
-- API
+- Gestion des clients — *pas encore livrée*
+- Quatre fois plus d'analyses
 
-Le devis et l'export technique sont dans Pro, et non réservés à Professional : la cible
-primaire est l'artisan seul, et lui refuser le devis reviendrait à lui refuser la raison
-même d'utiliser Neftya. Professional ne vend que ce qui n'a de sens qu'à plusieurs.
+### Max — plusieurs ateliers
 
-### Traduction en quotas de plateforme
+- Projets et membres illimités
+- Mille analyses par mois
+- Branding personnalisé — *pas encore livré*
+- API — *pas encore livrée*
+
+**Le devis et l'export technique sont dans Solo**, le palier le plus bas qui se paie : la
+cible primaire est l'artisan seul, et lui refuser le devis reviendrait à lui refuser la
+raison même d'utiliser Neftya. Les paliers supérieurs ne vendent que ce qui n'a de sens qu'à
+plusieurs.
+
+> **Trois promesses de ce §5 ne sont pas livrées** au 6 octobre 2026 : la gestion des
+> clients, le branding et l'API. Un projet n'a aujourd'hui aucun client rattaché, ce qui est
+> aussi ce qui manque pour qu'un devis parte sans qu'on saisisse l'adresse à la main.
+
+### 5.4 La grille, arbitrée le 6 octobre 2026
 
 Ce que chaque palier accorde devient des clés `limits`, **préfixées par le produit** :
 
-| Clé | Free | Pro | Professional |
-|---|---|---|---|
-| `neftya_projects_max` | 3 | `null` | `null` |
-| `neftya_ai_analyses_max` | 5 | 50 | 200 |
-| `members` | 1 | 1 | `null` |
+| Clé | Gratuit | Solo · 5 000 | Pro · 15 000 | Max · 40 000 |
+|---|---|---|---|---|
+| `neftya_projects_max` | 3 | 10 | 100 | `null` |
+| `neftya_ai_month_max` | 5 | 50 | 200 | **1 000** |
+| `members` | 1 | 2 | 10 | `null` |
+| `storage_gb` | 1 | 5 | 50 | 200 |
+| Essai | — | 14 j | 14 j | 14 j |
 
-`null` vaut illimité. `members` est une clé de la plateforme, pas de Neftya : les
-utilisateurs d'une organisation sont déjà nommés par Sekuu, et en redéclarer une seconde
-finirait par en dire une autre.
+`null` vaut illimité. Montants en francs CFA par mois ; remises de 2 %, 3 % et 5 % au
+trimestre, au semestre et à l'année.
 
-Le multi-utilisateur de Professional n'est donc pas une fonctionnalité de Neftya : c'est
-`members` qui passe de 1 à illimité côté plateforme.
+**Trois écarts avec la première version de ce brief, et leurs motifs.**
+
+Les noms sont **Solo, Pro, Max** et non Pro / Professional : ce sont ceux du catalogue de
+facturation, et un tarif se cite dans une facture — le renommer rendrait rétroactif ce qui
+ne doit pas l'être.
+
+La clé d'IA s'appelle `neftya_ai_month_max` et non `neftya_ai_analyses_max`. La seconde était
+celle de ce brief ; **personne ne l'a jamais lue**. La colonne que Neftya interroge s'appelle
+`ai_month_max` depuis sa migration `0006`, et c'est elle qui compte réellement les
+générations du mois.
+
+**`neftya_ai_month_max` est plafonné même sur Max**, à mille analyses. L'IA est la seule
+fonction qui dépense de l'argent réel à chaque appel : un palier illimité est une facture
+dont on ne connaît pas le plafond, et c'est précisément le scénario où l'on perd de l'argent
+sans le voir.
+
+### 5.5 Qui applique quoi
+
+`members` est une clé de la **plateforme**, pas de Neftya : les utilisateurs d'une
+organisation sont déjà nommés par Sekuu, et en redéclarer une seconde finirait par en dire
+une autre.
+
+**Mais Sekuu est mis de côté** (voir le journal des décisions, 6 octobre 2026), et un quota
+que personne n'applique est une promesse qu'on ne tient pas. Neftya l'applique donc en local,
+avec la même clé — `members`, sans préfixe — pour qu'au retour de la plateforme ce soit la
+même règle qui soit lue, et non une seconde à réconcilier.
+
+**Une organisation créée localement naît au palier gratuit.** Sans quoi elle naîtrait « non
+couverte », donc illimitée, et ce tableau ne serait qu'un tableau. Les organisations créées
+avant cette décision gardent leur absence de plafond : les plafonner après coup aurait fermé
+des projets déjà créés.

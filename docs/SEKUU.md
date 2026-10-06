@@ -1,5 +1,17 @@
 # Intégration à Sekuu Platform
 
+> **Sekuu est mis de côté depuis le 6 octobre 2026, provisoirement.**
+>
+> Neftya porte son identité, ses quotas, son stockage, son IA et son envoi d'emails. Ce
+> document décrit le contrat de la plateforme, qui reste exact et reste câblé — le
+> `CompositeVerifier` accepte les deux sortes de jetons, et l'absence de plateforme n'est plus
+> une erreur de démarrage. La condition de retour est écrite dans
+> [DECISIONS.md](DECISIONS.md), à cette date.
+>
+> **La liste de contrôle du §10 décrit donc l'état « branché sur Sekuu », pas l'état actuel.**
+> En particulier, « aucune table `users` » n'est plus vrai : il y en a une.
+
+
 > **Neftya est un produit, pas un module de la plateforme.**
 >
 > Ce document résume le contrat côté Neftya. **Il ne fait pas autorité** : la référence

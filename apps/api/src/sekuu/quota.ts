@@ -20,10 +20,17 @@ import { limitOf, type SekuuContext } from './sekuu-context.js';
 
 export const PROJECTS_QUOTA_KEY = 'neftya_projects_max';
 export const AI_QUOTA_KEY = 'neftya_ai_month_max';
+/**
+ * `members` sans préfixe, et c'est voulu : c'est la clé de la **plateforme**, pas de Neftya.
+ * Neftya l'applique en local le temps que Sekuu revienne, et le jour où elle revient, c'est
+ * la même clé qui est lue — pas une seconde à réconcilier.
+ */
+export const MEMBERS_QUOTA_KEY = 'members';
 
 const COLUMNS = {
   [PROJECTS_QUOTA_KEY]: 'projects_max',
   [AI_QUOTA_KEY]: 'ai_month_max',
+  [MEMBERS_QUOTA_KEY]: 'members_max',
 } as const;
 
 export type QuotaKey = keyof typeof COLUMNS;
