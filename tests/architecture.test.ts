@@ -157,3 +157,42 @@ describe('le graphe de construction', () => {
     });
   }
 });
+
+/**
+ * Le projet des tests se construit à part, et ne se référence pas depuis la racine.
+ *
+ * `tsconfig.tests.json` est le seul projet désigné par un **fichier** et non par un
+ * dossier. Référencé depuis `tsconfig.json`, le transformateur de Vite (oxc) résolvait ce
+ * chemin relativement au fichier qu'il compilait : pour
+ * `packages/drawing/dist/index.js`, il cherchait `packages/tsconfig.tests.json`, ne le
+ * trouvait pas, et refusait de servir le module. Le serveur de développement ne rendait
+ * plus qu'un écran d'erreur — sur une page qui n'a rien à voir avec les tests.
+ *
+ * On le garde donc hors de la solution racine, et `npm run typecheck` nomme les deux
+ * solutions : sans quoi plus personne ne vérifierait les types des tests.
+ */
+describe('le projet des tests', () => {
+  const withoutComments = (path: string) =>
+    readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+  it("n'est pas référencé par la solution racine", () => {
+    const config = JSON.parse(withoutComments('tsconfig.json')) as {
+      references?: { path: string }[];
+    };
+
+    const paths = (config.references ?? []).map((reference) => reference.path);
+
+    expect(
+      paths.some((path) => path.endsWith('.json')),
+      'un projet désigné par un fichier dans tsconfig.json : le serveur de développement cassera sur une page sans rapport',
+    ).toBe(false);
+  });
+
+  it('reste couvert par la vérification des types', () => {
+    const manifest = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+
+    expect(manifest.scripts.typecheck).toContain('tsconfig.tests.json');
+  });
+});

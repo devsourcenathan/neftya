@@ -14,7 +14,7 @@
     "dev": "npm run dev --workspace @neftya/web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc --build tsconfig.json tsconfig.tests.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

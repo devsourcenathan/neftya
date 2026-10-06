@@ -47,8 +47,10 @@ export function ProjectActions({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {/* `min-w-0 flex-1` : à 375 px le champ cède de la largeur plutôt que de renvoyer
+          seul « Supprimer » à la ligne suivante. */}
       <Input
-        className="max-w-xs font-sans text-lg"
+        className="min-w-0 flex-1 basis-48 max-w-xs font-sans text-lg"
         value={draft ?? name}
         aria-label={t('projects.name')}
         onChange={(event) => setDraft(event.target.value)}

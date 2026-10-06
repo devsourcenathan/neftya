@@ -47,7 +47,11 @@ function Shell() {
       <SideNav collapsed={collapsed} onToggle={() => setStored(!stored)} />
 
       <div
-        className={`relative z-10 flex min-h-screen flex-1 flex-col transition-[padding] ${
+        // `min-w-0` : colonne d'un conteneur flex, elle vaudrait `min-width: auto` et
+        // prendrait la largeur minimale de son contenu. Un seul tableau large suffisait
+        // alors à élargir la page entière, qui se mettait à glisser latéralement sur
+        // téléphone — loin du tableau fautif, et sans rien qui l'explique.
+        className={`relative z-10 flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] ${
           collapsed ? 'lg:pl-16' : 'lg:pl-[280px]'
         }`}
       >
@@ -92,12 +96,16 @@ function SideNav({
           <CubeIcon />
         </span>
         {/* Repliée, la barre garde sa marque et perd ses mots : c'est le seul élément qui
-            reste reconnaissable à 64 pixels. */}
-        <span className={collapsed ? 'hidden' : 'hidden lg:block'}>
+            reste reconnaissable à 64 pixels. En barre horizontale le nom reste, lui aussi :
+            trois icônes sans un mot ne disent pas où l'on est. La baseline, elle, cède —
+            elle n'a pas sa place dans un bandeau de 56 pixels de haut. */}
+        <span className={collapsed ? 'hidden' : 'block'}>
           <span className="block text-headline-md font-bold leading-none text-primary">
             {t('app.name')}
           </span>
-          <span className="label-caps mt-1 block text-outline">{t('nav.tagline')}</span>
+          <span className="label-caps mt-1 hidden text-outline lg:block">
+            {t('nav.tagline')}
+          </span>
         </span>
       </Link>
 
@@ -173,7 +181,9 @@ function NavItem({
       <span aria-hidden="true" className="text-base">
         {icon}
       </span>
-      <span className={collapsed ? 'hidden' : 'hidden sm:block'}>{children}</span>
+      {/* Le libellé tient même à 375 px : la navigation compte une entrée, et une icône
+          seule laisserait deviner laquelle. */}
+      <span className={collapsed ? 'hidden' : 'block'}>{children}</span>
     </Link>
   );
 }

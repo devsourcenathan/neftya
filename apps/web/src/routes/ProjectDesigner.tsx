@@ -53,8 +53,14 @@ export function ProjectDesigner({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      <header className="flex items-baseline justify-between gap-4">
+    /* `pt-20` sous `lg` : la barre de navigation y est fixée en haut de l'écran, et sans
+       cette réserve le titre du projet se glisse dessous. Au-dessus de `lg` elle est
+       latérale, donc la réserve n'a plus lieu d'être. */
+    <div className="flex h-full flex-col gap-3 px-4 pt-20 pb-4 lg:pt-4">
+      {/* `flex-wrap` : le nom du projet occupe à lui seul 320 px, et les trois actions
+          autant. Sur un téléphone elles passent à la ligne — sans quoi la page entière
+          déborde de 180 px et se met à glisser latéralement. */}
+      <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <ProjectActions projectId={projectId} name={project.data.name} />
         <Link
           to="/projects/$projectId/manufacturing"

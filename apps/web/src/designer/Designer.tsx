@@ -241,7 +241,9 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
         </div>
 
         <div
-          className={`order-1 min-h-[55vh] lg:order-2 lg:min-h-0 ${
+          // 70 vh sous `lg` : c'est le meuble qu'on vient voir. En dessous, la barre
+          // d'outils et le sélecteur de vue lui laissaient moins du quart de l'écran.
+          className={`order-1 min-h-[70vh] lg:order-2 lg:min-h-0 ${
             panel === 'view' ? 'flex' : 'hidden'
           } lg:flex ${isCollapsed('view') ? 'lg:w-11 lg:shrink-0' : 'flex-1'}`}
         >
