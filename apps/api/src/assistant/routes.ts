@@ -79,17 +79,19 @@ const imageBody = z.object({
    * Une image ne porte aucune dimension — le brief le dit lui-même. Le modèle rend des
    * proportions ; sans cette mesure, elles ne composent rien.
    */
+  /**
+   * L'échelle, **facultative**.
+   *
+   * Donnée, elle fait foi. Absente, le modèle en propose une d'après ce qu'il reconnaît —
+   * une bibliothèque fait couramment 800 à 1000 de large. C'est une typologie, pas une
+   * mesure, et la configuration s'affiche avec ses cotes avant qu'aucun projet n'existe.
+   */
   widthMm: z
     .number()
     .int('Une cote est un entier de millimètres.')
-    .min(
-      MIN_DIMENSION_MM,
-      `Largeur attendue entre ${MIN_DIMENSION_MM} et ${MAX_DIMENSION_MM} mm.`,
-    )
-    .max(
-      MAX_DIMENSION_MM,
-      `Largeur attendue entre ${MIN_DIMENSION_MM} et ${MAX_DIMENSION_MM} mm.`,
-    ),
+    .min(MIN_DIMENSION_MM)
+    .max(MAX_DIMENSION_MM)
+    .optional(),
   /**
    * La profondeur, **facultative**.
    *
@@ -182,6 +184,7 @@ function resource(generation: {
   output: unknown;
   widthMm?: number | null;
   depthMm?: number | null;
+  fromImage?: boolean;
 }) {
   if (generation.status !== 'succeeded') {
     return {
@@ -201,13 +204,19 @@ function resource(generation: {
    * sans elle on lirait `heightRatio` comme une cote absente. C'est pour cela que l'échelle
    * est rangée avec la génération, et non passée à la relecture.
    */
-  const interpretation =
-    generation.widthMm != null
-      ? interpretFromImage(extracted, {
-          widthMm: generation.widthMm,
-          depthMm: generation.depthMm ?? null,
-        })
-      : interpret(extracted);
+  /*
+   * **Le drapeau dit la composition, pas la présence d'une largeur.**
+   *
+   * Ce test portait sur `widthMm`, ce qui marchait tant que l'image en exigeait une. Depuis
+   * qu'elle est facultative, une photo sans largeur donnée aurait été relue comme une
+   * description, et ses proportions lues comme des cotes absentes.
+   */
+  const interpretation = generation.fromImage
+    ? interpretFromImage(extracted, {
+        widthMm: generation.widthMm ?? null,
+        depthMm: generation.depthMm ?? null,
+      })
+    : interpret(extracted);
 
   return {
     id: generation.id,
@@ -310,11 +319,11 @@ async function submitImage(service: AiService, organizationId: string, raw: unkn
       input: `image ${digest(image)} largeur=${widthMm}`,
       fields: IMAGE_FIELDS,
       imageDataUrl: image,
-      widthMm,
+      ...(widthMm === undefined ? {} : { widthMm }),
       ...(depthMm === undefined ? {} : { depthMm }),
       // La même photo à la même échelle est la même question. Changer la largeur en
       // redemande une : les proportions tiennent, le meuble composé non.
-      idempotencyKey: `neftya:image:${organizationId}:${digest(image)}:${widthMm}:${depthMm ?? ''}`,
+      idempotencyKey: `neftya:image:${organizationId}:${digest(image)}:${widthMm ?? ''}:${depthMm ?? ''}`,
     }),
   );
 }

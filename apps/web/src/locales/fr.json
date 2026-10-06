@@ -381,12 +381,12 @@
     "modePhoto": "Depuis une photo",
     "photoLabel": "La photo du meuble",
     "photoHint": "JPEG, PNG ou WebP, 3 Mo au plus. Une vue de face suffit.",
-    "widthLabel": "Largeur hors-tout (mm)",
-    "widthHint": "Une photo ne donne pas de cotes : cette mesure fournit l'échelle, le reste s'en déduit.",
+    "widthLabel": "Largeur hors-tout (mm), si connue",
+    "widthHint": "Laissez vide : l'assistant proposera une largeur d'après le meuble reconnu, et vous la corrigerez.",
     "photoTooHeavy": "Photo trop lourde : 3 Mo au plus.",
     "photoMissing": "Choisissez une photo et donnez la largeur.",
     "chosen": "Photo choisie",
     "depthLabel": "Profondeur (mm), si connue",
-    "depthHint": "Une vue de face ne montre pas la profondeur. Laissez vide si la photo est prise de trois quarts."
+    "depthHint": "Laissez vide aussi : une vue de face ne montre pas la profondeur, elle sera proposée."
   }
 }

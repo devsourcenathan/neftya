@@ -335,8 +335,15 @@ describe('une image, et une seule cote', () => {
     const system = messages.find((m) => m.role === 'system')?.content ?? '';
 
     expect(system).toContain('heightRatio');
-    // L'invite écrite demande explicitement des millimètres ; celle-ci les interdit.
-    expect(system).toContain('jamais de millim');
+    /*
+     * L'invite dit **ce que la photo porte** et ce qu'elle ne porte pas.
+     *
+     * Elle interdisait d'abord tout millimètre. Elle en demande maintenant, mais nommés
+     * pour ce qu'ils sont — des ordres de grandeur à relire — pendant que la hauteur
+     * continue de venir d'une proportion, c'est-à-dire de ce que l'image montre vraiment.
+     */
+    expect(system).toContain('aucune cote');
+    expect(system).toContain('ordres de grandeur');
   });
 
   it('garde l’échelle avec la génération', async () => {
@@ -434,9 +441,11 @@ describe('bout en bout par l’API', () => {
     }
   });
 
-  it('refuse une image sans échelle, et le dit par champ', async () => {
+  it('accepte une image seule, et compose sur ce qu’il propose', async () => {
     const wired = await createHarness('test_ia_image_sans_echelle', {
-      ai: local(() => completion({ heightRatio: 1.25 })),
+      ai: local(() =>
+        completion({ widthMm: 900, depthMm: 300, heightRatio: 2, compartments: 2 }),
+      ),
     });
     try {
       const response = await wired.app.inject({
@@ -446,8 +455,39 @@ describe('bout en bout par l’API', () => {
         payload: { image: 'data:image/png;base64,iVBORw0KGgo=' },
       });
 
-      expect(response.statusCode).toBe(422);
-      expect(response.json().error.details).toHaveProperty('widthMm');
+      /*
+       * Ce test exigeait une largeur et attendait `422`.
+       *
+       * Refuser laissait l'utilisateur devant un écran vide à remplir de mémoire. La
+       * configuration s'affiche de toute façon avec ses cotes avant qu'aucun projet
+       * n'existe : proposer une cote qu'on relit vaut mieux que n'en proposer aucune.
+       */
+      expect(response.statusCode).toBe(200);
+      expect(response.json().data.model.dimensions).toEqual({
+        widthMm: 900,
+        heightMm: 1800,
+        depthMm: 300,
+      });
+    } finally {
+      await wired.close();
+    }
+  });
+
+  it('refuse quand même ce qui ne tient pas', async () => {
+    const wired = await createHarness('test_ia_image_sans_rien', {
+      ai: local(() => completion({ compartments: 2 })),
+    });
+    try {
+      const response = await wired.app.inject({
+        method: 'POST',
+        url: '/v1/assistant/interpretations',
+        headers: await wired.authorization(),
+        payload: { image: 'data:image/png;base64,iVBORw0KGgo=' },
+      });
+
+      // Ni proportion, ni proposition : composer ici reviendrait à inventer nous-mêmes.
+      expect(response.statusCode).toBe(200);
+      expect(response.json().data.status).toBe('unusable');
     } finally {
       await wired.close();
     }

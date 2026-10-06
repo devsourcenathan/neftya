@@ -2205,3 +2205,38 @@ aurait servi à prouver qu'elle marche.
 
 **Vérifié en appliquant les douze migrations dans deux schémas d'une même base** : deux
 contraintes posées dans chacun, là où il n'y en avait qu'une.
+
+---
+
+## 2026-10-06 (après-midi) — Proposer une cote qu'on relit vaut mieux que n'en proposer aucune
+
+**Décision.** Avec une image, **toutes les cotes sont facultatives**. Le modèle propose une
+largeur et une profondeur d'après ce qu'il reconnaît ; ce que l'utilisateur donne gagne
+toujours. La hauteur, elle, continue de venir d'une **proportion** appliquée à la largeur
+retenue.
+
+**Ce que cela révise.** Le matin même, on refusait de composer sans échelle : « demander des
+millimètres à un modèle qui regarde une photo, c'est lui demander d'inventer ». C'est vrai, et
+ce n'était pas la bonne conclusion — refuser laissait la personne devant un écran vide à
+remplir de mémoire, alors que la configuration s'affiche de toute façon **avec ses cotes en
+clair, avant qu'aucun projet n'existe**. Le garde-fou n'était pas le refus : c'est l'écran de
+relecture, et il existait déjà.
+
+**Ce qui n'a pas changé, et qui tient tout.** La hauteur vient d'un rapport, parce qu'un
+rapport est ce que la photo montre vraiment. Les millimètres proposés sont une **typologie** —
+une bibliothèque fait couramment 800 à 1000 de large — et l'invite le dit au modèle dans ces
+termes : des ordres de grandeur à relire, pas des mesures. Les bornes de vraisemblance
+s'appliquent aux propositions comme au reste : une proposition absurde use plus de confiance
+qu'une absence.
+
+**On refuse encore quand rien ne tient.** Ni proportion, ni proposition : composer là
+reviendrait à inventer nous-mêmes, ce qui est un autre sujet que de relayer une estimation
+annoncée comme telle.
+
+**Un drapeau remplace une déduction.** La relecture distinguait l'image par la présence d'une
+largeur ; la largeur étant devenue facultative, une photo sans cote aurait été relue comme une
+description, et ses proportions lues comme des cotes absentes. `from_image` le dit au lieu de
+le faire deviner à une colonne qui parlait d'autre chose.
+
+**Mesuré contre le vrai modèle**, sur le même dessin : image seule → 900 × 1350 × 300 ;
+largeur donnée à 1500 → 1500 × 2250 × 300. Le rapport 1,5 traverse les deux.

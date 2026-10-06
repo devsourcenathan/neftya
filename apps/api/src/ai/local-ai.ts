@@ -51,9 +51,13 @@ export interface LocalAiOptions {
  */
 const IMAGE_PROMPT = [
   'Tu regardes la photo d’un meuble et tu rends un objet JSON.',
-  'Tu ne connais aucune cote : ne donne jamais de millimètres.',
+  'La photo ne porte aucune cote : ce que tu vois, ce sont des proportions.',
   'heightRatio = hauteur / largeur, depthRatio = profondeur / largeur,',
   'en nombres décimaux (une penderie fait environ 2.4 ; une étagère basse 0.11).',
+  'depthRatio = null si la vue est de face et ne montre pas la profondeur.',
+  'widthMm et depthMm : propose des millimètres entiers d’après ce qu’est l’objet',
+  '(une bibliothèque fait couramment 800 à 1000 de large et 300 de profond ;',
+  'une penderie 1200 sur 600). Ce sont des ordres de grandeur à relire, pas des mesures.',
   'Compte les compartiments, et par compartiment les étagères, tiroirs et portes.',
   'Matière en un mot si elle est reconnaissable, sinon null.',
   'Champs inconnus : null, jamais inventés. Rien que le JSON.',
@@ -80,7 +84,7 @@ export class LocalAI {
   async extract(request: ExtractRequest): Promise<Generation> {
     const existing = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm', 'from_image'])
       .where('organization_id', '=', request.organizationId)
       .where('idempotency_key', '=', request.idempotencyKey)
       .executeTakeFirst();
@@ -91,6 +95,7 @@ export class LocalAI {
         output: asRecord(existing.output),
         widthMm: existing.width_mm,
         depthMm: existing.depth_mm,
+        fromImage: existing.from_image,
       };
     }
 
@@ -116,6 +121,7 @@ export class LocalAI {
         raw_output: raw,
         width_mm: request.widthMm ?? null,
         depth_mm: request.depthMm ?? null,
+        from_image: request.imageDataUrl !== undefined,
       })
       .onConflict((conflict) => conflict.doNothing())
       .execute();
@@ -124,7 +130,7 @@ export class LocalAI {
     // un doublon. Deux soumissions du même texte restent une seule facture.
     const stored = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm', 'from_image'])
       .where('organization_id', '=', request.organizationId)
       .where('idempotency_key', '=', request.idempotencyKey)
       .executeTakeFirstOrThrow();
@@ -135,6 +141,7 @@ export class LocalAI {
       output: asRecord(stored.output),
       widthMm: stored.width_mm,
       depthMm: stored.depth_mm,
+      fromImage: stored.from_image,
     };
   }
 
@@ -142,7 +149,7 @@ export class LocalAI {
   async read(organizationId: string, generationId: string): Promise<Generation> {
     const row = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm', 'from_image'])
       .where('id', '=', generationId)
       .where('organization_id', '=', organizationId)
       .executeTakeFirst();
@@ -154,6 +161,7 @@ export class LocalAI {
       output: asRecord(row.output),
       widthMm: row.width_mm,
       depthMm: row.depth_mm,
+      fromImage: row.from_image,
     };
   }
 

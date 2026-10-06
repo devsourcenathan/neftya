@@ -67,7 +67,7 @@ export function Assistant({
 
   const submit = useMutation({
     mutationFn: (
-      input: { text: string } | { image: string; widthMm: number; depthMm?: number },
+      input: { text: string } | { image: string; widthMm?: number; depthMm?: number },
     ) =>
       'text' in input
         ? interpretDescription(api, input.text)
@@ -107,10 +107,20 @@ export function Assistant({
    * Une génération se paie : empêcher un appel voué à revenir en 422 coûte moins que de le
    * facturer.
    */
+  /**
+   * De quoi partir, selon la porte d'entrée.
+   *
+   * En mode photo, **l'image suffit** : les cotes sont proposées et relues avant qu'aucun
+   * projet n'existe. Une cote saisie doit en revanche être plausible — l'envoyer hors bornes
+   * ferait payer un appel pour un refus.
+   */
+  const plausible = (value: string) =>
+    value.trim() === '' || (Number(value) >= 100 && Number(value) <= 4000);
+
   const ready =
     mode === 'text'
       ? text.trim().length >= 3
-      : image !== null && Number(widthMm) >= 100 && Number(widthMm) <= 4000;
+      : image !== null && plausible(widthMm) && plausible(depthMm);
 
   const reset = () => {
     setId(null);
@@ -217,13 +227,13 @@ export function Assistant({
                 submit.mutate({ text: text.trim() });
                 return;
               }
-              if (!image || !Number.isInteger(Number(widthMm))) {
+              if (!image) {
                 setLocal(t('assistant.photoMissing'));
                 return;
               }
               submit.mutate({
                 image: image.dataUrl,
-                widthMm: Number(widthMm),
+                ...(widthMm.trim() === '' ? {} : { widthMm: Number(widthMm) }),
                 ...(depthMm.trim() === '' ? {} : { depthMm: Number(depthMm) }),
               });
             }}

@@ -47,12 +47,16 @@ export const interpretDescription = (api: ApiClient, text: string) =>
 export const interpretImage = (
   api: ApiClient,
   image: string,
-  widthMm: number,
+  widthMm?: number,
   depthMm?: number,
 ) =>
   api<InterpretationResource>('/v1/assistant/interpretations', {
     method: 'POST',
-    body: { image, widthMm, ...(depthMm === undefined ? {} : { depthMm }) },
+    body: {
+      image,
+      ...(widthMm === undefined ? {} : { widthMm }),
+      ...(depthMm === undefined ? {} : { depthMm }),
+    },
   });
 
 /**

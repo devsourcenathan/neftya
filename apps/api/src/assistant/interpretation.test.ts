@@ -230,22 +230,52 @@ describe('depuis une image, à une échelle donnée', () => {
     expect(result.model.dimensions.heightMm).toBe(1200);
   });
 
-  it('demande la profondeur quand la photo ne la montre pas', () => {
+  it('prend la profondeur proposée quand la vue de face n’en montre pas', () => {
+    const { depthRatio: _, ...vueDeFace } = SEEN;
+    const result = interpretFromImage(
+      { ...vueDeFace, depthMm: 320 },
+      { widthMm: 1600 },
+    );
+
+    /*
+     * **Le cas le plus courant, et le changement du 6 octobre.**
+     *
+     * Une photo prise en face ne montre aucune profondeur, et un modèle honnête rend `null`
+     * pour la proportion. On refusait alors — ce qui laissait l'utilisateur devant un écran
+     * vide à remplir de mémoire. On prend maintenant la cote proposée : elle s'affiche en
+     * clair avant qu'aucun projet n'existe, et celui qui a pris la photo corrige d'un regard.
+     */
+    if (!result.ok) throw new Error('attendu composable');
+    expect(result.model.dimensions.depthMm).toBe(320);
+  });
+
+  it('refuse quand même quand rien ne tient', () => {
     const { depthRatio: _, ...vueDeFace } = SEEN;
     const result = interpretFromImage(vueDeFace, { widthMm: 1600 });
 
-    /*
-     * **Le cas le plus courant.**
-     *
-     * Une photo prise en face ne montre aucune profondeur, et un modèle honnête rend
-     * `null`. Mesuré contre un vrai modèle : c'est exactement ce qu'il a fait. Refuser en
-     * parlant d'une « proportion absente » laissait l'utilisateur sans rien à corriger ; on
-     * lui demande la cote, ou une autre prise de vue.
-     */
+    // Ni proportion, ni proposition, ni mesure : proposer une profondeur « habituelle »
+    // ici reviendrait à l'inventer nous-mêmes.
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(Object.keys(result.problems)).toEqual(['depthMm']);
-    expect(result.problems['depthMm']?.[0]).toContain('trois quarts');
+  });
+
+  it('propose la largeur quand on n’en donne aucune', () => {
+    const result = interpretFromImage({ ...SEEN, widthMm: 900 });
+
+    if (!result.ok) throw new Error('attendu composable');
+    expect(result.model.dimensions.widthMm).toBe(900);
+    // La hauteur suit la proportion lue, appliquée à la largeur proposée.
+    expect(result.model.dimensions.heightMm).toBe(1125);
+  });
+
+  it('refuse une largeur proposée hors de ce qu’un meuble mesure', () => {
+    // Une proposition absurde use plus de confiance qu'une absence.
+    const result = interpretFromImage({ ...SEEN, widthMm: 40_000 });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toHaveProperty('widthMm');
   });
 
   it('accepte la profondeur donnée, et ignore alors la proportion', () => {
@@ -315,23 +345,30 @@ describe('depuis une image, à une échelle donnée', () => {
     expect(result.problems).toHaveProperty('heightMm');
   });
 
-  it('n’invente jamais la largeur : elle est donnée', () => {
-    const result = interpretFromImage({ ...SEEN, widthMm: 9999 }, { widthMm: 1200 });
+  it('préfère toujours la largeur donnée à celle proposée', () => {
+    const result = interpretFromImage({ ...SEEN, widthMm: 999 }, { widthMm: 1200 });
     if (!result.ok) throw new Error('attendu composable');
 
-    // Un `widthMm` rendu par le modèle est ignoré : l'échelle vient de l'utilisateur, et
-    // c'est tout l'objet de cette porte d'entrée.
+    // Qui mesure son meuble sait mieux que qui le regarde en photo.
     expect(result.model.dimensions.widthMm).toBe(1200);
   });
 });
 
 describe('les champs demandés pour une image', () => {
-  it('ne demandent aucune cote', () => {
-    // Demander des millimètres à un modèle qui regarde une photo, c'est lui demander
-    // d'inventer — et une cote inventée a l'air d'une cote mesurée.
-    for (const field of IMAGE_FIELDS) {
-      expect(field.endsWith('Mm')).toBe(false);
-    }
+  it('demandent des proportions, et des cotes seulement comme propositions', () => {
+    /*
+     * Ce test disait « aucune cote », et c'était la décision du matin : demander des
+     * millimètres à un modèle qui regarde une photo, c'est lui demander d'inventer.
+     *
+     * Elle a changé l'après-midi, à l'usage : refuser laissait l'utilisateur devant un
+     * écran vide à remplir de mémoire. Ce qui tient, c'est que **la hauteur vienne toujours
+     * d'une proportion** — ce que la photo montre vraiment — et que les millimètres ne
+     * soient que des ordres de grandeur, affichés avant qu'aucun projet n'existe.
+     */
+    expect(IMAGE_FIELDS).toContain('heightRatio');
+    expect(IMAGE_FIELDS).not.toContain('heightMm');
+    expect(IMAGE_FIELDS).toContain('widthMm');
+    expect(IMAGE_FIELDS).toContain('depthMm');
   });
 
   it('demandent les deux proportions', () => {

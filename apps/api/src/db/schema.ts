@@ -217,6 +217,8 @@ export interface AiGenerationsTable {
   width_mm: number | null;
   /** La profondeur donnée avec l'image. Une vue de face ne la montre pas. */
   depth_mm: number | null;
+  /** Ce qui dit quelle composition appliquer à la relecture : proportions, ou millimètres. */
+  from_image: boolean;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

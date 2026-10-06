@@ -75,6 +75,8 @@ export interface Generation {
    */
   widthMm?: number | null;
   depthMm?: number | null;
+  /** Vient d'une photo : la sortie porte des proportions, pas des millimètres. */
+  fromImage?: boolean;
 }
 
 export interface AiOptions {

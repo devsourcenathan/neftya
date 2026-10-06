@@ -172,14 +172,61 @@ describe('depuis une photo', () => {
   // `SegmentedControl` rend des onglets, pas des boutons.
   const photo = () => screen.getByRole('tab', { name: /Depuis une photo/u });
 
-  it('demande une largeur, et empêche de partir sans', async () => {
+  it('offre les cotes, sans les exiger', async () => {
     const { api } = scripted({});
     renderWithProviders(<Assistant onUse={() => {}} />, { api });
 
     fireEvent.click(photo());
 
-    // Une photo ne porte aucune cote : sans échelle, les proportions ne composent rien.
+    // Les deux champs existent — qui connaît ses cotes les donne — mais l'image seule
+    // suffit : les cotes sont proposées et relues avant qu'aucun projet n'existe.
     expect(screen.getByLabelText(/Largeur hors-tout/u)).toBeTruthy();
+    expect(screen.getByLabelText(/Profondeur/u)).toBeTruthy();
+    expect(interpret().disabled).toBe(true);
+  });
+
+  it('part avec la seule image, sans aucune cote', async () => {
+    const { api, bodies } = scripted({
+      post: { id: 'gen-1', status: 'succeeded', model: MODEL, problems: null },
+      get: { id: 'gen-1', status: 'succeeded', model: MODEL, problems: null },
+    });
+    renderWithProviders(<Assistant onUse={() => {}} />, { api });
+
+    fireEvent.click(photo());
+    fireEvent.change(screen.getByLabelText(/La photo du meuble/u), {
+      target: {
+        files: [new File([new Uint8Array([1])], 'meuble.png', { type: 'image/png' })],
+      },
+    });
+
+    await waitFor(() => expect(interpret().disabled).toBe(false));
+    fireEvent.click(interpret());
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    const sent = bodies[0] as Record<string, unknown>;
+    // Aucune cote envoyée : ni largeur, ni profondeur.
+    expect(sent).not.toHaveProperty('widthMm');
+    expect(sent).not.toHaveProperty('depthMm');
+  });
+
+  it('refuse une cote hors de ce qu’un meuble mesure', async () => {
+    const { api } = scripted({});
+    renderWithProviders(<Assistant onUse={() => {}} />, { api });
+
+    fireEvent.click(photo());
+    fireEvent.change(screen.getByLabelText(/La photo du meuble/u), {
+      target: {
+        files: [new File([new Uint8Array([1])], 'meuble.png', { type: 'image/png' })],
+      },
+    });
+    await waitFor(() => expect(interpret().disabled).toBe(false));
+
+    fireEvent.change(screen.getByLabelText(/Largeur hors-tout/u), {
+      target: { value: '40000' },
+    });
+
+    // Vide, la cote est proposée ; saisie, elle doit tenir — envoyer hors bornes ferait
+    // payer un appel pour un refus.
     expect(interpret().disabled).toBe(true);
   });
 

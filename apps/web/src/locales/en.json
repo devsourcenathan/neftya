@@ -381,12 +381,12 @@
     "modePhoto": "From a photo",
     "photoLabel": "A photo of the furniture",
     "photoHint": "JPEG, PNG or WebP, 3 MB at most. A front view is enough.",
-    "widthLabel": "Overall width (mm)",
-    "widthHint": "A photo carries no dimensions: this measurement sets the scale, the rest follows.",
+    "widthLabel": "Overall width (mm), if known",
+    "widthHint": "Leave empty: the assistant proposes a width from the furniture it recognises, and you correct it.",
     "photoTooHeavy": "Photo too heavy: 3 MB at most.",
     "photoMissing": "Choose a photo and give the width.",
     "chosen": "Photo selected",
     "depthLabel": "Depth (mm), if known",
-    "depthHint": "A front view shows no depth. Leave empty if the photo is taken at an angle."
+    "depthHint": "Leave this empty too: a front view shows no depth, so it will be proposed."
   }
 }

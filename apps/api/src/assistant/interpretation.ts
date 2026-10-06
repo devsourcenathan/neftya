@@ -56,6 +56,19 @@ export const EXTRACTED_FIELDS = [
  * — et une cote inventée a exactement l'air d'une cote mesurée.
  */
 export const IMAGE_FIELDS = [
+  /**
+   * Des cotes hors-tout **proposées**, en millimètres.
+   *
+   * Elles ne sont pas lues sur la photo — aucune photo n'en porte — mais déduites de ce
+   * qu'est l'objet : une bibliothèque fait couramment 800 à 1000 de large, une penderie
+   * 1200. C'est une typologie, pas une mesure, et le mot compte.
+   *
+   * On les demande quand même, parce que refuser de proposer laissait l'utilisateur devant
+   * un écran vide à remplir de mémoire. Elles s'affichent avec leurs cotes en clair, avant
+   * qu'aucun projet n'existe, et la personne qui a pris la photo corrige d'un regard.
+   */
+  'widthMm',
+  'depthMm',
   'heightRatio',
   'depthRatio',
   'compartments',
@@ -111,6 +124,18 @@ export type Extracted = Record<string, unknown>;
  * d'analyser une unité — ce qu'on refuse de faire ici : une unité devinée est une cote
  * fausse qui a l'air juste.
  */
+/**
+ * Un entier **plausible pour un meuble**, ou `null`.
+ *
+ * Utilisé pour les cotes que le modèle propose : hors bornes, elles ne valent pas mieux que
+ * rien, et une proposition absurde use plus de confiance qu'une absence.
+ */
+function integerOf(value: unknown): number | null {
+  const parsed = integer(value);
+  if (parsed === null) return null;
+  return parsed >= MIN_DIMENSION_MM && parsed <= MAX_DIMENSION_MM ? parsed : null;
+}
+
 function integer(value: unknown): number | null {
   if (typeof value === 'number') return Number.isInteger(value) ? value : null;
   if (typeof value !== 'string') return null;
@@ -149,7 +174,7 @@ export function interpret(extracted: Extracted): Interpretation {
  */
 export function interpretFromImage(
   extracted: Extracted,
-  reference: { widthMm: number; depthMm?: number | null },
+  reference: { widthMm?: number | null; depthMm?: number | null } = {},
 ): Interpretation {
   const problems: Problems = {};
   return compose(extracted, scaled(extracted, reference, problems), problems);
@@ -198,10 +223,9 @@ function measured(extracted: Extracted, problems: Problems): Dimensions {
  */
 function scaled(
   extracted: Extracted,
-  reference: { widthMm: number; depthMm?: number | null },
+  reference: { widthMm?: number | null; depthMm?: number | null },
   problems: Problems,
 ): Dimensions {
-  const { widthMm } = reference;
   /**
    * Une proportion lisible, ou `null`.
    *
@@ -236,18 +260,39 @@ function scaled(
   const heightRatio = ratio('heightRatio', true);
 
   /*
-   * La profondeur donnée gagne sur celle que le modèle propose.
+   * **Ce que l'utilisateur donne gagne toujours.**
    *
-   * Qui mesure son meuble sait mieux que qui le regarde en photo — et quand les deux
-   * manquent, on le dit plutôt que de poser une profondeur « habituelle ».
+   * Qui mesure son meuble sait mieux que qui le regarde en photo. À défaut, on prend la
+   * proposition du modèle — et c'est le changement du 6 octobre : refuser laissait la
+   * personne devant un écran vide, alors que la configuration s'affiche de toute façon
+   * avant qu'aucun projet n'existe. Proposer une cote qu'on relit vaut mieux que n'en
+   * proposer aucune.
    */
-  const givenDepth = reference.depthMm ?? null;
-  const depthRatio = givenDepth === null ? ratio('depthRatio', false) : null;
+  const widthMm = reference.widthMm ?? integerOf(extracted['widthMm']);
+  if (widthMm === null) {
+    problems['widthMm'] = [
+      'Impossible de proposer une largeur pour ce meuble : donnez-la.',
+    ];
+    return null;
+  }
 
   if (heightRatio === null) return null;
-  if (givenDepth === null && depthRatio === null) {
+
+  /*
+   * La profondeur : celle qu'on donne, sinon la proportion lue, sinon celle que le modèle
+   * propose. Une vue de face n'en montre aucune — c'est le cas le plus courant, et c'est
+   * pour cela qu'il y a trois sources plutôt que deux.
+   */
+  const depthRatio = ratio('depthRatio', false);
+  const depthMm =
+    reference.depthMm ??
+    (depthRatio === null
+      ? integerOf(extracted['depthMm'])
+      : Math.round(widthMm * depthRatio));
+
+  if (depthMm === null) {
     problems['depthMm'] = [
-      'La photo ne montre pas la profondeur : donnez-la, ou prenez le meuble de trois quarts.',
+      'La photo ne montre pas la profondeur et aucune proposition ne tient : donnez-la.',
     ];
     return null;
   }
@@ -261,7 +306,7 @@ function scaled(
   const dimensions = {
     widthMm,
     heightMm: Math.round(widthMm * heightRatio),
-    depthMm: givenDepth ?? Math.round(widthMm * (depthRatio as number)),
+    depthMm,
   };
 
   for (const [field, value] of Object.entries(dimensions)) {
