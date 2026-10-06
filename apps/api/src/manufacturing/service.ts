@@ -4,11 +4,13 @@ import {
   build,
   costLines,
   cutList,
+  cuttingOrder,
   drilling,
   nest,
   type AssemblyStep,
   type BillOfMaterials,
   type CutListRow,
+  type CuttingOrder,
   type DrillingResult,
   type NestingResult,
   type ParsedFurnitureInput,
@@ -47,6 +49,13 @@ export interface Quotation {
 export interface ManufacturingPlan {
   cutList: CutListRow[];
   nesting: NestingResult;
+  /**
+   * Ce qu'on fait couper au magasin, pour qui n'a pas de scie à format.
+   *
+   * Dérivée du placement et non calculée à côté : c'est le même nombre de panneaux, donc
+   * le même achat.
+   */
+  cuttingOrder: CuttingOrder;
   /** Les positions de perçage, et la quincaillerie qu'elles impliquent. */
   drilling: DrillingResult;
   bill: BillOfMaterials;
@@ -67,6 +76,7 @@ export function manufacturingPlan(
   return {
     cutList: cutList(furniture),
     nesting,
+    cuttingOrder: cuttingOrder(furniture, nesting),
     drilling: holes,
     bill,
     assembly: assemblySteps(furniture),

@@ -409,5 +409,24 @@
     "chosen": "Photo selected",
     "depthLabel": "Depth (mm), if known",
     "depthHint": "Leave this empty too: a front view shows no depth, so it will be proposed."
+  },
+  "cuttingOrder": {
+    "title": "Cutting list — store",
+    "lead": "Hand this to the cutting desk. You buy the boards, the store cuts them: only finished sizes matter here — saw kerf and trimming are their business.",
+    "buy_one": "{{count}} board of {{material}} {{thickness}} mm — {{length}} × {{width}}",
+    "buy_other": "{{count}} boards of {{material}} {{thickness}} mm — {{length}} × {{width}}",
+    "pieces_one": "{{count}} piece to cut",
+    "pieces_other": "{{count}} pieces to cut",
+    "size": "Size",
+    "count": "Qty",
+    "grain": "Grain",
+    "grainLocked": "along the length, do not rotate",
+    "grainFree": "free",
+    "marks": "Marks",
+    "tooSmall": "The smallest size is {{size}} mm. Many stores refuse cuts below {{limit}} mm — ask before you pay for the boards.",
+    "copy": "Copy the list",
+    "copied": "List copied",
+    "download": "Download the list (CSV)",
+    "summary": "{{pieces}} pieces · {{count}} distinct sizes"
   }
 }

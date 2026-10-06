@@ -3,6 +3,7 @@ import type {
   AssemblyStep,
   BillOfMaterials,
   CutListRow,
+  CuttingOrder,
   DrillingResult,
   NestingResult,
   ParsedFurnitureInput,
@@ -78,6 +79,8 @@ export interface ManufacturingResource {
   project: { id: string; name: string };
   cut_list: CutListRow[];
   nesting: NestingResult;
+  /** Ce qu'on fait couper au magasin : cotes finies, quantités, rien de plus. */
+  cutting_order: CuttingOrder;
   /** Les positions de perçage, et la quincaillerie qu'elles impliquent. */
   drilling: DrillingResult;
   bill: BillOfMaterials;

@@ -409,5 +409,24 @@
     "chosen": "Photo choisie",
     "depthLabel": "Profondeur (mm), si connue",
     "depthHint": "Laissez vide aussi : une vue de face ne montre pas la profondeur, elle sera proposée."
+  },
+  "cuttingOrder": {
+    "title": "Fiche de débit — magasin",
+    "lead": "À remettre au comptoir de découpe. Vous achetez les panneaux, le magasin les coupe : seules les cotes finies comptent ici, le trait de scie et le délignage sont son affaire.",
+    "buy_one": "{{count}} panneau {{material}} {{thickness}} mm — {{length}} × {{width}}",
+    "buy_other": "{{count}} panneaux {{material}} {{thickness}} mm — {{length}} × {{width}}",
+    "pieces_one": "{{count}} morceau à couper",
+    "pieces_other": "{{count}} morceaux à couper",
+    "size": "Cote",
+    "count": "Qté",
+    "grain": "Fil",
+    "grainLocked": "dans la longueur, ne pas pivoter",
+    "grainFree": "libre",
+    "marks": "Repères",
+    "tooSmall": "La plus petite cote fait {{size}} mm. Beaucoup d'enseignes refusent de couper sous {{limit}} mm : demandez avant de payer vos panneaux.",
+    "copy": "Copier la fiche",
+    "copied": "Fiche copiée",
+    "download": "Télécharger la fiche (CSV)",
+    "summary": "{{pieces}} morceaux · {{count}} cotes différentes"
   }
 }

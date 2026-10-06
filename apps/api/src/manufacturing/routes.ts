@@ -111,6 +111,7 @@ export function registerManufacturingRoutes(
       project: { id: project.id, name: project.name },
       cut_list: plan.cutList,
       nesting: plan.nesting,
+      cutting_order: plan.cuttingOrder,
       drilling: plan.drilling,
       bill: plan.bill,
       assembly: plan.assembly,

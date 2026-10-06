@@ -62,6 +62,14 @@ export { build, compartmentAt, type Furniture, type Warning } from './build.js';
 
 export { cutList, totalEdgeBandingMm, type CutListRow } from './cut-list.js';
 
+export {
+  cuttingOrder,
+  STORE_MIN_CUT_MM,
+  type CuttingOrder,
+  type CuttingOrderGroup,
+  type CuttingOrderPiece,
+} from './cutting-order.js';
+
 export { nestingViolations, panelViolations } from './nesting-properties.js';
 
 export {

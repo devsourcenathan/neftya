@@ -27,6 +27,7 @@ import { DownloadButton } from '../components/DownloadButton.js';
 const AssemblyGuide = lazy(async () => ({
   default: (await import('./AssemblyGuide.js')).AssemblyGuide,
 }));
+import { CuttingOrder } from './CuttingOrder.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
 import { QuotationEmail } from './QuotationEmail.js';
@@ -207,6 +208,8 @@ export function Manufacturing({ projectId }: { projectId: string }) {
           )}
         </div>
       </section>
+
+      <CuttingOrder order={data.cutting_order} />
 
       <section>
         <SectionTitle>{t('exports.title')}</SectionTitle>
