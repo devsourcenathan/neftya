@@ -311,6 +311,15 @@ VITE_API_URL = https://<le-nom-du-service>.onrender.com
 Elle est lue **à la compilation**, pas à l'exécution : la changer demande un redéploiement, et
 non un redémarrage.
 
+**`npm ci --include=dev`, et pas `npm ci`.** Vercel pose `NODE_ENV=production` pendant la
+construction, et `npm ci` omet alors les dépendances de développement — dont `vitest`, dont
+les types sont lus par les fichiers de test que `tsc --build` vérifie. Le symptôme est
+déroutant : « Cannot find module 'vitest' » dans une construction qui ne lance aucun test.
+
+L'alternative aurait été de retirer les tests du graphe de construction de l'interface. Elle a
+été écartée : ils en sortiraient aussi du `typecheck`, et une vérification qu'on déplace pour
+faire passer un déploiement est une vérification qu'on perd.
+
 La réécriture renvoie toute route inconnue sur `index.html`. Sans elle, ouvrir
 `/projects/<id>` directement — un signet, un rafraîchissement — rend un 404 : c'est le routeur
 du navigateur qui connaît cette adresse, pas l'hébergeur. Les fichiers qui existent sont

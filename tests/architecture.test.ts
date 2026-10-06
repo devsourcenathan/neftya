@@ -111,3 +111,49 @@ describe('frontières entre paquets', () => {
     expect(violations).toEqual([]);
   });
 });
+
+/**
+ * Une construction qui ne tient que grâce aux restes de la précédente.
+ *
+ * `apps/web` dépendait de `@neftya/drawing` sans le **référencer** dans son `tsconfig`.
+ * `tsc --build` ne le construisait donc pas : en local ça passait, parce que
+ * `packages/drawing/dist` traînait d'un `npm run build` à la racine. Sur un hébergeur, qui
+ * part d'un dépôt propre et construit l'interface seule, les déclarations manquaient — et
+ * `VIEWS` ou `technicalDrawing` devenaient `any`, ce qui fait tomber `noImplicitAny` sur des
+ * lignes qui n'ont rien à voir.
+ *
+ * C'est le piège du `dist` périmé, dans l'autre sens : un artefact qui traîne fait passer un
+ * graphe de construction faux.
+ */
+describe('le graphe de construction', () => {
+  const apps = ['apps/api', 'apps/web'];
+
+  for (const app of apps) {
+    it(`${app} référence tous les paquets dont il dépend`, () => {
+      const manifest = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8')) as {
+        dependencies?: Record<string, string>;
+      };
+
+      // Les commentaires sont admis dans un `tsconfig`, et `JSON.parse` ne les lit pas.
+      const config = JSON.parse(
+        readFileSync(join(app, 'tsconfig.json'), 'utf8').replace(
+          /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+          '',
+        ),
+      ) as { references?: { path: string }[] };
+
+      const referenced = new Set(
+        (config.references ?? []).map((reference) => reference.path.split('/').pop()),
+      );
+
+      for (const name of Object.keys(manifest.dependencies ?? {})) {
+        if (!name.startsWith('@neftya/')) continue;
+
+        expect(
+          referenced.has(name.replace('@neftya/', '')),
+          `${app} dépend de ${name} sans le référencer : sa construction ne tiendra que tant qu'un dist traîne`,
+        ).toBe(true);
+      }
+    });
+  }
+});
