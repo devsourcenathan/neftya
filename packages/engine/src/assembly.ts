@@ -1,5 +1,6 @@
 import type { Furniture } from './build.js';
 import type { PartRole } from './parts.js';
+import { hingesFor, slideFor } from './hardware.js';
 
 /**
  * Le guide de montage.
@@ -29,6 +30,14 @@ export interface AssemblyStepTemplate {
    * étape.
    */
   fastener?: { key: string; per: PartRole; count: number };
+  /**
+   * Une fixation que seul le meuble peut nommer.
+   *
+   * Une coulisse porte sa longueur dans sa référence — on n'achète pas « une paire de
+   * coulisses », on achète une paire de 400 — et une porte prend deux ou trois charnières
+   * selon sa hauteur. Ces deux-là ne tiennent pas dans un gabarit écrit d'avance.
+   */
+  resolve?: (furniture: Furniture) => { key: string; quantity: number } | null;
 }
 
 export interface AssemblyStep {
@@ -75,11 +84,52 @@ export const DEFAULT_ASSEMBLY: readonly AssemblyStepTemplate[] = [
   {
     key: 'drawer_faces',
     roles: ['drawer_face'],
-    fastener: { key: 'drawer_slide_pair', per: 'drawer_face', count: 1 },
+    /*
+     * La coulisse porte sa longueur, et c'est elle qu'on commande.
+     *
+     * L'étape annonçait `drawer_slide_pair`, la référence générique **retirée du catalogue
+     * le 2 septembre** : la nomenclature disait `slide_ball_400` et l'étape disait autre
+     * chose, pour la même chose. Un guide qui nomme deux fois le même article de deux
+     * façons fait commander la mauvaise.
+     */
+    resolve: (furniture) => {
+      const side = furniture.parts.find((part) => part.role === 'drawer_side');
+      const depthMm = side?.instances[0]?.sizeZMm;
+      const spec = depthMm === undefined ? null : slideFor(depthMm);
+      if (!spec) return null;
+
+      const faces = furniture.parts
+        .filter((part) => part.role === 'drawer_face')
+        .reduce((total, part) => total + part.quantity, 0);
+
+      return { key: spec.key, quantity: faces };
+    },
   },
-  // Les portes en dernier : elles se règlent une fois tout le reste en place, et un
-  // caisson qu'on manipule encore dérègle ce qu'on vient d'ajuster.
-  { key: 'doors', roles: ['door'] },
+  {
+    // Les portes en dernier : elles se règlent une fois tout le reste en place, et un
+    // caisson qu'on manipule encore dérègle ce qu'on vient d'ajuster.
+    key: 'doors',
+    roles: ['door'],
+    /*
+     * Les charnières manquaient à l'étape qui pose les portes.
+     *
+     * La nomenclature en comptait quatre et l'étape n'en parlait pas : l'apprenti vissait
+     * ses portes sans savoir avec quoi. Leur nombre dépend de la hauteur du vantail, et il
+     * est pris de la même fonction que le perçage — un compte tenu à part de la géométrie
+     * finit par diverger d'elle.
+     */
+    resolve: (furniture) => {
+      const quantity = furniture.parts
+        .filter((part) => part.role === 'door')
+        .reduce(
+          (total, part) =>
+            total + hingesFor(part.instances[0]?.sizeYMm ?? 0) * part.quantity,
+          0,
+        );
+
+      return quantity > 0 ? { key: 'hinge_35_110', quantity } : null;
+    },
+  },
 ];
 
 export function assemblySteps(
@@ -114,14 +164,20 @@ export function assemblySteps(
           .reduce((total, part) => total + part.quantity, 0)
       : 0;
 
+    // Ce que seul le meuble sait nommer passe avant le gabarit : une étape n'annonce
+    // jamais deux fixations, et la plus précise est celle qui se commande.
+    const named = step.template.resolve?.(furniture) ?? null;
+
     return {
       index: index + 1,
       total: resolved.length,
       key: step.template.key,
       parts: step.parts,
-      ...(fastener && fastened > 0
-        ? { fastener: { key: fastener.key, quantity: fastener.count * fastened } }
-        : {}),
+      ...(named
+        ? { fastener: named }
+        : fastener && fastened > 0
+          ? { fastener: { key: fastener.key, quantity: fastener.count * fastened } }
+          : {}),
     };
   });
 }

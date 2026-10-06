@@ -214,7 +214,9 @@
     "emailMessage": "Message joint",
     "emailSend": "Envoyer le devis",
     "emailSent": "Devis envoyé à {{to}}.",
-    "emailFailed": "Envoi impossible."
+    "emailFailed": "Envoi impossible.",
+    "previousStep": "Étape précédente",
+    "nextStep": "Étape suivante"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",

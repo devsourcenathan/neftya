@@ -2267,3 +2267,60 @@ invisible n'existe pas.
 
 **Ce qui n'a pas été fait.** Rien n'a été retiré. On retire une fonction qui ne marche pas,
 pas une fonction qu'on confond avec une autre — et la mesure disait laquelle des deux.
+
+---
+
+## 2026-10-06 — Le dossier de fabrication doit être lisible par qui monte, pas par qui conçoit
+
+**Décision.** Le guide d'assemblage devient un **pas à pas dessiné** : les pièces de l'étape
+en pleine couleur, celles des étapes précédentes en transparence, celles des suivantes
+absentes. Les pièces sont nommées partout — au guide comme au plan de découpe — et plus
+seulement codées.
+
+**Motif.** « Assemblez le dessous et les côtés, côtés à l'intérieur, alignés sur les bords »
+suppose qu'on sache déjà à quoi ça ressemble. C'est vrai pour un menuisier et faux pour un
+apprenti, et c'est lui qui monte. « P02 ×1, P03 ×2 » oblige à repartir vers la liste des
+pièces à chaque étape, et on monte un meuble les mains prises.
+
+**Une seule toile, pas une vignette par étape.** Un navigateur ne tient qu'une poignée de
+contextes WebGL : huit vignettes en ouvriraient huit, et la neuvième ferait tomber les
+premières. C'est aussi ainsi qu'on monte un meuble — une étape, les mains dedans, puis la
+suivante.
+
+**Les étapes précédentes restent, en transparence.** Un meuble entier à chaque étape ne dirait
+pas ce qu'il y a à faire ; une pièce seule ne dirait pas où elle va.
+
+**La décision est une fonction, pas un rendu.** `placedAtStep` et `partStateAt` sont testées
+hors de la toile, pour la même raison que `nextPoll` : une règle écrite au milieu d'un rendu
+est vraie le jour où on l'écrit et fausse au premier état ajouté.
+
+**Une pièce est posée à la première étape qui la nomme**, pas à la dernière. Un côté est
+mentionné au caisson puis au dessus ; le prendre à la dernière le ferait apparaître deux
+étapes trop tard, et on chercherait sur quoi visser le dessus.
+
+---
+
+## 2026-10-06 — Un guide qui nomme un article introuvable fait acheter autre chose
+
+**Décision.** Ce qu'une étape nomme doit figurer dans la quincaillerie du meuble, en quantité
+au moins égale. Un test le vérifie sur deux meubles, pour toutes les étapes.
+
+**Trois défauts l'ont rendu nécessaire**, trouvés en lisant l'écran comme un apprenti.
+
+**La visserie comptait une pièce sur deux** : un `find` prenait la première pièce du rôle.
+Deux côtés identiques sont une pièce en quantité deux, donc le compte tombait juste — et
+c'est ce qui l'a caché. Dès que deux compartiments n'ont pas la même largeur, les étagères
+deviennent deux pièces et l'apprenti reçoit quatre taquets au lieu de huit. Il s'en aperçoit
+au montage, quand il n'y a plus rien à faire.
+
+**L'étape des façades nommait `drawer_slide_pair`**, la référence générique retirée du
+catalogue le 2 septembre, pendant que la nomenclature disait `slide_ball_400`. Deux noms pour
+le même article, et un seul se commande.
+
+**L'étape des portes ne nommait aucune charnière**, alors que la nomenclature en comptait
+quatre.
+
+**Ce que ces trois-là ont en commun.** Aucun n'est une erreur de calcul : ce sont deux listes
+qui parlent du même meuble sans se parler. L'invariant ne vérifie donc pas une valeur, il
+vérifie qu'elles disent la même chose — et c'est le genre de contrôle qu'on n'écrit qu'après
+avoir lu l'écran à la place de celui qui s'en sert.

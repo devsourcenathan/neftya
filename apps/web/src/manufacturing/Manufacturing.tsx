@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { cutPlanSvg } from '@neftya/drawing';
+import { build } from '@neftya/engine';
 import type { NestedPanel } from '@neftya/engine';
 import { formatMoney, type Money } from '@neftya/units';
 import { ApiRequestError } from '../api/client.js';
@@ -10,10 +12,12 @@ import {
   downloadCutPlan,
   downloadDrilling,
   getManufacturing,
+  getProject,
   useApi,
   useFiles,
 } from '../api/projects.js';
 import { DownloadButton } from '../components/DownloadButton.js';
+import { AssemblyGuide } from './AssemblyGuide.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
 import { QuotationEmail } from './QuotationEmail.js';
@@ -42,12 +46,42 @@ export function Manufacturing({ projectId }: { projectId: string }) {
     queryFn: () => getManufacturing(api, projectId),
   });
 
+  /*
+   * Le modèle, pour dessiner les étapes.
+   *
+   * Une requête de plus, et volontairement séparée : le dossier de fabrication s'affiche
+   * sans attendre la géométrie, et le dessin apparaît quand elle arrive.
+   */
+  const project = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => getProject(api, projectId),
+  });
+
   const freeze = useMutation({
     mutationFn: () => createExport(api, projectId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['exports', projectId] });
     },
   });
+
+  /**
+   * Le meuble, reconstruit ici.
+   *
+   * Le dossier de fabrication porte les listes, pas la géométrie : le dessin d'une étape a
+   * besoin de savoir où va chaque pièce. Le moteur est pur et tourne dans le navigateur —
+   * c'est déjà ainsi que le concepteur dessine sa vue.
+   */
+  /*
+   * **Avant les retours anticipés.**
+   *
+   * Posé après, ce `useMemo` n'était appelé que lorsque le plan était chargé : React compte
+   * les crochets, et un crochet qu'on saute déplace tous les suivants. L'écran est tombé
+   * dès le premier rendu — « Rendered more hooks than during the previous render ».
+   */
+  const furniture = useMemo(
+    () => (project.data ? build(project.data.model) : null),
+    [project.data],
+  );
 
   if (plan.isPending)
     return <p className="p-6 text-sm text-ink-variant">{t('state.loading')}</p>;
@@ -61,6 +95,17 @@ export function Manufacturing({ projectId }: { projectId: string }) {
   }
 
   const data = plan.data;
+
+  /**
+   * `P03` → « Côté ».
+   *
+   * La liste de débit porte le rôle de chaque pièce ; le placement ne porte que son code.
+   * Un code seul ne dit rien à qui n'a pas la liste sous les yeux — et sur un établi, on ne
+   * l'a pas.
+   */
+  const names = new Map(
+    data.cut_list.map((row) => [row.id, t(`part.roles.${row.role}`)] as const),
+  );
 
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-10 px-4 pt-20 pb-12 lg:px-margin-desktop lg:pt-margin-desktop">
@@ -118,7 +163,7 @@ export function Manufacturing({ projectId }: { projectId: string }) {
                   utilisation: (panel.utilisation * 100).toFixed(1),
                 })}
               </p>
-              <PanelDrawing panel={panel} />
+              <PanelDrawing panel={panel} names={names} />
             </li>
           ))}
         </ul>
@@ -224,7 +269,12 @@ export function Manufacturing({ projectId }: { projectId: string }) {
 
       <section>
         <SectionTitle>{t('manufacturing.assembly')}</SectionTitle>
-        <ol className="flex flex-col gap-3 text-sm">
+
+        {/* Le pas à pas dessiné d'abord : c'est avec lui qu'on monte. La liste complète
+            reste en dessous, pour qui veut voir la séquence entière d'un coup d'œil. */}
+        {furniture && <AssemblyGuide furniture={furniture} steps={data.assembly} />}
+
+        <ol className="mt-6 flex flex-col gap-3 text-sm">
           {data.assembly.map((step) => (
             <li key={step.key} className="rounded-md border border-hairline p-3">
               <p className="font-medium">
@@ -232,7 +282,15 @@ export function Manufacturing({ projectId }: { projectId: string }) {
               </p>
               <p>{t(`assembly.${step.key}`)}</p>
               <p className="text-ink-variant">
-                {step.parts.map((part) => `${part.id} ×${part.quantity}`).join(', ')}
+                {/* Le nom avec le code : « P03 Côté ×2 ». Un code seul oblige à repartir
+                    vers la liste des pièces à chaque étape, et on monte un meuble les mains
+                    prises. */}
+                {step.parts
+                  .map(
+                    (part) =>
+                      `${part.id} ${t(`part.roles.${part.role}`)} ×${part.quantity}`,
+                  )
+                  .join(', ')}
               </p>
               {step.fastener && (
                 <p className="text-ink-variant">
@@ -284,13 +342,24 @@ export function Manufacturing({ projectId }: { projectId: string }) {
   );
 }
 
-function PanelDrawing({ panel }: { panel: NestedPanel }) {
+function PanelDrawing({
+  panel,
+  names,
+}: {
+  panel: NestedPanel;
+  /** `P03` → « Côté ». Un code seul ne dit rien à qui n'a pas la liste sous les yeux. */
+  names: Map<string, string>;
+}) {
   const { t } = useTranslation();
 
   const svg = cutPlanSvg(panel, {
     title: '',
     panel: () => '',
-    part: (placement) => `${placement.sizeXMm} × ${placement.sizeYMm}`,
+    part: (placement) => {
+      const name = names.get(placement.partId);
+      const size = `${placement.sizeXMm} × ${placement.sizeYMm}`;
+      return name ? `${name} · ${size}` : size;
+    },
   });
 
   return (
