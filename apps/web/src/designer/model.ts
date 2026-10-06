@@ -1,5 +1,6 @@
 import {
   furnitureInput,
+  type Joinery,
   type MaterialKey,
   type ParsedFurnitureInput,
 } from '@neftya/engine';
@@ -20,6 +21,7 @@ export type DesignerAction =
   | { type: 'material'; material: MaterialKey }
   | { type: 'back'; hasBack: boolean }
   | { type: 'grain'; respectGrain: boolean }
+  | { type: 'joinery'; joinery: Joinery }
   | { type: 'compartments'; count: number }
   | { type: 'shelves'; index: number; count: number }
   | { type: 'drawers'; index: number; count: number }
@@ -124,6 +126,11 @@ export function reduce(
 
     case 'grain':
       return { ...model, respectGrain: action.respectGrain };
+
+    case 'joinery':
+      // Dans `parameters`, pas à la racine : c'est un paramètre de projet comme le trait
+      // de scie, et le moteur le lit là.
+      return { ...model, parameters: { ...model.parameters, joinery: action.joinery } };
 
     case 'compartments':
       return { ...model, compartments: resize(model.compartments, action.count) };

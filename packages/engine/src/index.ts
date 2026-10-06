@@ -27,9 +27,11 @@ export {
 export {
   parameters,
   assemblyConvention,
+  joinery,
   DEFAULT_PARAMETERS,
   type Parameters,
   type AssemblyConvention,
+  type Joinery,
 } from './parameters.js';
 
 export {
@@ -87,6 +89,7 @@ export {
   SLIDES,
   HINGE,
   DOWEL,
+  SCREW,
   SHELF_SUPPORT,
   hingesFor,
   hingePositionsMm,
@@ -106,6 +109,7 @@ export {
   type SlideSpec,
   type SlideLengthMm,
   type DowelSpec,
+  type ScrewSpec,
   type ShelfSupportSpec,
 } from './hardware.js';
 

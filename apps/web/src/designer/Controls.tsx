@@ -224,6 +224,34 @@ export function Controls({ model, dispatch }: ControlsProps) {
             </span>
           </span>
         </label>
+
+        {/* Le choix d'outillage, posé comme un choix et non comme un réglage avancé.
+            Celui qui n'a qu'une perceuse doit pouvoir le dire avant de percer, pas le
+            découvrir au montage. Les deux conséquences sont écrites sous chaque option :
+            ce qui se voit, et ce qu'il faut pour le faire. */}
+        <fieldset className="flex flex-col gap-2">
+          <legend className="label-caps mb-1 text-ink-variant">
+            {t('joinery.legend')}
+          </legend>
+
+          {(['dowel', 'screw'] as const).map((option) => (
+            <label key={option} className="flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="joinery"
+                className="mt-1"
+                checked={(model.parameters.joinery ?? 'dowel') === option}
+                onChange={() => dispatch({ type: 'joinery', joinery: option })}
+              />
+              <span>
+                {t(`joinery.${option}`)}
+                <span className="block text-xs text-ink-variant">
+                  {t(option === 'dowel' ? 'joinery.dowelHint' : 'joinery.screwHint')}
+                </span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
       </section>
     </div>
   );

@@ -12,6 +12,7 @@ import { hingeEdgeOf } from './facades.js';
 import { pulls, type PlacedPull } from './pulls.js';
 import {
   DOWEL,
+  SCREW,
   HINGE,
   SHELF_SUPPORT,
   hingePositionsMm,
@@ -48,6 +49,10 @@ export type HolePurpose =
   | 'slide_cabinet'
   | 'slide_drawer'
   | 'dowel'
+  /** Trou de passage, dans la pièce que la vis traverse. */
+  | 'screw_clearance'
+  /** Avant-trou, dans le chant qui reçoit la vis. */
+  | 'screw_pilot'
   | 'pull_screw';
 
 export interface Hole {
@@ -171,8 +176,16 @@ export function drilling(furniture: Furniture): DrillingResult {
     slides(side, verticals, add, warnings);
   }
 
+  /*
+   * Un séparateur se tient par des tourillons ou par des vis — jamais les deux.
+   *
+   * Le choix est au projet, et il est lu ici plutôt que deviné : deux meubles de mêmes
+   * cotes n'ont pas le même perçage selon l'outillage de qui les monte.
+   */
+  const joint = furniture.parameters.joinery === 'screw' ? screws : dowels;
+
   for (const divider of pieces.filter((piece) => piece.part.role === 'divider')) {
-    dowels(divider, horizontals, add);
+    joint(divider, horizontals, add);
   }
 
   const placedPulls = pulls(furniture).pulls;
@@ -399,6 +412,52 @@ function slides(
 /* ----------------------------------------------------------------- tourillons */
 
 /**
+ * La ligne d'assemblage d'un séparateur.
+ *
+ * Les deux modes posent leurs fixations **au même endroit** — en ligne dans la profondeur,
+ * à chaque about du séparateur. Seuls le nombre et la nature changent. Ce calcul est donc
+ * ici, une fois : écrit deux fois, il aurait fini par donner deux lignes différentes, et un
+ * meuble changé de mode se serait retrouvé percé aux deux.
+ *
+ * Rend `null` quand le séparateur est moins profond que deux retraits d'about : il n'y a
+ * alors pas de ligne, et inventer une fixation unique au milieu ne tiendrait pas le joint.
+ */
+function jointLine(
+  divider: Piece,
+  horizontals: readonly Piece[],
+  count: number,
+  endOffsetMm: number,
+): {
+  positions: number[];
+  joints: { jointY: number; edge: HoleSide; partner: Piece | undefined }[];
+  centreX: number;
+} | null {
+  const [dy0, dy1] = span(divider.instance, 'y');
+  const [dz0, dz1] = span(divider.instance, 'z');
+
+  const first = dz0 + endOffsetMm;
+  const last = dz1 - endOffsetMm;
+  if (last <= first || count < 2) return null;
+
+  return {
+    positions: Array.from({ length: count }, (_, index) =>
+      Math.round(first + ((last - first) * index) / (count - 1)),
+    ),
+    joints: (
+      [
+        [dy0, 'min'],
+        [dy1, 'max'],
+      ] as const
+    ).map(([jointY, end]) => ({
+      jointY,
+      edge: edgeSideFor(divider.frame, 'y', end),
+      partner: horizontals.find((piece) => touchesAt(piece, 'y', jointY)),
+    })),
+    centreX: centre(divider.instance, 'x'),
+  };
+}
+
+/**
  * Un séparateur se tourillonne dans le dessus et le dessous.
  *
  * Chaque tourillon fait **deux** trous : un dans le chant du séparateur, un dans la face
@@ -410,28 +469,12 @@ function dowels(
   horizontals: readonly Piece[],
   add: (piece: Piece, hole: Hole) => void,
 ): void {
-  const [dy0, dy1] = span(divider.instance, 'y');
-  const [dz0, dz1] = span(divider.instance, 'z');
-  const dividerCentreX = centre(divider.instance, 'x');
+  const line = jointLine(divider, horizontals, DOWEL.countPerJoint, DOWEL.endOffsetMm);
+  if (!line) return;
 
-  const first = dz0 + DOWEL.endOffsetMm;
-  const last = dz1 - DOWEL.endOffsetMm;
-  // Un séparateur moins profond que deux retraits d'about ne se tourillonne pas en ligne.
-  if (last <= first) return;
-
-  const positions = Array.from({ length: DOWEL.countPerJoint }, (_, index) =>
-    Math.round(first + ((last - first) * index) / (DOWEL.countPerJoint - 1)),
-  );
-
-  for (const [jointY, end] of [
-    [dy0, 'min'],
-    [dy1, 'max'],
-  ] as const) {
-    const partner = horizontals.find((piece) => touchesAt(piece, 'y', jointY));
-    const edge = edgeSideFor(divider.frame, 'y', end);
-
-    for (const zMm of positions) {
-      const point = { x: dividerCentreX, y: jointY, z: zMm };
+  for (const { jointY, edge, partner } of line.joints) {
+    for (const zMm of line.positions) {
+      const point = { x: line.centreX, y: jointY, z: zMm };
 
       add(divider, {
         // Sur un chant, `xMm` court le long du chant et `yMm` s'enfonce depuis la face de
@@ -455,6 +498,58 @@ function dowels(
         side,
         purpose: 'dowel',
         hardware: DOWEL.key,
+      });
+    }
+  }
+}
+
+/**
+ * Un séparateur se visse à travers le dessus et le dessous.
+ *
+ * **Les deux trous ne sont pas le même trou à deux endroits.** Le panneau horizontal reçoit
+ * un trou de passage, traversant et plus large que la vis : elle doit y filer librement,
+ * faute de quoi elle se visse dans les deux pièces à la fois et les écarte au lieu de les
+ * serrer. Le chant du séparateur reçoit un avant-trou, borgne et plus étroit : c'est lui
+ * qui empêche le chant d'éclater, et un chant de panneau fendu ne se répare pas.
+ *
+ * Deux diamètres, deux mèches, deux pièces. Un montage vissé raté l'est presque toujours
+ * pour avoir percé les deux pareil.
+ */
+function screws(
+  divider: Piece,
+  horizontals: readonly Piece[],
+  add: (piece: Piece, hole: Hole) => void,
+): void {
+  const line = jointLine(divider, horizontals, SCREW.countPerJoint, SCREW.endOffsetMm);
+  if (!line) return;
+
+  for (const { jointY, edge, partner } of line.joints) {
+    for (const zMm of line.positions) {
+      const point = { x: line.centreX, y: jointY, z: zMm };
+
+      add(divider, {
+        xMm: alongEdge(divider.frame, point, edge),
+        yMm: Math.round(divider.frame.thicknessMm / 2),
+        diameterMm: SCREW.pilotDiameterMm,
+        depthMm: SCREW.pilotDepthMm,
+        side: edge,
+        purpose: 'screw_pilot',
+        hardware: SCREW.key,
+      });
+
+      if (!partner) continue;
+
+      const side = facingSide(partner.frame, jointY);
+      add(partner, {
+        ...toPartFrame(partner.frame, point, side),
+        diameterMm: SCREW.clearanceDiameterMm,
+        depthMm: partner.frame.thicknessMm,
+        // Le seul trou traversant en dehors des vis de poignée, et pour la même raison :
+        // ce qui ne sort pas ne tient sur rien.
+        through: true,
+        side,
+        purpose: 'screw_clearance',
+        hardware: SCREW.key,
       });
     }
   }
@@ -565,8 +660,26 @@ function hardwareOf(
         case 'slide_drawer':
           bump(hole.hardware, 0.25);
           break;
+        /*
+         * Un tourillon fait deux trous qui portent **le même** motif, un de chaque côté du
+         * joint : les additionner commanderait le double.
+         */
         case 'dowel':
           bump(hole.hardware, 0.5);
+          break;
+        /*
+         * Une vis en fait deux aussi, mais de motifs différents — passage d'un côté,
+         * avant-trou de l'autre. Compter le passage pour une demie, par symétrie avec le
+         * tourillon, commandait **la moitié** des vis : le raisonnement par analogie
+         * tombait sur une géométrie qui n'est pas la même.
+         *
+         * Un trou de passage, une vis. L'avant-trou ne compte rien, et c'est écrit plutôt
+         * que laissé au `default` : un silence ne dit pas s'il est voulu.
+         */
+        case 'screw_clearance':
+          bump(hole.hardware, 1);
+          break;
+        case 'screw_pilot':
           break;
         // Les vis d'une poignée ne la comptent pas : une coquille encastrée n'a aucune
         // vis, et le décompte des poignées part donc du modèle, juste en dessous.

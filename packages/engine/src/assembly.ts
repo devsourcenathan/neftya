@@ -1,6 +1,6 @@
 import type { Furniture } from './build.js';
 import type { PartRole } from './parts.js';
-import { hingesFor, slideFor } from './hardware.js';
+import { DOWEL, SCREW, hingesFor, slideFor } from './hardware.js';
 
 /**
  * Le guide de montage.
@@ -69,7 +69,29 @@ export const DEFAULT_ASSEMBLY: readonly AssemblyStepTemplate[] = [
   {
     key: 'dividers',
     roles: ['divider'],
-    fastener: { key: 'dowel_8x30', per: 'divider', count: 8 },
+    /*
+     * Ni tourillon ni vis écrits d'avance : c'est le projet qui le dit.
+     *
+     * Le gabarit annonçait huit tourillons, quelle que soit la façon dont le meuble se
+     * monte. Un meuble vissé aurait envoyé l'apprenti acheter des tourillons dont aucun
+     * trou ne veut — et le guide d'assemblage, qui est tout ce qu'il a sous les yeux,
+     * l'aurait confirmé.
+     *
+     * Le nombre vient de la même source que le perçage. Tenu à part, il en diverge, et
+     * c'est au montage qu'on s'en aperçoit.
+     */
+    resolve: (furniture) => {
+      const dividers = furniture.parts
+        .filter((part) => part.role === 'divider')
+        .reduce((total, part) => total + part.quantity, 0);
+
+      if (dividers === 0) return null;
+
+      const spec = furniture.parameters.joinery === 'screw' ? SCREW : DOWEL;
+
+      // Deux abouts par séparateur : un dans le dessus, un dans le dessous.
+      return { key: spec.key, quantity: dividers * spec.countPerJoint * 2 };
+    },
   },
   {
     key: 'shelves',

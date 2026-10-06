@@ -247,7 +247,8 @@
     "glue": "Colle à bois",
     "pull_bar": "Poignées-barres, entraxe {{centres}} mm",
     "pull_knob": "Boutons de meuble",
-    "pull_shell": "Coquilles encastrées"
+    "pull_shell": "Coquilles encastrées",
+    "screw_5x60": "Vis d’assemblage 5 × 60"
   },
   "assembly": {
     "carcass": "Assemblez le dessous et les côtés, côtés à l'intérieur, alignés sur les bords.",
@@ -351,7 +352,9 @@
     "slide_drawer": "profil de tiroir",
     "dowel": "tourillon",
     "pull_screw": "vis de poignée",
-    "pull_shell": "empreinte de coquille"
+    "pull_shell": "empreinte de coquille",
+    "screw_clearance": "passage de vis (traversant)",
+    "screw_pilot": "avant-trou de vis"
   },
   "account": {
     "signOut": "Se déconnecter",
@@ -428,5 +431,12 @@
     "copied": "Fiche copiée",
     "download": "Télécharger la fiche (CSV)",
     "summary": "{{pieces}} morceaux · {{count}} cotes différentes"
+  },
+  "joinery": {
+    "legend": "Assemblage des séparations",
+    "dowel": "Tourillons",
+    "screw": "Vis",
+    "dowelHint": "Invisible, mais demande un gabarit de perçage : les deux trous doivent se faire face au dixième.",
+    "screwHint": "Les têtes se voient sur le dessus et le dessous. Une perceuse suffit, et le meuble se démonte."
   }
 }

@@ -19,6 +19,20 @@ export const assemblyConvention = z.enum([
 
 export type AssemblyConvention = z.infer<typeof assemblyConvention>;
 
+/**
+ * Comment les pièces se tiennent entre elles.
+ *
+ * Le tourillon est ce que fait un atelier : invisible, et demandant un gabarit de perçage
+ * ainsi qu'une précision au dixième. La vis est ce que peut faire quelqu'un qui n'a qu'une
+ * perceuse : elle se voit, elle se rattrape, elle se démonte.
+ *
+ * Le défaut reste le tourillon — changer ce que produit le moteur pour les projets
+ * existants n'est pas une option.
+ */
+export const joinery = z.enum(['dowel', 'screw']);
+
+export type Joinery = z.infer<typeof joinery>;
+
 export const parameters = z.object({
   panelThicknessMm: positiveMillimetres.default(18),
   backThicknessMm: positiveMillimetres.default(8),
@@ -56,6 +70,7 @@ export const parameters = z.object({
    */
   maxDoorLeafWidthMm: positiveMillimetres.default(600),
   assemblyConvention: assemblyConvention.default('sides_between_top_bottom'),
+  joinery: joinery.default('dowel'),
   /**
    * Charge de référence pour la validation de flèche, en kilogrammes par étagère.
    * Passée en paramètre plutôt que codée : le moteur est déterministe et ne suppose rien.

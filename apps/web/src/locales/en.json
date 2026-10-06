@@ -247,7 +247,8 @@
     "glue": "Wood glue",
     "pull_bar": "Bar handles, {{centres}} mm centres",
     "pull_knob": "Cabinet knobs",
-    "pull_shell": "Recessed shells"
+    "pull_shell": "Recessed shells",
+    "screw_5x60": "Assembly screws 5 × 60"
   },
   "assembly": {
     "carcass": "Join the bottom to the sides, sides inside, flush with the edges.",
@@ -351,7 +352,9 @@
     "slide_drawer": "drawer runner",
     "dowel": "dowel",
     "pull_screw": "handle screw",
-    "pull_shell": "shell recess"
+    "pull_shell": "shell recess",
+    "screw_clearance": "screw clearance hole (through)",
+    "screw_pilot": "screw pilot hole"
   },
   "account": {
     "signOut": "Sign out",
@@ -428,5 +431,12 @@
     "copied": "List copied",
     "download": "Download the list (CSV)",
     "summary": "{{pieces}} pieces · {{count}} distinct sizes"
+  },
+  "joinery": {
+    "legend": "Divider joinery",
+    "dowel": "Dowels",
+    "screw": "Screws",
+    "dowelHint": "Invisible, but needs a doweling jig: both holes must line up to a tenth of a millimetre.",
+    "screwHint": "Heads show on the top and bottom. A drill is all you need, and the piece comes apart again."
   }
 }

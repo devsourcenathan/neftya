@@ -39,6 +39,7 @@ export type PullCentresMm = (typeof PULL_CENTRES_MM)[number];
 export type HardwareKey =
   | 'hinge_35_110'
   | 'dowel_8x30'
+  | 'screw_5x60'
   | 'shelf_support_5'
   | `slide_ball_${SlideLengthMm}`
   | `pull_bar_${PullCentresMm}`
@@ -193,6 +194,64 @@ export const DOWEL: DowelSpec = {
   holeDepthMm: 16,
   endOffsetMm: 50,
   countPerJoint: 4,
+};
+
+/**
+ * La vis d'assemblage de 5 × 60, et ses deux perçages.
+ *
+ * **L'alternative au tourillon pour qui n'a pas de gabarit.** Un tourillon demande deux
+ * perçages qui se font face au dixième ; décalés d'un millimètre, le meuble ne ferme plus
+ * d'équerre et rien ne le rattrape. La vis traverse le panneau horizontal et mord dans le
+ * chant du séparateur : elle se rattrape, elle se démonte, et elle ne demande qu'une
+ * perceuse.
+ *
+ * Elle se voit — une tête de vis sur le dessus d'un meuble. C'est le prix, et il est dit :
+ * on échange de l'apparence contre de la faisabilité.
+ *
+ * **Les deux diamètres ne sont pas une finesse.** Le trou de passage laisse filer la vis
+ * dans la pièce traversée : sans lui, la vis se visse dans les deux pièces à la fois et les
+ * écarte au lieu de les serrer, et le joint reste ouvert. L'avant-trou, lui, empêche le
+ * chant d'éclater — un chant de panneau de particules fendu ne se répare pas.
+ */
+export interface ScrewSpec {
+  key: 'screw_5x60';
+  /** Diamètre nominal. */
+  diameterMm: number;
+  lengthMm: number;
+  /** Trou de passage dans la pièce traversée : plus large que la vis, exprès. */
+  clearanceDiameterMm: number;
+  /** Avant-trou dans le chant qui reçoit : plus étroit que la vis, exprès. */
+  pilotDiameterMm: number;
+  /** Profondeur de l'avant-trou. Plus courte que la vis : elle doit mordre. */
+  pilotDepthMm: number;
+  /** Des deux bouts de la ligne d'assemblage à la première vis. */
+  endOffsetMm: number;
+  /** Par about de séparateur. */
+  countPerJoint: number;
+}
+
+export const SCREW: ScrewSpec = {
+  key: 'screw_5x60',
+  diameterMm: 5,
+  lengthMm: 60,
+  clearanceDiameterMm: 5.5,
+  pilotDiameterMm: 3,
+  /*
+   * 35 pour une vis qui dépasse de 42 dans le chant.
+   *
+   * L'avant-trou s'arrête avant la pointe : les derniers millimètres sont ce qui tient.
+   * Percé à la longueur, la vis tourne dans le vide et ne serre rien.
+   */
+  pilotDepthMm: 35,
+  endOffsetMm: 50,
+  /*
+   * Trois là où le tourillon en met quatre.
+   *
+   * Une vis de 5 tient bien plus qu'un tourillon de 8 collé : le nombre suit la tenue, pas
+   * la symétrie avec l'autre mode. Trois perçages de moins par about, c'est aussi trois
+   * occasions de moins de percer de travers.
+   */
+  countPerJoint: 3,
 };
 
 /** Le taquet d'étagère de 5, sur ligne système 32. */
