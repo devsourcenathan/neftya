@@ -2240,3 +2240,30 @@ le faire deviner à une colonne qui parlait d'autre chose.
 
 **Mesuré contre le vrai modèle**, sur le même dessin : image seule → 900 × 1350 × 300 ;
 largeur donnée à 1500 → 1500 × 2250 × 300. Le rapport 1,5 traverse les deux.
+
+---
+
+## 2026-10-06 — Un réglage n'a pas le droit de ressembler à de la quincaillerie
+
+**Décision.** Les poignées de manipulation sont des **sphères orange** à demi transparentes,
+franches sous le doigt. Elles étaient des cubes bleu nuit.
+
+**Motif.** Signalées deux fois comme « poignées mal positionnées ». Vérification faite, les
+poignées de **meuble** étaient à leur place au millimètre : sur un buffet de 1200, la poignée
+de porte tombait à 554 sur une façade de 0 à 599 — quarante-cinq millimètres du chant qui
+s'ouvre, jamais de celui des charnières — et les tiroirs étaient centrés. Aucun avertissement.
+
+Ce qui n'allait pas était la **lecture**, pas la géométrie : sur un meuble à quatre poignées,
+l'écran en montrait sept objets sombres, dont trois étaient des réglages. Un cube sombre posé
+sur une façade est de la quincaillerie, quoi qu'en dise le commentaire au-dessus.
+
+**Pourquoi l'orange.** Aucune poignée de meuble n'est orange. La quincaillerie du produit est
+grise ou creusée ; l'orange de la palette ne ressemble à aucune essence ni à aucun métal. La
+forme suit : une sphère ne se visse sur rien, là où un cube évoque un bouton.
+
+**Discrètes au repos, franches sous le doigt.** Un réglage qu'on ne cherche pas n'a pas à
+occuper l'œil autant que le meuble ; à demi effacé il devient invisible, et un réglage
+invisible n'existe pas.
+
+**Ce qui n'a pas été fait.** Rien n'a été retiré. On retire une fonction qui ne marche pas,
+pas une fonction qu'on confond avec une autre — et la mesure disait laquelle des deux.

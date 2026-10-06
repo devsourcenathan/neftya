@@ -63,8 +63,19 @@ const MM = 0.001;
  * sur un objet ; elle doit se lire comme tel, et la palette du produit en tient déjà deux
  * qui ne ressemblent à aucune essence.
  */
-const IDLE = '#031632';
-const ACTIVE = '#b45309';
+/**
+ * **Orange, et jamais sombre.**
+ *
+ * Elles étaient bleu nuit, et c'est ce qui les a fait prendre pour des poignées de meuble :
+ * un cube sombre posé sur une façade est de la quincaillerie, quoi qu'on en dise. Aucune
+ * poignée de meuble n'est orange ; la quincaillerie du produit est grise ou creusée, et
+ * l'orange de la palette ne ressemble à aucune essence ni à aucun métal.
+ *
+ * Mesuré en regardant l'écran : sur un buffet à quatre poignées, on comptait sept objets
+ * sombres et on cherchait lesquels s'ouvraient.
+ */
+const IDLE = '#b45309';
+const ACTIVE = '#7c3d06';
 
 export interface HandlesProps {
   furniture: Furniture;
@@ -200,6 +211,7 @@ function DragHandle({
 }) {
   const project = useAxisProjection();
   const [dragging, setDragging] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const start = useRef<{
     xPx: number;
     yPx: number;
@@ -268,19 +280,36 @@ function DragHandle({
       onPointerCancel={end}
       onPointerOver={(event) => {
         event.stopPropagation();
+        setHovered(true);
         document.body.style.cursor = 'grab';
       }}
       onPointerOut={() => {
+        setHovered(false);
         if (!start.current) document.body.style.cursor = '';
       }}
     >
-      <boxGeometry args={size} />
+      {/*
+        Une sphère pour un point, une barre pour un séparateur.
+        Une sphère ne se visse sur rien : c'est ce qui la distingue d'un bouton, qui est la
+        seule quincaillerie de forme voisine — et le bouton, lui, est gris et mat.
+      */}
+      {shape === 'bar' ? (
+        <boxGeometry args={size} />
+      ) : (
+        <sphereGeometry args={[(HANDLE_MM / 2) * MM, 16, 12]} />
+      )}
       {/* Devant le meuble quoi qu'il arrive : une poignée cachée derrière la pièce qu'elle
           règle ne se saisit pas. */}
       <meshBasicMaterial
         color={dragging ? ACTIVE : IDLE}
         transparent
-        opacity={dragging ? 1 : 0.85}
+        /*
+         * Discrète au repos, franche sous le doigt.
+         *
+         * Un réglage qu'on ne cherche pas n'a pas à occuper l'œil autant que le meuble ;
+         * mais à demi effacé il devient invisible, et un réglage invisible n'existe pas.
+         */
+        opacity={dragging ? 1 : hovered ? 0.95 : 0.55}
         depthTest={false}
       />
     </mesh>
