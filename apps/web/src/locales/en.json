@@ -484,5 +484,37 @@
     "router": "Router",
     "dowel_jig": "Doweling jig",
     "bit": "Ø {{diameter}} wood bit"
+  },
+  "glossaryTerm": {
+    "edge_banding": "edge banding",
+    "trim": "trimming",
+    "kerf": "saw kerf",
+    "shelf_support": "shelf support",
+    "hinge_plate": "hinge plate",
+    "hinge_cup": "hinge cup",
+    "dowel": "dowel",
+    "pilot_hole": "pilot hole",
+    "clearance_hole": "clearance hole",
+    "grain": "grain direction",
+    "yield": "yield",
+    "forstner": "Forstner bit",
+    "countersink": "countersink",
+    "slide": "drawer slide"
+  },
+  "glossary": {
+    "edge_banding": "The thin strip glued onto the cut edge of a board. Without it you see the core — chipboard or plies — exactly where the piece is looked at and touched.",
+    "trim": "The strip removed from each edge of a new board before cutting. Factory edges are neither straight nor square: cutting into them gives wrong parts.",
+    "kerf": "The material the blade turns into sawdust, about 3 mm. Two 600 parts do not fit in 1200: the width of the cut is always missing.",
+    "shelf_support": "The small, often metal support pushed into a 5 mm hole in the upright, on which the shelf rests. Four per shelf, and they can be moved.",
+    "hinge_plate": "The half of the hinge screwed to the cabinet upright. The other half — the cup — sits in the door.",
+    "hinge_cup": "The round part of the hinge, housed in a 35 mm hole bored in the door. That hole is what needs a Forstner bit.",
+    "dowel": "A wooden pin glued into two facing holes. Invisible once assembled, but the two holes must line up to a tenth of a millimetre.",
+    "pilot_hole": "The narrow hole drilled before driving a screw, in the part that receives it. It keeps the board from splitting and guides the screw straight.",
+    "clearance_hole": "The wide hole drilled in the part the screw passes through. The screw must run freely: otherwise it pushes the parts apart instead of pulling them together.",
+    "grain": "The direction of the fibres, visible on a wood decor. Two neighbouring parts whose grain runs differently show from three metres away.",
+    "yield": "The share of the bought board that becomes parts. The rest is offcut. 70 % is common; below that, it is often worth revisiting the sizes.",
+    "forstner": "A flat-bottomed bit that bores large, flat-bottomed holes. It is the only one that makes a clean hinge housing.",
+    "countersink": "A tool that widens the mouth of a hole into a cone, so the screw head sits flush instead of holding the board apart.",
+    "slide": "The rail a drawer runs on. They are sold in pairs and by length — you buy a pair of 400, not \"some slides\"."
   }
 }

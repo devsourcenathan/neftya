@@ -484,5 +484,37 @@
     "router": "Défonceuse",
     "dowel_jig": "Gabarit de tourillonnage",
     "bit": "Mèche à bois Ø {{diameter}}"
+  },
+  "glossaryTerm": {
+    "edge_banding": "chant",
+    "trim": "délignage",
+    "kerf": "trait de scie",
+    "shelf_support": "taquet d’étagère",
+    "hinge_plate": "embase de charnière",
+    "hinge_cup": "boîtier de charnière",
+    "dowel": "tourillon",
+    "pilot_hole": "avant-trou",
+    "clearance_hole": "trou de passage",
+    "grain": "sens du fil",
+    "yield": "rendement",
+    "forstner": "mèche Forstner",
+    "countersink": "fraise à lamer",
+    "slide": "coulisse"
+  },
+  "glossary": {
+    "edge_banding": "La bande fine qu’on colle sur la tranche d’un panneau. Sans elle, on voit le cœur du panneau — l’aggloméré ou les plis — là où le meuble se regarde et se touche.",
+    "trim": "La bande qu’on retire sur chaque rive d’un panneau neuf avant de scier. Les bords d’usine ne sont ni droits ni d’équerre : couper dedans donne des pièces fausses.",
+    "kerf": "L’épaisseur de matière que la lame transforme en sciure, environ 3 mm. Deux pièces de 600 dans 1200 ne tiennent pas : il en manque toujours la largeur du trait.",
+    "shelf_support": "Le petit support, souvent en métal, qu’on enfonce dans un trou de 5 mm du montant et sur lequel l’étagère repose. Quatre par étagère, et ils se déplacent.",
+    "hinge_plate": "La partie de la charnière qui se visse dans le montant du caisson. L’autre moitié — le boîtier — se loge dans la porte.",
+    "hinge_cup": "La partie ronde de la charnière, logée dans un trou de 35 mm percé dans la porte. C’est ce trou qui demande une mèche Forstner.",
+    "dowel": "Un tourillon de bois collé dans deux trous qui se font face. Invisible une fois monté, mais les deux trous doivent s’aligner au dixième.",
+    "pilot_hole": "Le trou étroit percé avant de visser, dans la pièce qui reçoit la vis. Il empêche le panneau d’éclater et guide la vis droit.",
+    "clearance_hole": "Le trou large percé dans la pièce que la vis traverse. La vis doit y filer librement : sinon elle écarte les deux pièces au lieu de les serrer.",
+    "grain": "La direction des fibres, visible sur un décor bois. Deux pièces voisines dont le fil ne court pas dans le même sens se voient à trois mètres.",
+    "yield": "La part du panneau acheté qui devient des pièces. Le reste est de la chute. 70 % est courant ; en dessous, il vaut souvent la peine de revoir les cotes.",
+    "forstner": "Une mèche à bout plat qui perce des trous à fond plat et de grand diamètre. C’est la seule qui fasse un logement de charnière propre.",
+    "countersink": "Un outil qui élargit l’entrée d’un trou en cône, pour que la tête de vis s’enfonce au ras du panneau au lieu de le tenir écarté.",
+    "slide": "Le rail sur lequel un tiroir coulisse. Elles se vendent par paires et par longueur — on achète une paire de 400, pas « des coulisses »."
   }
 }

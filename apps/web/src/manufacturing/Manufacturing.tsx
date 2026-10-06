@@ -29,6 +29,7 @@ const AssemblyGuide = lazy(async () => ({
 }));
 import { CuttingOrder } from './CuttingOrder.js';
 import { Tooling } from './Tooling.js';
+import { Term } from '../ui/Term.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
 import { QuotationEmail } from './QuotationEmail.js';
@@ -154,18 +155,17 @@ export function Manufacturing({ projectId }: { projectId: string }) {
           {data.nesting.panels.map((panel, index) => (
             <li key={index}>
               <div className="mb-2 flex flex-wrap items-center gap-4">
+                {/* Les deux mots que personne ne connaît avant son premier panneau, et
+                    qui décident pourtant de ce qu'on achète. */}
                 <DataPoint
-                  label={t('manufacturing.yield')}
+                  label={<Term term="yield" />}
                   value={`${(panel.utilisation * 100).toFixed(1)} %`}
                 />
                 <DataPoint
                   label={t('manufacturing.board')}
                   value={`${panel.format.lengthMm}×${panel.format.widthMm}×${panel.thicknessMm}`}
                 />
-                <DataPoint
-                  label={t('manufacturing.trim')}
-                  value={`${panel.trimMm} mm`}
-                />
+                <DataPoint label={<Term term="trim" />} value={`${panel.trimMm} mm`} />
               </div>
               <p className="mb-1 hidden text-sm text-ink-variant">
                 {t('manufacturing.panel', {

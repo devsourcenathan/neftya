@@ -2,6 +2,13 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { ToolKey, ToolLine, Tooling as Result } from '@neftya/engine';
 import { Badge, SectionTitle } from '../ui/index.js';
+import { Term } from '../ui/Term.js';
+
+/** Les outils dont le nom ne dit rien tant qu'on ne les a pas vus. */
+const EXPLAINED: Partial<Record<ToolKey, string>> = {
+  forstner_35: 'forstner',
+  countersink: 'countersink',
+};
 
 /**
  * Ce qu'il faut pour le faire.
@@ -40,7 +47,11 @@ export function Tooling({ tooling }: { tooling: Result }) {
         {tooling.tools.map((tool) => (
           <li key={tool.key} className="flex flex-wrap items-baseline gap-x-2">
             <span className={tool.optional ? 'text-ink-variant' : 'text-ink'}>
-              {toolName(t, tool.key)}
+              {EXPLAINED[tool.key] ? (
+                <Term term={EXPLAINED[tool.key] as string} />
+              ) : (
+                toolName(t, tool.key)
+              )}
             </span>
 
             {tool.reasons.length > 0 && (
