@@ -457,5 +457,31 @@
     "tilt": "Au redressement",
     "tiltHint": "Hauteur qu’il faut au-dessus pour lever le meuble monté à plat.",
     "clear": "Effacer"
+  },
+  "tooling": {
+    "title": "Ce qu’il faut pour le faire",
+    "level": "Niveau",
+    "beginner": "Débutant",
+    "intermediate": "Intermédiaire",
+    "advanced": "Confirmé",
+    "beginnerHint": "Une perceuse, des mèches, des serre-joints. Rien qui demande d’avoir déjà fait.",
+    "intermediateHint": "Un outil à acheter pour l’occasion, et qui s’apprend en une fois : {{tools}}.",
+    "advancedHint": "Un outil qui s’apprend sur des chutes avant de toucher une façade : {{tools}}.",
+    "optional": "on peut s’en passer",
+    "sawHint": "ou faites couper vos panneaux au magasin",
+    "for": "pour {{reasons}}"
+  },
+  "tool": {
+    "drill": "Perceuse",
+    "driver": "Visseuse",
+    "clamps": "Serre-joints",
+    "square": "Équerre",
+    "tape": "Mètre",
+    "saw": "Scie",
+    "countersink": "Fraise à lamer",
+    "forstner_35": "Mèche Forstner Ø 35",
+    "router": "Défonceuse",
+    "dowel_jig": "Gabarit de tourillonnage",
+    "bit": "Mèche à bois Ø {{diameter}}"
   }
 }

@@ -66,6 +66,16 @@ export { build, compartmentAt, type Furniture, type Warning } from './build.js';
 
 export { fittingWarnings, tiltHeightMm, type FittingCode } from './fitting.js';
 
+export {
+  tooling,
+  compareTools,
+  type SkillLevel,
+  type ToolKey,
+  type ToolLine,
+  type ToolReason,
+  type Tooling,
+} from './tooling.js';
+
 export { cutList, totalEdgeBandingMm, type CutListRow } from './cut-list.js';
 
 export {

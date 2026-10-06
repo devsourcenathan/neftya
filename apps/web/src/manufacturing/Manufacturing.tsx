@@ -28,6 +28,7 @@ const AssemblyGuide = lazy(async () => ({
   default: (await import('./AssemblyGuide.js')).AssemblyGuide,
 }));
 import { CuttingOrder } from './CuttingOrder.js';
+import { Tooling } from './Tooling.js';
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
 import { QuotationEmail } from './QuotationEmail.js';
@@ -129,6 +130,8 @@ export function Manufacturing({ projectId }: { projectId: string }) {
           { key: 'manufacturing', label: t('pipeline.manufacturing') },
         ]}
       />
+
+      <Tooling tooling={data.tooling} />
 
       <section>
         <SectionTitle

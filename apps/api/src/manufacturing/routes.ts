@@ -115,6 +115,7 @@ export function registerManufacturingRoutes(
       drilling: plan.drilling,
       bill: plan.bill,
       assembly: plan.assembly,
+      tooling: plan.tooling,
       ...(withCosts ? { quotation: plan.quotation } : {}),
     });
   });

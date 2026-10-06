@@ -457,5 +457,31 @@
     "tilt": "To raise it",
     "tiltHint": "Height needed above to tilt the piece up once assembled flat.",
     "clear": "Clear"
+  },
+  "tooling": {
+    "title": "What you need to build it",
+    "level": "Level",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Experienced",
+    "beginnerHint": "A drill, some bits, some clamps. Nothing that assumes practice.",
+    "intermediateHint": "One tool bought for the occasion, learned in one go: {{tools}}.",
+    "advancedHint": "A tool to practise on offcuts before touching a front: {{tools}}.",
+    "optional": "can be skipped",
+    "sawHint": "or have the store cut your boards",
+    "for": "for {{reasons}}"
+  },
+  "tool": {
+    "drill": "Drill",
+    "driver": "Screwdriver",
+    "clamps": "Clamps",
+    "square": "Square",
+    "tape": "Tape measure",
+    "saw": "Saw",
+    "countersink": "Countersink bit",
+    "forstner_35": "Ø 35 Forstner bit",
+    "router": "Router",
+    "dowel_jig": "Doweling jig",
+    "bit": "Ø {{diameter}} wood bit"
   }
 }

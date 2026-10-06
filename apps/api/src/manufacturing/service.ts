@@ -7,6 +7,7 @@ import {
   cuttingOrder,
   drilling,
   nest,
+  tooling,
   type AssemblyStep,
   type BillOfMaterials,
   type CutListRow,
@@ -14,6 +15,7 @@ import {
   type DrillingResult,
   type NestingResult,
   type ParsedFurnitureInput,
+  type Tooling,
 } from '@neftya/engine';
 import { multiply, sum, type Money } from '@neftya/units';
 
@@ -60,6 +62,8 @@ export interface ManufacturingPlan {
   drilling: DrillingResult;
   bill: BillOfMaterials;
   assembly: AssemblyStep[];
+  /** De quoi il faut, et le niveau que cela suppose. Déduit du perçage. */
+  tooling: Tooling;
   quotation: Quotation;
 }
 
@@ -80,6 +84,7 @@ export function manufacturingPlan(
     drilling: holes,
     bill,
     assembly: assemblySteps(furniture),
+    tooling: tooling(holes),
     quotation: quote(costLines(bill), prices, currency),
   };
 }

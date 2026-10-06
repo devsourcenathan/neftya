@@ -7,6 +7,7 @@ import type {
   DrillingResult,
   NestingResult,
   ParsedFurnitureInput,
+  Tooling,
 } from '@neftya/engine';
 import type { Money } from '@neftya/units';
 import type { ApiClient, FileClient } from './client.js';
@@ -85,6 +86,8 @@ export interface ManufacturingResource {
   drilling: DrillingResult;
   bill: BillOfMaterials;
   assembly: AssemblyStep[];
+  /** L'outillage nécessaire, et le niveau qui s'en déduit. */
+  tooling: Tooling;
   /** Absent quand le rôle n'autorise pas la lecture des coûts. */
   quotation?: {
     lines: QuotationLine[];
