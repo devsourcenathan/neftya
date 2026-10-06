@@ -54,6 +54,16 @@ export type HoleSide =
   | 'edge_y_max';
 
 /**
+ * L'autre face d'un panneau.
+ *
+ * Définie pour les deux faces seulement : un chant n'a pas d'opposé utile — on ne traverse
+ * pas une pièce par son chant pour ressortir par l'autre.
+ */
+export function oppositeFace(side: 'front' | 'back'): 'front' | 'back' {
+  return side === 'front' ? 'back' : 'front';
+}
+
+/**
  * Le repère d'une instance.
  *
  * L'axe traversant est celui dont l'encombrement vaut l'épaisseur **et** dont les deux

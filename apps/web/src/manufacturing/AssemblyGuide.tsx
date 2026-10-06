@@ -297,6 +297,13 @@ export function AssemblyGuide({
                             y: hole.yMm,
                           })}
                           {hole.through && ` · ${t('manufacturing.holeThrough')}`}
+                          {/* « Traversant » ne dit pas par où entrer. Un trou perce du
+                              bon côté ou abîme la face qu'on regarde — et sur un montage
+                              vissé, il décide aussi d'où se loge la tête. */}
+                          {hole.drillFrom &&
+                            ` · ${t('manufacturing.holeDrillFrom', {
+                              face: t(`part.sides.${hole.drillFrom}`),
+                            })}`}
                           {' · '}
                           {/* Les barres et les coulisses portent leur cote dans leur
                               clé — `pull_bar_128`, `slide_ball_400` — et une entrée de

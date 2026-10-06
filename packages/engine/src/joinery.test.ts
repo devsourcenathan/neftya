@@ -81,6 +81,23 @@ describe('les deux trous d’une vis', () => {
     }
   });
 
+  it('se perce du dehors, du côté où la tête se loge', () => {
+    /*
+     * La face d'attaque est portée, pas déduite — et elle n'est pas celle des coordonnées.
+     *
+     * Percé de l'intérieur, la tête de vis serait prise entre les deux panneaux, et l'éclat
+     * de sortie tomberait sur la face qu'on regarde. Les deux se paient sur le meuble fini.
+     */
+    for (const hole of clearance) {
+      expect(hole.drillFrom).toBeDefined();
+      expect(hole.drillFrom).not.toBe(hole.side);
+    }
+
+    // Un trou borgne n'a pas de face d'attaque : on perce depuis celle qui porte les cotes,
+    // et un champ en plus ne ferait que donner une seconde chose à garder juste.
+    for (const hole of pilot) expect(hole.drillFrom).toBeUndefined();
+  });
+
   it('traverse d’un côté, s’arrête de l’autre', () => {
     // Un passage qui ne sort pas n'est pas un passage. Un avant-trou qui sort abîme la face
     // opposée, et la vis n'a plus rien pour mordre sur ses derniers millimètres.

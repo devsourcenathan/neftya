@@ -117,6 +117,7 @@ export {
   frameOf,
   toPartFrame,
   facingSide,
+  oppositeFace,
   type Axis,
   type HoleSide,
   type PartFrame,

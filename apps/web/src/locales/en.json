@@ -235,7 +235,8 @@
     "pocketLine": "Recess {{width}} × {{height}} · depth {{depth}} · at {{x}} × {{y}}",
     "noHoles": "No drilling on this part",
     "fittingSheet": "Fitting sheet",
-    "copy": "Copy {{index}}"
+    "copy": "Copy {{index}}",
+    "holeDrillFrom": "drill from the {{face}}"
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",

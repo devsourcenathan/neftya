@@ -3,6 +3,7 @@ import type { Part, Placement } from './parts.js';
 import {
   facingSide,
   frameOf,
+  oppositeFace,
   toPartFrame,
   type Axis,
   type HoleSide,
@@ -72,6 +73,19 @@ export interface Hole {
    * un drapeau est une décision, et l'atelier ne monte pas la même mèche dans les deux cas.
    */
   through?: boolean;
+  /**
+   * La face par laquelle on engage la mèche, quand ce n'est **pas** `side`.
+   *
+   * `side` dit depuis quelle face se comptent les coordonnées ; il ne dit pas par où entre
+   * le foret. Pour un trou borgne les deux coïncident, et le champ est absent. Pour un
+   * trou traversant, non : une mèche éclate à la sortie, et la tête de vis doit se trouver
+   * du côté où l'on perce.
+   *
+   * Porté par le moteur plutôt que déduit par la vue. Le retrouver en prenant « l'opposé
+   * de `side` » marcherait aujourd'hui, et ce serait deviner là où le moteur avait la
+   * réponse — exactement ce qu'on s'interdit ailleurs.
+   */
+  drillFrom?: HoleSide;
   side: HoleSide;
   /** Ce que le trou reçoit. Clé stable, jamais traduite. */
   purpose: HolePurpose;
@@ -547,6 +561,15 @@ function screws(
         // Le seul trou traversant en dehors des vis de poignée, et pour la même raison :
         // ce qui ne sort pas ne tient sur rien.
         through: true,
+        /*
+         * On perce **du côté opposé au joint**, c'est-à-dire du dehors du caisson.
+         *
+         * Deux raisons, et chacune suffirait. La tête de vis doit se loger dehors : percée
+         * de l'intérieur, elle serait prise entre les deux panneaux. Et une mèche éclate à
+         * la sortie : percer du dehors laisse l'éclat du côté du joint, où il disparaît une
+         * fois les pièces serrées.
+         */
+        drillFrom: oppositeFace(side),
         side,
         purpose: 'screw_clearance',
         hardware: SCREW.key,

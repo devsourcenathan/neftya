@@ -235,7 +235,8 @@
     "pocketLine": "Empreinte {{width}} × {{height}} · prof. {{depth}} · à {{x}} × {{y}}",
     "noHoles": "Aucun perçage sur cette pièce",
     "fittingSheet": "Fiche de pose",
-    "copy": "Exemplaire {{index}}"
+    "copy": "Exemplaire {{index}}",
+    "holeDrillFrom": "percer depuis la {{face}}"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",
