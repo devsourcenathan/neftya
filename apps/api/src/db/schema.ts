@@ -208,6 +208,15 @@ export interface AiGenerationsTable {
   output: unknown;
   /** Brut du modèle, tronqué — le diagnostic quand `output` est nul. */
   raw_output: string | null;
+  /**
+   * La largeur hors-tout fournie avec une image, qui donne l'échelle.
+   *
+   * `null` pour une description écrite : elle porte ses millimètres elle-même. C'est aussi
+   * ce qui dit à la relecture quelle composition appliquer.
+   */
+  width_mm: number | null;
+  /** La profondeur donnée avec l'image. Une vue de face ne la montre pas. */
+  depth_mm: number | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

@@ -90,9 +90,15 @@ V2 ne doit être engagée.
 
 ## V2 — Intelligence et usinage
 
-- **Image → analyse et structure** — **bloqué par la plateforme** : aucune tâche de Sekuu AI
-  n'accepte d'image, et son périmètre de V1 exclut explicitement l'OCR et l'analyse de
-  document. Demande d'abord une tâche à entrée image chez Sekuu.
+- ~~**Image → analyse et structure**~~ — **livré le 6 octobre 2026** : une photo donne la
+  structure et les **proportions**, l'utilisateur donne une seule cote — la largeur hors-tout
+  — et le reste s'en déduit. Une image ne porte pas de dimensions, et en demander au modèle
+  serait lui demander d'inventer.
+
+  Ce poste était bloqué par la plateforme jusqu'au passage à un modèle direct : aucune tâche
+  de Sekuu AI n'accepte d'image. Le blocage a disparu sans que personne le remarque, et
+  `SekuuAI` refuse toujours franchement une image — le jour du retour, c'est la plateforme
+  qui devra rattraper.
 - ~~Texte → configuration~~ — **livré le 1er octobre 2026** : `extract`, et la sortie passe
   par le schéma du moteur
 - Assistant conversationnel

@@ -376,6 +376,17 @@
     "use": "Create this project",
     "unusable": "The description is not enough to compose a piece of furniture. Clarify the following, then try again.",
     "failed": "The interpretation did not complete. Rephrase, or start from a preset.",
-    "timeout": "The interpretation is taking too long. Rephrase, or start from a preset."
+    "timeout": "The interpretation is taking too long. Rephrase, or start from a preset.",
+    "modeText": "Describe",
+    "modePhoto": "From a photo",
+    "photoLabel": "A photo of the furniture",
+    "photoHint": "JPEG, PNG or WebP, 3 MB at most. A front view is enough.",
+    "widthLabel": "Overall width (mm)",
+    "widthHint": "A photo carries no dimensions: this measurement sets the scale, the rest follows.",
+    "photoTooHeavy": "Photo too heavy: 3 MB at most.",
+    "photoMissing": "Choose a photo and give the width.",
+    "chosen": "Photo selected",
+    "depthLabel": "Depth (mm), if known",
+    "depthHint": "A front view shows no depth. Leave empty if the photo is taken at an angle."
   }
 }

@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   EXTRACTED_FIELDS,
+  IMAGE_FIELDS,
   MAX_DIMENSION_MM,
+  MAX_RATIO,
   MIN_DIMENSION_MM,
   interpret,
+  interpretFromImage,
 } from './interpretation.js';
 
 /**
@@ -191,6 +194,163 @@ describe('les nombres d’aménagement', () => {
     const result = interpret({ ...COMPLETE, compartments: 500 });
 
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('depuis une image, à une échelle donnée', () => {
+  const SEEN = {
+    heightRatio: 1.25,
+    depthRatio: 0.25,
+    compartments: 3,
+    shelvesPerCompartment: 2,
+    material: 'mdf',
+  };
+
+  it('déduit les deux cotes de la largeur donnée', () => {
+    const result = interpretFromImage(SEEN, { widthMm: 1600 });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // 1600 × 1,25 = 2000 ; 1600 × 0,25 = 400.
+    expect(result.model.dimensions).toEqual({
+      widthMm: 1600,
+      heightMm: 2000,
+      depthMm: 400,
+    });
+    expect(result.model.compartments).toHaveLength(3);
+  });
+
+  it('arrondit au millimètre, parce que le moteur ne connaît que l’entier', () => {
+    const result = interpretFromImage(
+      { ...SEEN, heightRatio: 1.3333 },
+      { widthMm: 900 },
+    );
+    if (!result.ok) throw new Error('attendu composable');
+
+    expect(result.model.dimensions.heightMm).toBe(1200);
+  });
+
+  it('demande la profondeur quand la photo ne la montre pas', () => {
+    const { depthRatio: _, ...vueDeFace } = SEEN;
+    const result = interpretFromImage(vueDeFace, { widthMm: 1600 });
+
+    /*
+     * **Le cas le plus courant.**
+     *
+     * Une photo prise en face ne montre aucune profondeur, et un modèle honnête rend
+     * `null`. Mesuré contre un vrai modèle : c'est exactement ce qu'il a fait. Refuser en
+     * parlant d'une « proportion absente » laissait l'utilisateur sans rien à corriger ; on
+     * lui demande la cote, ou une autre prise de vue.
+     */
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(Object.keys(result.problems)).toEqual(['depthMm']);
+    expect(result.problems['depthMm']?.[0]).toContain('trois quarts');
+  });
+
+  it('accepte la profondeur donnée, et ignore alors la proportion', () => {
+    const { depthRatio: _, ...vueDeFace } = SEEN;
+    const result = interpretFromImage(vueDeFace, { widthMm: 1600, depthMm: 350 });
+    if (!result.ok) throw new Error('attendu composable');
+
+    expect(result.model.dimensions).toEqual({
+      widthMm: 1600,
+      heightMm: 2000,
+      depthMm: 350,
+    });
+  });
+
+  it('préfère la profondeur mesurée à celle que le modèle propose', () => {
+    // Qui mesure son meuble sait mieux que qui le regarde en photo.
+    const result = interpretFromImage(SEEN, { widthMm: 1600, depthMm: 320 });
+    if (!result.ok) throw new Error('attendu composable');
+
+    expect(result.model.dimensions.depthMm).toBe(320);
+  });
+
+  it('refuse une proportion illisible, sans la confondre avec une absence', () => {
+    const result = interpretFromImage(
+      { ...SEEN, depthRatio: 'je ne sais pas' },
+      { widthMm: 1600 },
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    // Deux reproches pour un seul défaut égareraient : un seul champ est nommé.
+    expect(Object.keys(result.problems)).toEqual(['depthMm']);
+  });
+
+  it('refuse une proportion qui n’en est pas une', () => {
+    // Un meuble cent fois plus haut que large n'existe pas : c'est un rapport lu à
+    // l'envers, ou une invention.
+    const result = interpretFromImage({ ...SEEN, heightRatio: 100 }, { widthMm: 1600 });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems['heightRatio']?.[0]).toContain(String(MAX_RATIO));
+  });
+
+  it('refuse une proportion négative ou nulle', () => {
+    for (const heightRatio of [0, -1.2]) {
+      expect(interpretFromImage({ ...SEEN, heightRatio }, { widthMm: 1600 }).ok).toBe(
+        false,
+      );
+    }
+  });
+
+  it('attrape une cote absurde après la mise à l’échelle', () => {
+    /*
+     * Le rapport est plausible, le produit non.
+     *
+     * 0,06 × 1 000 fait 60 mm : un meuble de six centimètres de haut. Les bornes en
+     * millimètres restent le vrai filet — le rapport, lui, n'avait l'air de rien.
+     */
+    const result = interpretFromImage(
+      { ...SEEN, heightRatio: 0.06 },
+      { widthMm: 1000 },
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toHaveProperty('heightMm');
+  });
+
+  it('n’invente jamais la largeur : elle est donnée', () => {
+    const result = interpretFromImage({ ...SEEN, widthMm: 9999 }, { widthMm: 1200 });
+    if (!result.ok) throw new Error('attendu composable');
+
+    // Un `widthMm` rendu par le modèle est ignoré : l'échelle vient de l'utilisateur, et
+    // c'est tout l'objet de cette porte d'entrée.
+    expect(result.model.dimensions.widthMm).toBe(1200);
+  });
+});
+
+describe('les champs demandés pour une image', () => {
+  it('ne demandent aucune cote', () => {
+    // Demander des millimètres à un modèle qui regarde une photo, c'est lui demander
+    // d'inventer — et une cote inventée a l'air d'une cote mesurée.
+    for (const field of IMAGE_FIELDS) {
+      expect(field.endsWith('Mm')).toBe(false);
+    }
+  });
+
+  it('demandent les deux proportions', () => {
+    expect(IMAGE_FIELDS).toContain('heightRatio');
+    expect(IMAGE_FIELDS).toContain('depthRatio');
+  });
+
+  it('partagent la structure avec la description écrite', () => {
+    // La structure est la même chose vue autrement : la composer deux fois les ferait
+    // diverger.
+    for (const field of [
+      'compartments',
+      'shelvesPerCompartment',
+      'material',
+      'hasBack',
+    ]) {
+      expect(IMAGE_FIELDS).toContain(field);
+      expect(EXTRACTED_FIELDS).toContain(field);
+    }
   });
 });
 

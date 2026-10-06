@@ -2124,3 +2124,84 @@ aurait fermé des projets déjà créés.
 **Le tarif ne se réécrit pas.** Une migration de plus ajoute le gratuit et le quota d'IA qui
 manquait aux trois payants ; celle du 4 septembre a tourné, et un tarif se cite dans une
 facture.
+
+---
+
+## 2026-10-06 — Une image donne une structure et des proportions, jamais des cotes
+
+**Décision.** L'assistant accepte une photo, **la largeur hors-tout**, et **la profondeur si
+on la connaît**. Le modèle rend des rapports — `heightRatio`, `depthRatio` — et la structure ;
+ce qui manque s'en déduit.
+
+**La seconde mesure n'était pas prévue : elle vient de l'essai.** Contre un vrai modèle, sur
+une vue de face, `depthRatio` est revenu `null` — et le modèle avait raison, une vue de face
+ne montre aucune profondeur. La garde a refusé plutôt que d'inventer, ce qui était le bon
+comportement et rendait inutilisable **le cas le plus courant**. La profondeur est donc
+demandée, facultative : une vue de trois quarts permet au modèle de la proposer.
+
+Mesuré ensuite de bout en bout : 1800 mm de large et 350 de profond donnés, `heightRatio`
+lu à 1,5 → **1800 × 2700 × 350**, trois compartiments, deux étagères chacun. Le dessin
+soumis en portait exactement autant.
+
+**Motif.** Le brief le dit lui-même : « une image ne fournit pas : les dimensions ». Demander
+des millimètres à un modèle qui regarde une photo, c'est lui demander d'inventer — et une
+cote inventée a exactement l'air d'une cote mesurée. Avec une échelle donnée, un rapport faux
+produit une cote fausse **du bon ordre de grandeur**, qui reste corrigeable à l'œil dans le
+concepteur. C'est tout l'écart.
+
+**Qui mesure gagne sur qui regarde.** Une profondeur donnée prime sur celle que le modèle
+propose, et quand les deux manquent on le dit — avec le champ à remplir, pas avec un reproche
+sur une proportion que l'utilisateur ne contrôle pas. Deux reproches pour un seul défaut
+égarent celui qui les lit.
+
+**Deux filets, et le second est le vrai.** Les proportions sont bornées entre 0,05 et 20 —
+une penderie fait 2,4 fois sa largeur en hauteur, une étagère basse 0,11 ; les bornes
+n'arbitrent pas une silhouette, elles attrapent un rapport qui n'a pas de sens. Mais c'est la
+vérification **après la mise à l'échelle** qui attrape le reste : 0,06 × 1 000 fait un meuble
+de six centimètres, et le rapport n'avait l'air de rien.
+
+**L'échelle est rangée avec la génération**, pas passée à la relecture. Sans elle,
+`GET /v1/assistant/interpretations/{id}` lirait des proportions sans savoir par quoi les
+multiplier, et rendrait « inutilisable » un résultat parfaitement bon. Une colonne
+`width_mm`, `null` pour une description écrite — et c'est ce `null` qui dit à la relecture
+quelle composition appliquer.
+
+**L'image n'est pas enregistrée.** La ligne garde l'empreinte et la largeur. Trois mégaoctets
+de base64 par génération rendraient la table illisible et les sauvegardes absurdes, et la
+photo appartient à l'utilisateur : elle n'a aucune raison de rester ici.
+
+**Trois formats, et pas un de plus** — PNG, JPEG, WebP. En accepter d'autres demanderait de
+les convertir, donc de les décoder sur le serveur, et un décodeur d'image est une surface
+d'attaque qu'on n'ouvre pas pour deviner un nombre de compartiments. Une URL distante est
+refusée pour la même raison : ce serait une requête sortante décidée par l'appelant.
+
+**`detail: 'low'`.** Une vignette suffit à compter des compartiments et à juger une
+proportion. Le coût d'une image est proportionnel au nombre de tuiles qu'elle occupe, et
+personne ne relit la facture d'une photo.
+
+**La plateforme refuse franchement.** `SekuuAI.extract` lève dès qu'une image lui est
+passée, **sans appeler** : aucune de ses tâches n'en accepte, et son périmètre de V1 exclut
+l'OCR. Envoyer quand même, c'est se faire rejeter — ou, pire, se faire accepter en voyant
+l'image ignorée, et payer pour une réponse inventée.
+
+**Ce que l'obstacle était, et ce qu'il est devenu.** Le 1er octobre, ce poste était bloqué
+par la plateforme. Le passage à un modèle direct l'a débloqué sans que personne le remarque :
+`gpt-4o-mini` lit les images. L'obstacle avait changé de nature pendant cinq jours.
+
+---
+
+## 2026-10-06 — Une contrainte posée dans un seul schéma n'en protège aucun
+
+**Décision.** Les tests d'existence de contrainte filtrent la **relation**, pas seulement le
+nom : `AND conrelid = 'organization_quotas'::regclass`.
+
+**Motif.** La migration `0011` testait `pg_constraint` sur le nom seul. Un nom de contrainte
+est unique par schéma, pas dans `pg_constraint` : dans une base qui porte soixante schémas de
+test, le premier posait la contrainte et les cinquante-neuf autres la croyaient déjà là.
+
+**Ce n'est visible qu'en test**, et c'est précisément ce qui la rendait dangereuse : en
+production, une base d'un seul schéma la pose toujours. La garde manquait donc partout où elle
+aurait servi à prouver qu'elle marche.
+
+**Vérifié en appliquant les douze migrations dans deux schémas d'une même base** : deux
+contraintes posées dans chacun, là où il n'y en avait qu'une.

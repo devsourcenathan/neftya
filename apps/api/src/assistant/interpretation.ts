@@ -45,6 +45,38 @@ export const EXTRACTED_FIELDS = [
 ] as const;
 
 /**
+ * Les champs demandés **à partir d'une image**.
+ *
+ * Mêmes faits de structure, mais **aucune cote** : une photo n'en porte pas, et le brief le
+ * dit lui-même — « une image ne fournit pas : les dimensions ». Ce qu'elle porte, ce sont
+ * des **proportions**, et l'utilisateur fournit l'échelle : une seule cote, la largeur
+ * hors-tout.
+ *
+ * Demander des millimètres à un modèle qui regarde une photo, c'est lui demander d'inventer
+ * — et une cote inventée a exactement l'air d'une cote mesurée.
+ */
+export const IMAGE_FIELDS = [
+  'heightRatio',
+  'depthRatio',
+  'compartments',
+  'shelvesPerCompartment',
+  'drawersPerCompartment',
+  'doorsPerCompartment',
+  'material',
+  'hasBack',
+] as const;
+
+/**
+ * Au-delà de quoi une proportion n'en est plus une.
+ *
+ * Une penderie fait 2,4 fois sa largeur en hauteur ; une étagère basse, 0,11. Les bornes
+ * sont donc larges : elles n'arbitrent pas une silhouette, elles attrapent un rapport qui
+ * n'a pas de sens. Le vrai filet reste les bornes en millimètres, appliquées après l'échelle.
+ */
+export const MIN_RATIO = 0.05;
+export const MAX_RATIO = 20;
+
+/**
  * Au-delà de quoi une cote n'est plus un meuble.
  *
  * `positiveMillimetres` accepte 2 comme 2 000 000 : le moteur n'a pas d'opinion sur la
@@ -104,7 +136,29 @@ function boolean(value: unknown): boolean | null {
  */
 export function interpret(extracted: Extracted): Interpretation {
   const problems: Problems = {};
+  return compose(extracted, measured(extracted, problems), problems);
+}
 
+/**
+ * D'une image et d'une seule cote à une entrée du moteur.
+ *
+ * L'échelle vient de l'utilisateur, les proportions du modèle. Un rapport faux donne une
+ * cote fausse, mais **du bon ordre de grandeur** — et c'est tout l'écart avec une cote
+ * inventée : elle reste corrigeable à l'œil dans le concepteur, là où « 1 800 mm » annoncé
+ * pour un meuble de 900 ne se voit pas.
+ */
+export function interpretFromImage(
+  extracted: Extracted,
+  reference: { widthMm: number; depthMm?: number | null },
+): Interpretation {
+  const problems: Problems = {};
+  return compose(extracted, scaled(extracted, reference, problems), problems);
+}
+
+type Dimensions = { widthMm: number; heightMm: number; depthMm: number } | null;
+
+/** Les trois cotes lues telles quelles, pour une description écrite. */
+function measured(extracted: Extracted, problems: Problems): Dimensions {
   const dimension = (field: 'widthMm' | 'heightMm' | 'depthMm'): number | null => {
     const value = integer(extracted[field]);
 
@@ -129,6 +183,104 @@ export function interpret(extracted: Extracted): Interpretation {
   const heightMm = dimension('heightMm');
   const depthMm = dimension('depthMm');
 
+  return widthMm !== null && heightMm !== null && depthMm !== null
+    ? { widthMm, heightMm, depthMm }
+    : null;
+}
+
+/**
+ * Les cotes manquantes, déduites des proportions et de ce que l'utilisateur a donné.
+ *
+ * **La profondeur se donne, elle ne se devine pas.** Une vue de face n'en montre aucune : un
+ * modèle honnête rend `null`, et refuser là-dessus rendrait inutilisable la photo la plus
+ * courante. Une vue de trois quarts, elle, permet au modèle de la proposer — on prend donc ce
+ * que l'utilisateur donne, sinon ce que le modèle voit, et on refuse si personne ne sait.
+ */
+function scaled(
+  extracted: Extracted,
+  reference: { widthMm: number; depthMm?: number | null },
+  problems: Problems,
+): Dimensions {
+  const { widthMm } = reference;
+  /**
+   * Une proportion lisible, ou `null`.
+   *
+   * `report` dit si l'absence mérite un reproche. Pour la hauteur, oui : sans elle il n'y a
+   * rien à composer et rien d'autre à proposer. Pour la profondeur, non — l'utilisateur sera
+   * invité à la donner, et deux reproches pour un seul défaut égarent celui qui les lit.
+   */
+  const ratio = (
+    field: 'heightRatio' | 'depthRatio',
+    report: boolean,
+  ): number | null => {
+    const value = extracted[field];
+    const parsed = typeof value === 'number' ? value : Number(String(value ?? ''));
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      if (report) problems[field] = ['Proportion absente ou illisible.'];
+      return null;
+    }
+
+    if (parsed < MIN_RATIO || parsed > MAX_RATIO) {
+      if (report) {
+        problems[field] = [
+          `Proportion hors de ce qu'un meuble peut avoir : ${parsed}, attendu entre ${MIN_RATIO} et ${MAX_RATIO}.`,
+        ];
+      }
+      return null;
+    }
+
+    return parsed;
+  };
+
+  const heightRatio = ratio('heightRatio', true);
+
+  /*
+   * La profondeur donnée gagne sur celle que le modèle propose.
+   *
+   * Qui mesure son meuble sait mieux que qui le regarde en photo — et quand les deux
+   * manquent, on le dit plutôt que de poser une profondeur « habituelle ».
+   */
+  const givenDepth = reference.depthMm ?? null;
+  const depthRatio = givenDepth === null ? ratio('depthRatio', false) : null;
+
+  if (heightRatio === null) return null;
+  if (givenDepth === null && depthRatio === null) {
+    problems['depthMm'] = [
+      'La photo ne montre pas la profondeur : donnez-la, ou prenez le meuble de trois quarts.',
+    ];
+    return null;
+  }
+
+  /*
+   * Arrondi au millimètre, parce que le moteur ne connaît que l'entier.
+   *
+   * Les bornes de vraisemblance sont vérifiées **après** la mise à l'échelle : c'est là que
+   * le facteur mille se verrait, pas dans le rapport.
+   */
+  const dimensions = {
+    widthMm,
+    heightMm: Math.round(widthMm * heightRatio),
+    depthMm: givenDepth ?? Math.round(widthMm * (depthRatio as number)),
+  };
+
+  for (const [field, value] of Object.entries(dimensions)) {
+    if (value < MIN_DIMENSION_MM || value > MAX_DIMENSION_MM) {
+      problems[field] = [
+        `Cote hors de ce qu'un meuble peut mesurer : ${value} mm, attendu entre ${MIN_DIMENSION_MM} et ${MAX_DIMENSION_MM}.`,
+      ];
+    }
+  }
+
+  return Object.keys(problems).length > 0 ? null : dimensions;
+}
+
+/** La structure, commune aux deux portes d'entrée : seules les cotes en diffèrent. */
+function compose(
+  extracted: Extracted,
+  dimensions: Dimensions,
+  problems: Problems,
+): Interpretation {
   const count = (field: string, fallback: number, max: number): number => {
     const value = integer(extracted[field]);
     if (value === null) return fallback;
@@ -154,13 +306,15 @@ export function interpret(extracted: Extracted): Interpretation {
   const drawers = count('drawersPerCompartment', 0, 16);
   const doors = count('doorsPerCompartment', 0, 2);
 
-  if (Object.keys(problems).length > 0) return { ok: false, problems };
+  if (dimensions === null || Object.keys(problems).length > 0) {
+    return { ok: false, problems };
+  }
 
   const material = extracted['material'];
   const hasBack = boolean(extracted['hasBack']);
 
   const candidate = {
-    dimensions: { widthMm, heightMm, depthMm },
+    dimensions,
     // Uniformes, et c'est assumé : « le premier compartiment en tiroirs » n'est pas
     // exprimable dans une liste de champs plats. L'utilisateur ajuste ensuite au
     // compartiment, là où l'interface sait déjà le faire.

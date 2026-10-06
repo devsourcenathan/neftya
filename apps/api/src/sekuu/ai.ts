@@ -66,6 +66,15 @@ export interface Generation {
   status: GenerationStatus;
   /** Lu **uniquement** en cas de succès : voir `read`. */
   output: Record<string, unknown> | null;
+  /**
+   * L'échelle avec laquelle cette génération a été faite, ou `null`.
+   *
+   * Elle voyage avec la génération parce que la relecture en a besoin : des proportions sans
+   * échelle ne composent rien, et l'appel qui relit ne connaît pas la largeur qu'on avait
+   * donnée.
+   */
+  widthMm?: number | null;
+  depthMm?: number | null;
 }
 
 export interface AiOptions {
@@ -81,6 +90,19 @@ export interface ExtractRequest {
   organizationId: string;
   input: string;
   fields: readonly string[];
+  /**
+   * Une image, en `data:` URL. Absente pour une description écrite.
+   *
+   * **Sekuu AI ne sait pas la lire** : aucune de ses tâches n'accepte d'image, et son
+   * périmètre de V1 exclut explicitement l'OCR et l'analyse de document. Le client distant
+   * refuse donc franchement plutôt que d'envoyer un appel qui serait rejeté — ou, pire,
+   * accepté en ignorant l'image et facturé pour une réponse inventée.
+   */
+  imageDataUrl?: string;
+  /** L'échelle, avec une image : la largeur hors-tout en millimètres entiers. */
+  widthMm?: number;
+  /** La profondeur, quand l'utilisateur la donne : une vue de face ne la montre pas. */
+  depthMm?: number;
   /**
    * Portée par l'événement métier, pas tirée au hasard.
    *
@@ -101,6 +123,13 @@ export class SekuuAI {
 
   /** Soumet une extraction. @throws {AiUnavailable} */
   async extract(request: ExtractRequest): Promise<Generation> {
+    if (request.imageDataUrl !== undefined) {
+      throw new AiUnavailable(
+        'denied',
+        "la plateforme n'a pas de tâche à entrée image",
+      );
+    }
+
     return read(
       await this.call('POST', '/api/v1/ai/tasks', request.idempotencyKey, {
         task: 'extract',

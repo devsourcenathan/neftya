@@ -16,8 +16,16 @@ ALTER TABLE organization_quotas
 -- entier = plafond. La contrainte n'interdit donc pas `NULL`, elle interdit l'absurde.
 DO $$
 BEGIN
+    -- `conrelid` filtre la relation, donc le schéma courant.
+    --
+    -- Sans lui, le test portait sur le nom seul, qui est unique par schéma mais pas dans
+    -- `pg_constraint` : dans une base qui porte soixante schémas de test, le premier posait
+    -- la contrainte et les cinquante-neuf autres la croyaient déjà là. Elle manquait donc
+    -- partout où elle aurait servi.
     IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'organization_quotas_members_max'
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'organization_quotas_members_max'
+          AND conrelid = 'organization_quotas'::regclass
     ) THEN
         ALTER TABLE organization_quotas
             ADD CONSTRAINT organization_quotas_members_max

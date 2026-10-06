@@ -252,6 +252,137 @@ describe('quota mensuel', () => {
   });
 });
 
+describe('une image, et une seule cote', () => {
+  const IMAGE =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4z8AAAAMBAQDuLHpvAAAAAElFTkSuQmCC';
+
+  const RATIOS = { heightRatio: 1.25, depthRatio: 0.25, compartments: 3 };
+
+  /** Capture le corps envoyé au modèle. */
+  function spying() {
+    const bodies: Record<string, unknown>[] = [];
+    const ai = new LocalAI({
+      db: harness.db,
+      baseUrl: 'https://modele.test/v1',
+      apiKey: 'cle-de-test',
+      model: 'modele-de-test',
+      fetch: (async (_input: unknown, init?: { body?: unknown }) => {
+        bodies.push(JSON.parse(String((init as { body: string }).body)));
+        return completion(RATIOS);
+      }) as typeof globalThis.fetch,
+    });
+    return { ai, bodies };
+  }
+
+  it('envoie l’image dans le message, pas dans l’invite', async () => {
+    const { ai, bodies } = spying();
+
+    await ai.extract({
+      organizationId: ORGANIZATION,
+      input: 'image abc largeur=1600',
+      fields: ['heightRatio', 'depthRatio'],
+      imageDataUrl: IMAGE,
+      widthMm: 1600,
+      idempotencyKey: 'neftya:image:org:abc:1600',
+    });
+
+    const messages = bodies[0]?.['messages'] as { role: string; content: unknown }[];
+    const user = messages.find((m) => m.role === 'user');
+    const parts = user?.content as { type: string; image_url?: { url: string } }[];
+
+    expect(Array.isArray(parts)).toBe(true);
+    expect(parts.find((part) => part.type === 'image_url')?.image_url?.url).toBe(IMAGE);
+  });
+
+  it('demande une vignette, pas la pleine résolution', async () => {
+    const { ai, bodies } = spying();
+
+    await ai.extract({
+      organizationId: ORGANIZATION,
+      input: 'image abc largeur=1600',
+      fields: ['heightRatio'],
+      imageDataUrl: IMAGE,
+      widthMm: 1600,
+      idempotencyKey: 'neftya:image:org:vignette',
+    });
+
+    const messages = bodies[0]?.['messages'] as { role: string; content: unknown }[];
+    const parts = messages.find((m) => m.role === 'user')?.content as {
+      type: string;
+      image_url?: { detail: string };
+    }[];
+
+    // Le coût d'une image est proportionnel au nombre de tuiles qu'elle occupe, et
+    // compter des compartiments ne demande pas de lire le grain du bois.
+    expect(parts.find((part) => part.type === 'image_url')?.image_url?.detail).toBe(
+      'low',
+    );
+  });
+
+  it('change d’invite : des proportions, jamais des millimètres', async () => {
+    const { ai, bodies } = spying();
+
+    await ai.extract({
+      organizationId: ORGANIZATION,
+      input: 'image abc largeur=1600',
+      fields: ['heightRatio'],
+      imageDataUrl: IMAGE,
+      widthMm: 1600,
+      idempotencyKey: 'neftya:image:org:invite',
+    });
+
+    const messages = bodies[0]?.['messages'] as { role: string; content: string }[];
+    const system = messages.find((m) => m.role === 'system')?.content ?? '';
+
+    expect(system).toContain('heightRatio');
+    // L'invite écrite demande explicitement des millimètres ; celle-ci les interdit.
+    expect(system).toContain('jamais de millim');
+  });
+
+  it('garde l’échelle avec la génération', async () => {
+    const { ai } = spying();
+
+    const generation = await ai.extract({
+      organizationId: ORGANIZATION,
+      input: 'image abc largeur=1600',
+      fields: ['heightRatio', 'depthRatio'],
+      imageDataUrl: IMAGE,
+      widthMm: 1600,
+      idempotencyKey: 'neftya:image:org:echelle',
+    });
+
+    // Sans elle, la relecture lirait des proportions sans savoir par quoi les multiplier.
+    expect(generation.widthMm).toBe(1600);
+
+    const reread = await ai.read(ORGANIZATION, generation.id);
+    expect(reread.widthMm).toBe(1600);
+  });
+
+  it('n’enregistre pas l’image, seulement son empreinte', async () => {
+    const { ai } = spying();
+
+    const generation = await ai.extract({
+      organizationId: ORGANIZATION,
+      input: 'image empreinte-courte largeur=1600',
+      fields: ['heightRatio'],
+      imageDataUrl: IMAGE,
+      widthMm: 1600,
+      idempotencyKey: 'neftya:image:org:empreinte',
+    });
+
+    const row = await harness.db
+      .selectFrom('ai_generations')
+      .select('input')
+      .where('id', '=', generation.id)
+      .executeTakeFirstOrThrow();
+
+    // Trois mégaoctets de base64 par ligne rendraient la table illisible et les
+    // sauvegardes absurdes — et l'image appartient à l'utilisateur.
+    expect(row.input).not.toContain('base64');
+    expect(row.input.length).toBeLessThan(200);
+  });
+});
+
 describe('bout en bout par l’API', () => {
   const local = (respond: () => Response | Promise<Response>) => (db: Harness['db']) =>
     new LocalAI({
@@ -261,6 +392,90 @@ describe('bout en bout par l’API', () => {
       model: 'modele-de-test',
       fetch: (async () => respond()) as typeof globalThis.fetch,
     });
+
+  it('compose un meuble depuis une image et une largeur', async () => {
+    const wired = await createHarness('test_ia_image_bout_en_bout', {
+      ai: local(() =>
+        completion({ heightRatio: 1.25, depthRatio: 0.25, compartments: 3 }),
+      ),
+    });
+    try {
+      const submit = await wired.app.inject({
+        method: 'POST',
+        url: '/v1/assistant/interpretations',
+        headers: await wired.authorization(),
+        payload: {
+          image:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4z8AAAAMBAQDuLHpvAAAAAElFTkSuQmCC',
+          widthMm: 1600,
+        },
+      });
+
+      expect(submit.statusCode).toBe(200);
+      expect(submit.json().data.status).toBe('succeeded');
+      // 1600 × 1,25 et 1600 × 0,25 : l'échelle vient de l'utilisateur, les proportions du
+      // modèle.
+      expect(submit.json().data.model.dimensions).toEqual({
+        widthMm: 1600,
+        heightMm: 2000,
+        depthMm: 400,
+      });
+
+      // La relecture retrouve la même chose, parce que l'échelle est rangée avec la
+      // génération.
+      const read = await wired.app.inject({
+        method: 'GET',
+        url: `/v1/assistant/interpretations/${submit.json().data.id as string}`,
+        headers: await wired.authorization(),
+      });
+      expect(read.json().data).toEqual(submit.json().data);
+    } finally {
+      await wired.close();
+    }
+  });
+
+  it('refuse une image sans échelle, et le dit par champ', async () => {
+    const wired = await createHarness('test_ia_image_sans_echelle', {
+      ai: local(() => completion({ heightRatio: 1.25 })),
+    });
+    try {
+      const response = await wired.app.inject({
+        method: 'POST',
+        url: '/v1/assistant/interpretations',
+        headers: await wired.authorization(),
+        payload: { image: 'data:image/png;base64,iVBORw0KGgo=' },
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json().error.details).toHaveProperty('widthMm');
+    } finally {
+      await wired.close();
+    }
+  });
+
+  it('refuse ce qui n’est pas une image', async () => {
+    const wired = await createHarness('test_ia_image_invalide', {
+      ai: local(() => completion({ heightRatio: 1.25 })),
+    });
+    try {
+      // Une URL distante serait une requête sortante décidée par l'appelant ; un PDF
+      // demanderait un décodeur. Ni l'un ni l'autre pour deviner des compartiments.
+      for (const image of [
+        'https://example.test/meuble.png',
+        'data:application/pdf;base64,AAAA',
+      ]) {
+        const response = await wired.app.inject({
+          method: 'POST',
+          url: '/v1/assistant/interpretations',
+          headers: await wired.authorization(),
+          payload: { image, widthMm: 1600 },
+        });
+        expect(response.statusCode).toBe(422);
+      }
+    } finally {
+      await wired.close();
+    }
+  });
 
   it('soumet puis lit une interprétation utilisable', async () => {
     const wired = await createHarness('test_ia_locale_bout_en_bout', {

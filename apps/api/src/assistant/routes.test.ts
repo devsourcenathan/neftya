@@ -333,6 +333,45 @@ describe('ce que la plateforme refuse', () => {
   });
 });
 
+/**
+ * Ce que la plateforme ne sait pas faire, et qu'on refuse franchement.
+ *
+ * Aucune tâche de Sekuu AI n'accepte d'image, et son périmètre de V1 exclut explicitement
+ * l'OCR. Envoyer l'image quand même serait se faire rejeter — ou, pire, se faire accepter
+ * en la voyant ignorée, et payer pour une réponse inventée.
+ */
+describe('une image envoyée à la plateforme', () => {
+  it('est refusée, sans appel', async () => {
+    let appels = 0;
+    const comptant = new SekuuAI({
+      baseUrl: 'https://ai.sekuu.test',
+      apiKey: 'cle',
+      fetch: (() => {
+        appels += 1;
+        return Promise.resolve(json({ data: { id: 'gen-1', status: 'queued' } }, 202));
+      }) as typeof globalThis.fetch,
+    });
+
+    const distante = await createHarness('test_assistant_image_sekuu', {
+      ai: comptant,
+    });
+    try {
+      const response = await distante.app.inject({
+        method: 'POST',
+        url: '/v1/assistant/interpretations',
+        headers: await distante.authorization(),
+        payload: { image: 'data:image/png;base64,iVBORw0KGgo=', widthMm: 1600 },
+      });
+
+      expect(response.statusCode).toBe(503);
+      // Et surtout : rien n'est parti. Un appel refusé après coup aurait été facturé.
+      expect(appels).toBe(0);
+    } finally {
+      await distante.close();
+    }
+  });
+});
+
 describe('une installation sans clé', () => {
   it('dit que l’assistant n’est pas configuré', async () => {
     const response = await sansAssistant.app.inject({

@@ -17,7 +17,11 @@ import type { AiService } from '../ai/ai-service.js';
 import {
   EXTRACTED_FIELDS,
   MAX_DESCRIPTION_LENGTH,
+  IMAGE_FIELDS,
+  MAX_DIMENSION_MM,
+  MIN_DIMENSION_MM,
   interpret,
+  interpretFromImage,
   type Problems,
 } from './interpretation.js';
 
@@ -47,6 +51,60 @@ const describeBody = z.object({
     ),
 });
 
+/**
+ * Les formats admis, et pourquoi la liste est courte.
+ *
+ * Trois formats que tout appareil photo et tout navigateur produisent. En accepter d'autres
+ * demanderait de les convertir, donc de les décoder ici — et un décodeur d'image est une
+ * surface d'attaque qu'on n'a aucune raison d'ouvrir pour deviner un nombre de compartiments.
+ */
+const IMAGE_DATA_URL = /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/u;
+
+/**
+ * Une photo de téléphone passe, un scan de catalogue non.
+ *
+ * Le coût d'un appel est proportionnel à l'image : cette borne protège une facture, pas un
+ * serveur. En base64, quatre millions de caractères valent environ trois mégaoctets.
+ */
+export const MAX_IMAGE_BASE64 = 4_000_000;
+
+const imageBody = z.object({
+  image: z
+    .string()
+    .max(MAX_IMAGE_BASE64, 'Image trop lourde : 3 Mo au plus.')
+    .regex(IMAGE_DATA_URL, 'Image attendue en data URL PNG, JPEG ou WebP.'),
+  /**
+   * L'échelle, et **la seule cote qu'on demande**.
+   *
+   * Une image ne porte aucune dimension — le brief le dit lui-même. Le modèle rend des
+   * proportions ; sans cette mesure, elles ne composent rien.
+   */
+  widthMm: z
+    .number()
+    .int('Une cote est un entier de millimètres.')
+    .min(
+      MIN_DIMENSION_MM,
+      `Largeur attendue entre ${MIN_DIMENSION_MM} et ${MAX_DIMENSION_MM} mm.`,
+    )
+    .max(
+      MAX_DIMENSION_MM,
+      `Largeur attendue entre ${MIN_DIMENSION_MM} et ${MAX_DIMENSION_MM} mm.`,
+    ),
+  /**
+   * La profondeur, **facultative**.
+   *
+   * Une vue de face n'en montre aucune, et un modèle honnête rend `null` : la demander
+   * plutôt que la deviner est ce qui rend utilisable la photo la plus courante. Une vue de
+   * trois quarts permet au modèle de la proposer, et l'utilisateur n'a rien à saisir.
+   */
+  depthMm: z
+    .number()
+    .int('Une cote est un entier de millimètres.')
+    .min(MIN_DIMENSION_MM)
+    .max(MAX_DIMENSION_MM)
+    .optional(),
+});
+
 export function registerAssistantRoutes(app: FastifyInstance, ai?: AiService): void {
   app.post('/v1/assistant/interpretations', async (request, reply) => {
     const context = sekuuOf(request);
@@ -58,25 +116,18 @@ export function registerAssistantRoutes(app: FastifyInstance, ai?: AiService): v
     }
 
     const service = configured(ai);
-    const body = describeBody.safeParse(request.body);
-    if (!body.success) throw details(body.error.issues);
 
-    const text = body.data.text;
-
-    const generation = await guarded(() =>
-      service.extract({
-        organizationId: context.organizationId,
-        input: text,
-        fields: EXTRACTED_FIELDS,
-        /*
-         * L'événement métier est **le texte**, dans cette organisation.
-         *
-         * Deux fois la même description ne doit pas être facturée deux fois : c'est la même
-         * question, et elle a déjà sa réponse. Changer un mot en redemande une.
-         */
-        idempotencyKey: `neftya:interpret:${context.organizationId}:${digest(text)}`,
-      }),
-    );
+    /*
+     * Deux portes d'entrée, et le choix se lit sur le corps.
+     *
+     * Une union de schémas aurait rendu des messages illisibles — « aucune des deux
+     * formes ne correspond » n'aide personne à corriger sa requête. La présence
+     * d'`image` décide, et chaque forme garde ses propres messages.
+     */
+    const generation =
+      (request.body as { image?: unknown } | null)?.image !== undefined
+        ? await submitImage(service, context.organizationId, request.body)
+        : await submitText(service, context.organizationId, request.body);
 
     /*
      * `202` seulement s'il reste quelque chose à attendre.
@@ -125,7 +176,13 @@ function settled(status: string): boolean {
  * que c'est la phrase qui ne disait pas de quoi faire un meuble — il faut la reformuler,
  * pas réessayer.
  */
-function resource(generation: { id: string; status: string; output: unknown }) {
+function resource(generation: {
+  id: string;
+  status: string;
+  output: unknown;
+  widthMm?: number | null;
+  depthMm?: number | null;
+}) {
   if (generation.status !== 'succeeded') {
     return {
       id: generation.id,
@@ -135,9 +192,22 @@ function resource(generation: { id: string; status: string; output: unknown }) {
     };
   }
 
-  const interpretation = interpret(
-    (generation.output as Record<string, unknown> | null) ?? {},
-  );
+  const extracted = (generation.output as Record<string, unknown> | null) ?? {};
+
+  /*
+   * L'échelle décide de la composition.
+   *
+   * Une génération faite depuis une image porte sa largeur ; elle rend des proportions, et
+   * sans elle on lirait `heightRatio` comme une cote absente. C'est pour cela que l'échelle
+   * est rangée avec la génération, et non passée à la relecture.
+   */
+  const interpretation =
+    generation.widthMm != null
+      ? interpretFromImage(extracted, {
+          widthMm: generation.widthMm,
+          depthMm: generation.depthMm ?? null,
+        })
+      : interpret(extracted);
 
   return {
     id: generation.id,
@@ -194,6 +264,59 @@ async function guarded<T>(call: () => Promise<T>): Promise<T> {
       }[error.refusal],
     );
   }
+}
+
+/** Une description écrite : les cotes sont dans la phrase. */
+async function submitText(service: AiService, organizationId: string, raw: unknown) {
+  const body = describeBody.safeParse(raw);
+  if (!body.success) throw details(body.error.issues);
+
+  const text = body.data.text;
+
+  return await guarded(() =>
+    service.extract({
+      organizationId,
+      input: text,
+      fields: EXTRACTED_FIELDS,
+      /*
+       * L'événement métier est **le texte**, dans cette organisation.
+       *
+       * Deux fois la même description ne doit pas être facturée deux fois : c'est la même
+       * question, et elle a déjà sa réponse. Changer un mot en redemande une.
+       */
+      idempotencyKey: `neftya:interpret:${organizationId}:${digest(text)}`,
+    }),
+  );
+}
+
+/** Une image et son échelle : les proportions viennent du modèle. */
+async function submitImage(service: AiService, organizationId: string, raw: unknown) {
+  const body = imageBody.safeParse(raw);
+  if (!body.success) throw details(body.error.issues);
+
+  const { image, widthMm, depthMm } = body.data;
+
+  return await guarded(() =>
+    service.extract({
+      organizationId,
+      /*
+       * L'image **n'est pas** l'entrée enregistrée.
+       *
+       * Ce champ garde la trace de la question posée ; trois mégaoctets de base64 par ligne
+       * rendraient la table illisible et les sauvegardes absurdes. L'empreinte suffit à
+       * reconnaître deux fois la même photo, et l'image appartient à l'utilisateur — elle
+       * n'a aucune raison de rester ici.
+       */
+      input: `image ${digest(image)} largeur=${widthMm}`,
+      fields: IMAGE_FIELDS,
+      imageDataUrl: image,
+      widthMm,
+      ...(depthMm === undefined ? {} : { depthMm }),
+      // La même photo à la même échelle est la même question. Changer la largeur en
+      // redemande une : les proportions tiennent, le meuble composé non.
+      idempotencyKey: `neftya:image:${organizationId}:${digest(image)}:${widthMm}:${depthMm ?? ''}`,
+    }),
+  );
 }
 
 function digest(text: string): string {

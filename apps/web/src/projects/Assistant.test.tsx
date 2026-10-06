@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ApiClient } from '../api/client.js';
 import { ApiRequestError } from '../api/client.js';
+import { MAX_IMAGE_BYTES } from '../api/assistant.js';
 import { renderWithProviders } from '../test-support/render.js';
 import { Assistant } from './Assistant.js';
 
@@ -164,6 +165,71 @@ describe('une sortie inexploitable', () => {
 
     // Le champ se rouvre : l'écran ne doit pas être un cul-de-sac.
     await waitFor(() => expect(describeField().disabled).toBe(false));
+  });
+});
+
+describe('depuis une photo', () => {
+  // `SegmentedControl` rend des onglets, pas des boutons.
+  const photo = () => screen.getByRole('tab', { name: /Depuis une photo/u });
+
+  it('demande une largeur, et empêche de partir sans', async () => {
+    const { api } = scripted({});
+    renderWithProviders(<Assistant onUse={() => {}} />, { api });
+
+    fireEvent.click(photo());
+
+    // Une photo ne porte aucune cote : sans échelle, les proportions ne composent rien.
+    expect(screen.getByLabelText(/Largeur hors-tout/u)).toBeTruthy();
+    expect(interpret().disabled).toBe(true);
+  });
+
+  it('refuse une photo trop lourde sans rien envoyer', async () => {
+    const { api, bodies } = scripted({});
+    renderWithProviders(<Assistant onUse={() => {}} />, { api });
+
+    fireEvent.click(photo());
+
+    const heavy = new File([new Uint8Array(MAX_IMAGE_BYTES + 1)], 'catalogue.png', {
+      type: 'image/png',
+    });
+    fireEvent.change(screen.getByLabelText(/La photo du meuble/u), {
+      target: { files: [heavy] },
+    });
+
+    await waitFor(() => expect(screen.getByText(/trop lourde/u)).toBeTruthy());
+    // La borne du serveur, vérifiée ici : inutile de payer un aller-retour pour un 422.
+    expect(bodies).toHaveLength(0);
+  });
+
+  it('envoie l’image et la largeur, et montre les cotes déduites', async () => {
+    const { api, bodies } = scripted({
+      post: { id: 'gen-1', status: 'succeeded', model: MODEL, problems: null },
+      get: { id: 'gen-1', status: 'succeeded', model: MODEL, problems: null },
+    });
+    renderWithProviders(<Assistant onUse={() => {}} />, { api });
+
+    fireEvent.click(photo());
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'meuble.png', {
+      type: 'image/png',
+    });
+    fireEvent.change(screen.getByLabelText(/La photo du meuble/u), {
+      target: { files: [file] },
+    });
+    fireEvent.change(screen.getByLabelText(/Largeur hors-tout/u), {
+      target: { value: '1800' },
+    });
+
+    await waitFor(() => expect(interpret().disabled).toBe(false));
+    fireEvent.click(interpret());
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    const sent = bodies[0] as { image: string; widthMm: number };
+    expect(sent.widthMm).toBe(1800);
+    expect(sent.image.startsWith('data:image/png;base64,')).toBe(true);
+
+    // Et les cotes s'affichent avant que rien ne soit créé, comme pour une description.
+    await waitFor(() => expect(screen.getByText('1800 × 2000 × 400')).toBeTruthy());
   });
 });
 

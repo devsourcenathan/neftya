@@ -42,6 +42,23 @@ export interface LocalAiOptions {
   timeoutMs?: number;
 }
 
+/**
+ * Les règles changent avec la porte d'entrée.
+ *
+ * Sur une photo, demander des millimètres serait demander d'inventer : le modèle ne voit
+ * aucune cote. On lui demande des **rapports** à la largeur, et l'échelle vient de
+ * l'utilisateur.
+ */
+const IMAGE_PROMPT = [
+  'Tu regardes la photo d’un meuble et tu rends un objet JSON.',
+  'Tu ne connais aucune cote : ne donne jamais de millimètres.',
+  'heightRatio = hauteur / largeur, depthRatio = profondeur / largeur,',
+  'en nombres décimaux (une penderie fait environ 2.4 ; une étagère basse 0.11).',
+  'Compte les compartiments, et par compartiment les étagères, tiroirs et portes.',
+  'Matière en un mot si elle est reconnaissable, sinon null.',
+  'Champs inconnus : null, jamais inventés. Rien que le JSON.',
+].join(' ');
+
 const SYSTEM_PROMPT = [
   'Tu extrais les faits mesurables d\u2019une description de meuble en un objet JSON.',
   'R\u00e8gles : cotes en millim\u00e8tres entiers (un meuble mesure 100 \u00e0 4000 mm ;',
@@ -63,7 +80,7 @@ export class LocalAI {
   async extract(request: ExtractRequest): Promise<Generation> {
     const existing = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
       .where('organization_id', '=', request.organizationId)
       .where('idempotency_key', '=', request.idempotencyKey)
       .executeTakeFirst();
@@ -72,12 +89,18 @@ export class LocalAI {
         id: existing.id,
         status: existing.status,
         output: asRecord(existing.output),
+        widthMm: existing.width_mm,
+        depthMm: existing.depth_mm,
       };
     }
 
     await this.enforceQuota(request.organizationId);
 
-    const { output, raw } = await this.complete(request.input, request.fields);
+    const { output, raw } = await this.complete(
+      request.input,
+      request.fields,
+      request.imageDataUrl,
+    );
     const id = uuidv7();
     const status = output ? 'succeeded' : 'failed';
 
@@ -91,6 +114,8 @@ export class LocalAI {
         input: request.input,
         output,
         raw_output: raw,
+        width_mm: request.widthMm ?? null,
+        depth_mm: request.depthMm ?? null,
       })
       .onConflict((conflict) => conflict.doNothing())
       .execute();
@@ -99,25 +124,37 @@ export class LocalAI {
     // un doublon. Deux soumissions du même texte restent une seule facture.
     const stored = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
       .where('organization_id', '=', request.organizationId)
       .where('idempotency_key', '=', request.idempotencyKey)
       .executeTakeFirstOrThrow();
 
-    return { id: stored.id, status: stored.status, output: asRecord(stored.output) };
+    return {
+      id: stored.id,
+      status: stored.status,
+      output: asRecord(stored.output),
+      widthMm: stored.width_mm,
+      depthMm: stored.depth_mm,
+    };
   }
 
   /** Où en est une génération. Toujours terminée : l'exécution est synchrone. */
   async read(organizationId: string, generationId: string): Promise<Generation> {
     const row = await this.options.db
       .selectFrom('ai_generations')
-      .select(['id', 'status', 'output'])
+      .select(['id', 'status', 'output', 'width_mm', 'depth_mm'])
       .where('id', '=', generationId)
       .where('organization_id', '=', organizationId)
       .executeTakeFirst();
 
     if (!row) throw new AiUnavailable('not_found', 'génération introuvable');
-    return { id: row.id, status: row.status, output: asRecord(row.output) };
+    return {
+      id: row.id,
+      status: row.status,
+      output: asRecord(row.output),
+      widthMm: row.width_mm,
+      depthMm: row.depth_mm,
+    };
   }
 
   /**
@@ -154,7 +191,28 @@ export class LocalAI {
   private async complete(
     input: string,
     fields: readonly string[],
+    imageDataUrl?: string,
   ): Promise<{ output: Record<string, unknown> | null; raw: string | null }> {
+    const instruction = `Champs attendus : ${fields.join(', ')}.`;
+
+    /*
+     * Une image voyage dans le message, pas dans l'invite système.
+     *
+     * `detail: 'low'` : une vignette suffit à compter des compartiments et à juger une
+     * proportion, et coûte une fraction de la pleine résolution. Le coût d'une image est
+     * proportionnel au nombre de tuiles qu'elle occupe, et personne ne relit la facture
+     * d'une photo.
+     */
+    const message = imageDataUrl
+      ? {
+          role: 'user',
+          content: [
+            { type: 'text', text: instruction },
+            { type: 'image_url', image_url: { url: imageDataUrl, detail: 'low' } },
+          ],
+        }
+      : { role: 'user', content: `${instruction} Description : ${input}` };
+
     let response: Response;
     try {
       response = await this.fetch(`${this.options.baseUrl}/chat/completions`, {
@@ -176,11 +234,11 @@ export class LocalAI {
             : {}),
           response_format: { type: 'json_object' },
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
             {
-              role: 'user',
-              content: `Champs attendus : ${fields.join(', ')}.\nDescription : ${input}`,
+              role: 'system',
+              content: imageDataUrl ? IMAGE_PROMPT : SYSTEM_PROMPT,
             },
+            message,
           ],
         }),
         signal: AbortSignal.timeout(this.timeoutMs),

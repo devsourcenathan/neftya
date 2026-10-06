@@ -376,6 +376,17 @@
     "use": "Créer ce projet",
     "unusable": "La description ne suffit pas à composer un meuble. Précisez ce qui suit, puis réessayez.",
     "failed": "L'interprétation n'a pas abouti. Reformulez, ou partez d'un modèle.",
-    "timeout": "L'interprétation est trop longue. Reformulez, ou partez d'un modèle."
+    "timeout": "L'interprétation est trop longue. Reformulez, ou partez d'un modèle.",
+    "modeText": "Décrire",
+    "modePhoto": "Depuis une photo",
+    "photoLabel": "La photo du meuble",
+    "photoHint": "JPEG, PNG ou WebP, 3 Mo au plus. Une vue de face suffit.",
+    "widthLabel": "Largeur hors-tout (mm)",
+    "widthHint": "Une photo ne donne pas de cotes : cette mesure fournit l'échelle, le reste s'en déduit.",
+    "photoTooHeavy": "Photo trop lourde : 3 Mo au plus.",
+    "photoMissing": "Choisissez une photo et donnez la largeur.",
+    "chosen": "Photo choisie",
+    "depthLabel": "Profondeur (mm), si connue",
+    "depthHint": "Une vue de face ne montre pas la profondeur. Laissez vide si la photo est prise de trois quarts."
   }
 }

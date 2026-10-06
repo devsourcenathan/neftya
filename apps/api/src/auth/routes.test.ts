@@ -44,6 +44,22 @@ async function register(
   });
 }
 
+/**
+ * Ouvre le plafond de membres.
+ *
+ * Une organisation naît au palier gratuit, qui n'admet qu'**un** membre — le propriétaire.
+ * Les tests qui portent sur l'invitation elle-même l'ouvrent donc d'abord : sans quoi ils
+ * vérifieraient le quota, qui a ses propres tests.
+ */
+async function allowMembers(accessToken: string): Promise<void> {
+  await harness.app.inject({
+    method: 'PUT',
+    url: '/v1/auth/quotas',
+    headers: { authorization: `Bearer ${accessToken}` },
+    payload: { membersMax: null },
+  });
+}
+
 describe('inscription et connexion', () => {
   it("crée le compte, l'organisation, et rend une session active", async () => {
     const response = await register();
@@ -215,6 +231,7 @@ describe('organisations et invitations', () => {
 
   it('invite un membre, qui accepte et rejoint avec le bon rôle', async () => {
     const session = (await register()).json().data;
+    await allowMembers(session.accessToken);
 
     const invited = await harness.app.inject({
       method: 'POST',
@@ -255,6 +272,8 @@ describe('organisations et invitations', () => {
 
   it('un membre ne peut pas inviter', async () => {
     const owner = (await register('owner@atelier.test', 'Atelier')).json().data;
+    await allowMembers(owner.accessToken);
+
     const invitation = (
       await harness.app.inject({
         method: 'POST',

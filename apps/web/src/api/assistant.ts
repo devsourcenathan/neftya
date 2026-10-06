@@ -37,6 +37,42 @@ export const interpretDescription = (api: ApiClient, text: string) =>
     body: { text },
   });
 
+/**
+ * Depuis une photo, et **une seule cote**.
+ *
+ * Une image ne porte aucune dimension. Le modèle rend des proportions ; la largeur
+ * hors-tout donne l'échelle, et les deux autres cotes s'en déduisent. Demander des
+ * millimètres à un modèle qui regarde une photo, c'est lui demander d'inventer.
+ */
+export const interpretImage = (
+  api: ApiClient,
+  image: string,
+  widthMm: number,
+  depthMm?: number,
+) =>
+  api<InterpretationResource>('/v1/assistant/interpretations', {
+    method: 'POST',
+    body: { image, widthMm, ...(depthMm === undefined ? {} : { depthMm }) },
+  });
+
+/**
+ * Au-delà, l'API refuse — autant le dire avant d'envoyer trois mégaoctets pour rien.
+ *
+ * La borne est celle du serveur, ramenée en octets : le base64 pèse un tiers de plus que
+ * les octets qu'il transporte.
+ */
+export const MAX_IMAGE_BYTES = 3_000_000;
+
+/** Lit un fichier en `data:` URL, la forme que l'API attend. */
+export function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result)));
+    reader.addEventListener('error', () => reject(new Error('lecture impossible')));
+    reader.readAsDataURL(file);
+  });
+}
+
 export const readInterpretation = (api: ApiClient, id: string) =>
   api<InterpretationResource>(`/v1/assistant/interpretations/${id}`);
 
