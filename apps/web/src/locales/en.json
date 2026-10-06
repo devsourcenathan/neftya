@@ -178,7 +178,13 @@
     "COMPARTMENT_WIDTH_MISMATCH": "The fixed widths add up to {{requestedMm}} mm for {{availableMm}} mm available.",
     "PULL_UNKNOWN": "Handle not in the catalogue: {{key}}.",
     "PULL_WITHOUT_FACADE": "A handle in compartment {{compartment}} no longer has a facade.",
-    "PULL_OFF_FACADE": "A handle overhangs its {{facadeWidthMm}} × {{facadeHeightMm}} mm facade."
+    "PULL_OFF_FACADE": "A handle overhangs its {{facadeWidthMm}} × {{facadeHeightMm}} mm facade.",
+    "SPACE_TOO_NARROW": "The piece is {{furnitureMm}} mm wide for {{spaceMm}} mm available.",
+    "SPACE_TOO_SHORT": "The piece is {{furnitureMm}} mm tall including legs, for {{spaceMm}} mm of ceiling height.",
+    "SPACE_TOO_SHALLOW": "The piece is {{furnitureMm}} mm deep for {{spaceMm}} mm available.",
+    "CANNOT_TILT_UP": "It stands, but cannot be raised in place: assembled flat it needs {{tiltMm}} mm to tilt up, and the ceiling is at {{spaceMm}} mm. Assemble it upright, or outside the room.",
+    "SKIRTING_HOLDS_OFF": "The skirting board holds the piece {{gapMm}} mm off the wall: it will take {{totalDepthMm}} mm of floor. Notch the back, or allow for the gap.",
+    "DOOR_SWING_CLEARANCE": "The doors need {{clearanceMm}} mm in front of the piece to open."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
@@ -439,5 +445,17 @@
     "screw": "Screws",
     "dowelHint": "Invisible, but needs a doweling jig: both holes must line up to a tenth of a millimetre.",
     "screwHint": "Heads show on the top and bottom. A drill is all you need, and the piece comes apart again."
+  },
+  "space": {
+    "legend": "Location",
+    "hint": "Optional. The sizes you give are checked; the others are ignored.",
+    "width": "Available width",
+    "height": "Ceiling height",
+    "depth": "Available depth",
+    "skirtingHeight": "Skirting height",
+    "skirtingDepth": "Skirting projection",
+    "tilt": "To raise it",
+    "tiltHint": "Height needed above to tilt the piece up once assembled flat.",
+    "clear": "Clear"
   }
 }

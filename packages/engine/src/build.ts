@@ -6,6 +6,7 @@ import {
   type ParsedFurnitureInput,
 } from './input.js';
 import type { Parameters } from './parameters.js';
+import { fittingWarnings, type FittingCode } from './fitting.js';
 import type { Edge, Grain, Part, PartRole, Placement } from './parts.js';
 import { shelfDeflection } from './deflection.js';
 
@@ -29,7 +30,8 @@ export interface Warning {
     | 'SHELF_SPACE_MISMATCH'
     | 'DRAWER_DOES_NOT_FIT'
     | 'DOOR_DOES_NOT_FIT'
-    | 'DOOR_LEAF_TOO_WIDE';
+    | 'DOOR_LEAF_TOO_WIDE'
+    | FittingCode;
   /** Identifiant de la pièce concernée, quand il y en a une. */
   partId?: string;
   details: Record<string, number | string>;
@@ -236,7 +238,7 @@ export function build(rawInput: FurnitureInput): Furniture {
     ...frontGapWarnings(faces, dividerCentres, p, parts),
   );
 
-  return {
+  const furniture: Furniture = {
     input,
     parameters: p,
     parts,
@@ -244,6 +246,18 @@ export function build(rawInput: FurnitureInput): Furniture {
     warnings,
     totalHeightWithLegsMm: height + p.legHeightMm,
   };
+
+  /*
+   * Les contrôles de pose en dernier, et sur le meuble fini.
+   *
+   * Ils ont besoin des façades et de la hauteur pieds compris, qui n'existent qu'ici. Les
+   * poser dans `build` plutôt que de laisser l'interface les demander : un meuble qui
+   * n'entre pas dans sa niche le sait, quel que soit l'écran qui le regarde — y compris
+   * celui du serveur, qui fait foi pour ce qui part à l'atelier.
+   */
+  warnings.push(...fittingWarnings(furniture));
+
+  return furniture;
 }
 
 /**

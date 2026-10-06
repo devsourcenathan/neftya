@@ -2,6 +2,7 @@ import {
   furnitureInput,
   type Joinery,
   type MaterialKey,
+  type SpaceInput,
   type ParsedFurnitureInput,
 } from '@neftya/engine';
 
@@ -22,6 +23,8 @@ export type DesignerAction =
   | { type: 'back'; hasBack: boolean }
   | { type: 'grain'; respectGrain: boolean }
   | { type: 'joinery'; joinery: Joinery }
+  | { type: 'space'; key: keyof SpaceInput; valueMm: number | undefined }
+  | { type: 'clearSpace' }
   | { type: 'compartments'; count: number }
   | { type: 'shelves'; index: number; count: number }
   | { type: 'drawers'; index: number; count: number }
@@ -126,6 +129,29 @@ export function reduce(
 
     case 'grain':
       return { ...model, respectGrain: action.respectGrain };
+
+    case 'space': {
+      /*
+       * Une cote effacée **disparaît** de l'emplacement, elle ne devient pas zéro.
+       *
+       * Zéro serait une niche de zéro millimètre, donc un meuble qui n'entre jamais. C'est
+       * la distinction que porte le moteur — une cote absente n'est pas contrôlée — et
+       * l'écrire autrement ici la perdrait en route.
+       */
+      const space = { ...model.space };
+
+      if (action.valueMm === undefined) delete space[action.key];
+      else space[action.key] = action.valueMm;
+
+      // Un emplacement vide n'est pas un emplacement : on le retire plutôt que de laisser
+      // un objet sans cote, que le moteur traiterait comme une niche décrite.
+      return Object.keys(space).length > 0
+        ? { ...model, space }
+        : { ...model, space: undefined };
+    }
+
+    case 'clearSpace':
+      return { ...model, space: undefined };
 
     case 'joinery':
       // Dans `parameters`, pas à la racine : c'est un paramètre de projet comme le trait

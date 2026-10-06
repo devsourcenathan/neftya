@@ -75,6 +75,38 @@ export const compartment = z.object({
 
 export type CompartmentInput = z.infer<typeof compartment>;
 
+/**
+ * L'emplacement où le meuble ira.
+ *
+ * **Facultatif, et il doit le rester.** Un meuble se conçoit sans savoir où il va ; exiger
+ * une niche obligerait à en inventer une, et un chiffre inventé vaut moins que pas de
+ * chiffre. Absent, aucun contrôle de pose n'est fait et rien n'est signalé.
+ *
+ * Chaque cote est indépendante : on connaît souvent la hauteur sous plafond sans avoir
+ * mesuré la largeur disponible.
+ *
+ * @see docs/NEFTYA_ENGINE.md §7.5
+ */
+export const space = z.object({
+  /** Entre les deux murs, pour une niche. */
+  widthMm: positiveMillimetres.optional(),
+  /** Du sol au plafond. C'est elle qui décide si le meuble peut être redressé sur place. */
+  heightMm: positiveMillimetres.optional(),
+  /** Du mur au premier obstacle. */
+  depthMm: positiveMillimetres.optional(),
+  /**
+   * Hauteur de la plinthe au mur, s'il y en a une.
+   *
+   * Un caisson poussé contre un mur plinthé ne touche pas le mur : il porte sur la
+   * plinthe et reste en avant d'autant. Personne n'y pense avant de pousser le meuble.
+   */
+  skirtingHeightMm: positiveMillimetres.optional(),
+  /** Saillie de la plinthe par rapport au mur. C'est elle qui écarte le meuble. */
+  skirtingDepthMm: positiveMillimetres.optional(),
+});
+
+export type SpaceInput = z.infer<typeof space>;
+
 export const furnitureInput = z.object({
   dimensions: z.object({
     widthMm: positiveMillimetres,
@@ -100,6 +132,8 @@ export const furnitureInput = z.object({
    * @see docs/NEFTYA_ENGINE.md §8
    */
   respectGrain: z.boolean().default(false),
+  /** Où le meuble ira, si on le sait. Voir `space`. */
+  space: space.optional(),
 });
 
 export type FurnitureInput = z.input<typeof furnitureInput>;

@@ -4,6 +4,7 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useTranslation } from 'react-i18next';
 import {
   materialKey,
+  tiltHeightMm,
   type MaterialKey,
   type ParsedFurnitureInput,
 } from '@neftya/engine';
@@ -168,6 +169,8 @@ export function Controls({ model, dispatch }: ControlsProps) {
           ))}
         </ol>
       </section>
+
+      <SpaceControls model={model} dispatch={dispatch} />
 
       <section className="flex flex-col gap-3">
         <SectionTitle>{t('designer.material')}</SectionTitle>
@@ -378,5 +381,96 @@ function Move({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * L'emplacement où le meuble ira.
+ *
+ * **Cinq champs qui peuvent rester vides.** Un meuble se conçoit sans savoir où il va, et
+ * on connaît souvent la hauteur sous plafond sans avoir mesuré la largeur. Un champ vide
+ * n'est donc pas zéro : c'est une cote qu'on ne contrôle pas, et le moteur fait la
+ * différence.
+ *
+ * La hauteur au redressement s'affiche en permanence, et non seulement quand elle coince :
+ * c'est la mesure que personne ne prend, et la voir à côté du meuble est ce qui donne
+ * l'idée d'aller mesurer le plafond.
+ */
+function SpaceControls({
+  model,
+  dispatch,
+}: {
+  model: ParsedFurnitureInput;
+  dispatch: (action: DesignerAction) => void;
+}) {
+  const { t } = useTranslation();
+  const space = model.space;
+
+  const fields = [
+    { key: 'widthMm', label: t('space.width') },
+    { key: 'heightMm', label: t('space.height') },
+    { key: 'depthMm', label: t('space.depth') },
+    { key: 'skirtingHeightMm', label: t('space.skirtingHeight') },
+    { key: 'skirtingDepthMm', label: t('space.skirtingDepth') },
+  ] as const;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <SectionTitle>{t('space.legend')}</SectionTitle>
+
+      <p className="text-xs text-ink-variant">{t('space.hint')}</p>
+
+      <div className="flex flex-col gap-2">
+        {fields.map((field) => (
+          <label key={field.key} className="flex items-center justify-between gap-3">
+            <span className="text-sm">{field.label}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={space?.[field.key] ?? ''}
+              onChange={(event) => {
+                const raw = event.target.value.trim();
+                const valueMm = raw === '' ? undefined : Number(raw);
+
+                // Un zéro ou un texte ne décrit aucune niche : on efface plutôt que de
+                // poser une cote que le moteur devrait ensuite apprendre à ignorer.
+                dispatch({
+                  type: 'space',
+                  key: field.key,
+                  valueMm:
+                    valueMm !== undefined && Number.isFinite(valueMm) && valueMm > 0
+                      ? Math.round(valueMm)
+                      : undefined,
+                });
+              }}
+              className="w-28 rounded-md border border-outline-variant bg-surface px-2 py-1 text-right text-sm"
+            />
+          </label>
+        ))}
+      </div>
+
+      <p className="flex items-baseline justify-between gap-3 border-t border-hairline pt-2 text-sm">
+        <span className="text-ink-variant">{t('space.tilt')}</span>
+        <span className="technical">
+          {tiltHeightMm(
+            model.dimensions.heightMm + model.parameters.legHeightMm,
+            model.dimensions.depthMm,
+          )}{' '}
+          mm
+        </span>
+      </p>
+      <p className="-mt-2 text-xs text-ink-variant">{t('space.tiltHint')}</p>
+
+      {space && (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'clearSpace' })}
+          className="self-start text-xs text-ink-variant underline hover:text-ink"
+        >
+          {t('space.clear')}
+        </button>
+      )}
+    </section>
   );
 }

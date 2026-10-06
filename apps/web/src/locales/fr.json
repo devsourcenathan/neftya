@@ -178,7 +178,13 @@
     "COMPARTMENT_WIDTH_MISMATCH": "Les largeurs imposées totalisent {{requestedMm}} mm pour {{availableMm}} mm disponibles.",
     "PULL_UNKNOWN": "Poignée inconnue au catalogue : {{key}}.",
     "PULL_WITHOUT_FACADE": "Une poignée du compartiment {{compartment}} n’a plus de façade.",
-    "PULL_OFF_FACADE": "Une poignée dépasse de sa façade de {{facadeWidthMm}} × {{facadeHeightMm}} mm."
+    "PULL_OFF_FACADE": "Une poignée dépasse de sa façade de {{facadeWidthMm}} × {{facadeHeightMm}} mm.",
+    "SPACE_TOO_NARROW": "Le meuble fait {{furnitureMm}} mm de large pour {{spaceMm}} mm disponibles.",
+    "SPACE_TOO_SHORT": "Le meuble fait {{furnitureMm}} mm de haut, pieds compris, pour {{spaceMm}} mm sous plafond.",
+    "SPACE_TOO_SHALLOW": "Le meuble fait {{furnitureMm}} mm de profondeur pour {{spaceMm}} mm disponibles.",
+    "CANNOT_TILT_UP": "Il tient debout, mais ne pourra pas être redressé sur place : monté à plat, il lui faut {{tiltMm}} mm pour basculer et le plafond est à {{spaceMm}} mm. Montez-le debout, ou hors de la pièce.",
+    "SKIRTING_HOLDS_OFF": "La plinthe écarte le meuble du mur de {{gapMm}} mm : il prendra {{totalDepthMm}} mm au sol. Découpez le fond, ou comptez ce jeu.",
+    "DOOR_SWING_CLEARANCE": "Les portes demandent {{clearanceMm}} mm devant le meuble pour s’ouvrir."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",
@@ -439,5 +445,17 @@
     "screw": "Vis",
     "dowelHint": "Invisible, mais demande un gabarit de perçage : les deux trous doivent se faire face au dixième.",
     "screwHint": "Les têtes se voient sur le dessus et le dessous. Une perceuse suffit, et le meuble se démonte."
+  },
+  "space": {
+    "legend": "Emplacement",
+    "hint": "Facultatif. Les cotes que vous donnez sont vérifiées ; les autres sont ignorées.",
+    "width": "Largeur disponible",
+    "height": "Hauteur sous plafond",
+    "depth": "Profondeur disponible",
+    "skirtingHeight": "Hauteur de plinthe",
+    "skirtingDepth": "Saillie de plinthe",
+    "tilt": "Au redressement",
+    "tiltHint": "Hauteur qu’il faut au-dessus pour lever le meuble monté à plat.",
+    "clear": "Effacer"
   }
 }
