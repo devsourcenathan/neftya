@@ -216,3 +216,96 @@ qu'elle existe.
 
 **Restaurer sans avoir lu quelle sauvegarde on restaure.** Le nom du fichier porte
 l'horodatage UTC. Le lire prend trois secondes ; le regretter prend une journée.
+
+---
+
+## 9. Mettre en ligne
+
+Deux hébergeurs : **l'API sur Render**, **l'interface sur Vercel**. Les deux fichiers de
+configuration sont versionnés — [`render.yaml`](../render.yaml) et
+[`vercel.json`](../vercel.json) — et la base reste celle de Neon, déjà en service.
+
+> **Aucun des deux premiers déploiements n'est automatisable d'ici, et ne doit pas l'être.**
+> Créer un service engage un compte et une facturation. Ce qui suit est la liste de ce qu'il
+> faut faire, dans l'ordre, et de ce qu'il faut savoir avant.
+
+### 9.1 L'ordre, et pourquoi il compte
+
+L'API a besoin du domaine du front pour l'autoriser ; le front a besoin de l'adresse de l'API
+pour l'appeler. Chacun attend l'autre, donc on passe deux fois :
+
+1. **Déployer l'API** sur Render. Elle démarre, migre, et répond `/health`. Aucune page ne
+   peut encore l'appeler : `NEFTYA_ALLOWED_ORIGINS` est vide, et c'est le bon défaut.
+2. **Déployer le front** sur Vercel avec `VITE_API_URL` pointant sur l'API. Il se charge, et
+   toute requête échoue — le navigateur refuse la réponse avant que le code la voie.
+3. **Revenir sur Render**, poser le domaine Vercel dans `NEFTYA_ALLOWED_ORIGINS`, redéployer.
+
+Le symptôme de l'étape 2 ne ressemble en rien à sa cause : la console parle de CORS, l'écran
+ne montre rien. C'est pour cela que l'ordre est écrit.
+
+### 9.2 L'API, sur Render
+
+« New > Blueprint », en pointant ce dépôt. Render lit `render.yaml` et crée le service.
+
+Quatre variables sont à coller à la main, parce qu'elles n'appartiennent pas au dépôt :
+
+| Variable | Quoi |
+|---|---|
+| `DATABASE_URL` | L'URL Neon, **point d'accès direct**, jamais le `-pooler` |
+| `NEFTYA_ALLOWED_ORIGINS` | Le domaine Vercel, à l'étape 3 |
+| `OPENAI_API_KEY` | Facultative : sans elle l'assistant dit qu'il n'est pas configuré |
+| `NEFTYA_SMTP_*` | Facultatives : sans hôte, l'envoi de devis répond `503` |
+
+`NEFTYA_JWT_SECRET` est tirée au hasard par Render. **La changer déconnecte tout le monde** —
+ce qui est aussi le moyen de révoquer toutes les sessions d'un coup.
+
+Les migrations s'appliquent au démarrage. Un déploiement qui ne passe pas `/health` n'a pas
+migré, et c'est ce qu'on veut savoir avant que quelqu'un s'en serve.
+
+### 9.3 Le front, sur Vercel
+
+« Add New > Project », le même dépôt. Vercel lit `vercel.json` : il n'y a ni cadre à choisir,
+ni répertoire racine à changer. Une seule variable d'environnement :
+
+```
+VITE_API_URL = https://neftya-api.onrender.com
+```
+
+Elle est lue **à la compilation**, pas à l'exécution : la changer demande un redéploiement, et
+non un redémarrage.
+
+La règle de réécriture de `vercel.json` renvoie toute route inconnue sur `index.html`. Sans
+elle, ouvrir `/projects/<id>` directement — un signet, un rafraîchissement — rend un 404 :
+c'est le routeur du navigateur qui connaît cette adresse, pas l'hébergeur. Les fichiers qui
+existent sont servis avant la règle, donc les ressources ne passent pas par là.
+
+### 9.4 Ce que l'offre gratuite coûte, et qu'il vaut mieux savoir avant
+
+**L'API s'endort.** Quinze minutes sans requête, et Render éteint l'instance. Le réveil prend
+une cinquantaine de secondes, pendant lesquelles la première page tourne dans le vide. Pour
+une démonstration devant quelqu'un, l'ouvrir cinq minutes avant.
+
+**Le disque est éphémère.** Chaque déploiement vide `NEFTYA_DATA_DIR`. Un export figé devient
+alors une ligne sans fichier, donc un `404`. **Le meuble ne se perd pas** — tout se recalcule
+du modèle — mais l'instantané, si ; et c'est précisément ce qu'un instantané promet de ne pas
+faire. Le tenir demande une instance payante et un `disk:` monté sur ce chemin.
+
+**La base n'est pas celle de Render.** La Postgres gratuite de Render expire au bout de trente
+jours, et une base qui disparaît emporte les projets avec elle. Celle de Neon s'endort aussi,
+mais elle se réveille, et elle est déjà en service.
+
+**Les deux endormissements s'additionnent.** Première requête après une nuit : Render se
+réveille, puis Neon se réveille. C'est le chemin le plus lent du produit, et il ne se mesure
+pas en local.
+
+### 9.5 Vérifier que c'est en ligne
+
+Dans cet ordre, parce que chacun dépend du précédent :
+
+```bash
+curl https://neftya-api.onrender.com/health   # {"success":true,...}
+curl https://neftya-api.onrender.com/ready    # checks.database = "ok"
+```
+
+Puis, depuis le front : créer un compte, partir d'un modèle prédéfini, ouvrir le dossier de
+fabrication. Si la première étape échoue sans message, c'est `NEFTYA_ALLOWED_ORIGINS`.

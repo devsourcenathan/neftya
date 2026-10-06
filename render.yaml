@@ -1,13 +1,15 @@
 # Déploiement Render — blueprint versionné.
 #
-# Render est ce qu'utilise déjà Sekuu Platform ; Neftya étant en Node, aucune image
-# Docker n'est nécessaire, contrairement à la plateforme qui n'a pas de runtime PHP.
+# **L'API seulement.** L'interface va sur Vercel : voir `vercel.json` et
+# OPERATIONS.md §9. Deux hébergeurs plutôt qu'un parce que Render endort une
+# instance gratuite au bout de quinze minutes, et qu'un fichier statique n'a
+# aucune raison de s'endormir.
 #
-# Le premier déploiement se fait depuis le tableau de bord Render, en pointant ce
-# dépôt : « New > Blueprint ». Il n'est pas automatisable depuis ici, et ne doit pas
+# Le premier déploiement se fait depuis le tableau de bord : « New > Blueprint »
+# en pointant ce dépôt. Il n'est pas automatisable depuis ici, et ne doit pas
 # l'être — c'est un acte qui engage un compte et une facturation.
 #
-# @see Sekuu-Platform/docs/06-operations/04-render.md
+# @see docs/OPERATIONS.md §9
 
 services:
   - type: web
@@ -15,44 +17,77 @@ services:
     runtime: node
     plan: free
     region: frankfurt
+    # Tout le dépôt : l'API dépend de `@neftya/engine`, `contracts`, `units` et
+    # `drawing`, qui sont des projets TypeScript référencés et non des paquets
+    # publiés. `tsc --build` les construit dans l'ordre.
     buildCommand: npm ci && npm run build
     startCommand: npm run start --workspace @neftya/api
+    # Les migrations s'appliquent au démarrage : un déploiement qui ne passe pas
+    # la sonde n'a pas migré, et c'est ce qu'on veut savoir.
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: '22'
       - key: PORT
         value: '3000'
-      - key: SEKUU_PLATFORM_URL
-        value: https://platform.sekuu.com
-      - key: SEKUU_ISSUER
-        value: https://identity.sekuu.com
-      - key: SEKUU_AUDIENCE
-        value: sekuu-platform
-      - key: SEKUU_PRODUCT_SLUG
-        value: neftya
+
+      # La base. **Collée à la main**, et pas une base Render : celle de Neon est
+      # déjà en service, et la Postgres gratuite de Render expire au bout de
+      # trente jours — une base qui disparaît emporte les projets avec elle.
+      #
+      # Prendre le point d'accès **direct**, pas le pooler : le banc d'essai
+      # passe `search_path` en paramètre de démarrage, qu'un pooler rejette.
       - key: DATABASE_URL
-        fromDatabase:
-          name: neftya-postgres
-          property: connectionString
+        sync: false
 
-  - type: web
-    name: neftya-web
-    runtime: static
-    buildCommand: npm ci && npm run build --workspace @neftya/web
-    staticPublishPath: apps/web/dist
-    # Une application à page unique : toute route inconnue rend l'index, et c'est le
-    # routeur du navigateur qui décide.
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: NODE_VERSION
-        value: '22'
+      # Le secret qui signe les jetons d'accès. Render le tire au hasard une
+      # fois ; le changer déconnecte tout le monde, ce qui est aussi le moyen de
+      # révoquer toutes les sessions d'un coup.
+      - key: NEFTYA_JWT_SECRET
+        generateValue: true
 
-databases:
-  - name: neftya-postgres
-    plan: free
-    region: frankfurt
-    postgresMajorVersion: '18'
+      # Les origines admises, séparées par des virgules. **Vide, aucune page ne
+      # peut appeler l'API** — c'est le bon défaut, et c'est aussi pourquoi il
+      # faut y mettre le domaine Vercel après le premier déploiement du front.
+      - key: NEFTYA_ALLOWED_ORIGINS
+        sync: false
+
+      # Où atterrissent les exports figés.
+      #
+      # **Sur une instance gratuite, ce disque est éphémère** : chaque
+      # déploiement le vide, et un export figé devient une ligne sans fichier,
+      # donc un 404. Le meuble, lui, ne se perd pas — tout se recalcule du
+      # modèle. C'est l'instantané qui se perd, et c'est précisément ce qu'un
+      # instantané promet de ne pas faire.
+      #
+      # Pour le tenir : passer l'instance en payante et déclarer un `disk:`
+      # monté sur ce chemin.
+      - key: NEFTYA_DATA_DIR
+        value: /opt/render/project/data
+
+      # L'assistant. Sans clé, il répond qu'il n'est pas configuré — il n'y a
+      # rien à dégrader, une interprétation n'a pas de version locale.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_REASONING_EFFORT
+        value: minimal
+
+      # L'envoi des devis. Sans hôte SMTP, la route répond 503 et rien n'est
+      # tenté : un devis non envoyé n'est pas un devis perdu.
+      - key: NEFTYA_SMTP_HOST
+        sync: false
+      - key: NEFTYA_SMTP_PORT
+        value: '587'
+      - key: NEFTYA_SMTP_USER
+        sync: false
+      - key: NEFTYA_SMTP_PASSWORD
+        sync: false
+# Sekuu n'est plus exigé.
+#
+# L'identité est locale depuis le 6 octobre 2026, et le vérifieur de plateforme
+# est devenu optionnel : sans `SEKUU_JWKS_URL`, seuls les jetons locaux sont
+# reconnus. Les trois variables de plateforme ne sont donc **pas** posées ici —
+# en inventer qui pointent dans le vide rend impossible de savoir lesquelles
+# servent. Voir DECISIONS.md, 6 octobre 2026.
