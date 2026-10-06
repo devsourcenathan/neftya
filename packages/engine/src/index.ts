@@ -58,8 +58,10 @@ export {
 
 export {
   shelfDeflection,
+  deflectionRemedy,
   DEFLECTION_LIMIT_RATIO,
   type DeflectionResult,
+  type DeflectionRemedy,
 } from './deflection.js';
 
 export { build, compartmentAt, type Furniture, type Warning } from './build.js';

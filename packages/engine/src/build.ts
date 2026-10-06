@@ -8,7 +8,8 @@ import {
 import type { Parameters } from './parameters.js';
 import { fittingWarnings, type FittingCode } from './fitting.js';
 import type { Edge, Grain, Part, PartRole, Placement } from './parts.js';
-import { shelfDeflection } from './deflection.js';
+import { deflectionRemedy, shelfDeflection } from './deflection.js';
+import { PANEL_THICKNESSES_MM } from './materials.js';
 
 /**
  * Neftya Engine — construction d'un meuble à partir de ses paramètres.
@@ -819,16 +820,52 @@ function deflectionWarnings(
       }),
     }))
     .filter(({ result }) => result.excessive)
-    .map(({ part, result }) => ({
-      code: 'SHELF_DEFLECTION' as const,
-      partId: part.id,
-      details: {
+    .map(({ part, result }) => {
+      const remedy = deflectionRemedy({
         spanMm: part.lengthMm,
-        deflectionMm: Math.round(result.deflectionMm * 100) / 100,
-        limitMm: Math.round(result.limitMm * 100) / 100,
+        depthMm: part.widthMm,
+        thicknessMm: part.thicknessMm,
+        material,
         loadKg: p.shelfLoadKg,
-      },
-    }));
+        thicknessesMm: catalogueFor(part.thicknessMm),
+      });
+
+      return {
+        code: 'SHELF_DEFLECTION' as const,
+        partId: part.id,
+        details: {
+          spanMm: part.lengthMm,
+          deflectionMm: Math.round(result.deflectionMm * 100) / 100,
+          limitMm: Math.round(result.limitMm * 100) / 100,
+          loadKg: p.shelfLoadKg,
+          /*
+           * Le remède, avec sa dose.
+           *
+           * « Augmentez l'épaisseur » ne dit pas jusqu'où, et une consigne qu'on ne peut
+           * pas suivre vaut un silence. `0` quand aucune épaisseur du catalogue n'y
+           * suffit : il reste alors la portée, ou un montant au milieu.
+           */
+          thickerMm: remedy.thicknessMm ?? 0,
+          maxSpanMm: remedy.maxSpanMm,
+        },
+      };
+    });
+}
+
+/**
+ * Le catalogue d'épaisseurs auquel une pièce appartient.
+ *
+ * Déduit de son épaisseur plutôt que d'un réglage : un panneau de 19,05 mm est un 3/4 de
+ * pouce, et proposer d'y répondre par du 22 métrique enverrait chercher une épaisseur
+ * qu'aucun rayon ne vend là où ce panneau s'achète. Le moteur ne porte pas de système
+ * d'unités — c'est de l'affichage — mais l'épaisseur, elle, le trahit.
+ */
+function catalogueFor(thicknessMm: number): readonly number[] {
+  const imperial = PANEL_THICKNESSES_MM.imperial;
+
+  return imperial.includes(thicknessMm as (typeof imperial)[number])
+    ? imperial
+    : PANEL_THICKNESSES_MM.metric;
 }
 
 /**

@@ -167,7 +167,7 @@
     }
   },
   "warning": {
-    "SHELF_DEFLECTION": "Une étagère fléchit au-delà de la limite admise. Réduisez la portée ou augmentez l'épaisseur.",
+    "SHELF_DEFLECTION": "Une étagère de {{spanMm}} mm fléchit de {{deflectionMm}} mm sous {{loadKg}} kg, pour {{limitMm}} mm admis : ça se verra. Trois sorties — passez en {{thickerMm}} mm, ou raccourcissez la portée à {{maxSpanMm}} mm, ou posez un montant au milieu, ce qui divise la flèche par seize.",
     "NO_BACK_PANEL": "Sans fond, le caisson se déforme dans le temps.",
     "FRONT_GAP_OFF_DIVIDER": "Un jeu de façade ne tombe pas sur sa séparation.",
     "COMPARTMENT_TOO_NARROW": "Un compartiment est trop étroit pour ce qu'il doit recevoir.",
@@ -184,7 +184,8 @@
     "SPACE_TOO_SHALLOW": "Le meuble fait {{furnitureMm}} mm de profondeur pour {{spaceMm}} mm disponibles.",
     "CANNOT_TILT_UP": "Il tient debout, mais ne pourra pas être redressé sur place : monté à plat, il lui faut {{tiltMm}} mm pour basculer et le plafond est à {{spaceMm}} mm. Montez-le debout, ou hors de la pièce.",
     "SKIRTING_HOLDS_OFF": "La plinthe écarte le meuble du mur de {{gapMm}} mm : il prendra {{totalDepthMm}} mm au sol. Découpez le fond, ou comptez ce jeu.",
-    "DOOR_SWING_CLEARANCE": "Les portes demandent {{clearanceMm}} mm devant le meuble pour s’ouvrir."
+    "DOOR_SWING_CLEARANCE": "Les portes demandent {{clearanceMm}} mm devant le meuble pour s’ouvrir.",
+    "SHELF_DEFLECTION_NO_THICKNESS": "Une étagère de {{spanMm}} mm fléchit de {{deflectionMm}} mm sous {{loadKg}} kg, pour {{limitMm}} mm admis : ça se verra. Aucune épaisseur du catalogue n’y suffit — raccourcissez la portée à {{maxSpanMm}} mm, ou posez un montant au milieu, ce qui divise la flèche par seize."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",

@@ -13,5 +13,23 @@ import type { Warning } from '@neftya/engine';
  * Passée par ici, la substitution a un endroit où être vérifiée.
  */
 export function warningText(t: TFunction, warning: Warning): string {
-  return t(`warning.${warning.code}`, warning.details);
+  return t(variantOf(warning), warning.details);
+}
+
+/**
+ * Le message à employer, quand le même code en a plusieurs.
+ *
+ * Une étagère qui plie a trois sorties, sauf quand aucune épaisseur du catalogue ne suffit :
+ * il n'en reste alors que deux. Proposer « passez en 0 mm » serait pire que de se taire, et
+ * un message unique écrit au conditionnel — « le cas échéant » — ne se suit pas davantage.
+ *
+ * Le choix est ici plutôt que dans le moteur : c'est une affaire de phrase, pas de calcul,
+ * et le moteur a déjà dit ce qu'il savait en rendant `thickerMm` à zéro.
+ */
+function variantOf(warning: Warning): string {
+  const key = `warning.${warning.code}`;
+
+  return warning.code === 'SHELF_DEFLECTION' && warning.details['thickerMm'] === 0
+    ? `${key}_NO_THICKNESS`
+    : key;
 }

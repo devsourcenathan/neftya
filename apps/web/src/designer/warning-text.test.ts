@@ -59,6 +59,52 @@ describe('le texte d’un avertissement', () => {
   }
 });
 
+describe('l’étagère qui plie', () => {
+  /** Un mètre de portée en 18 mm : elle plie, et une épaisseur du catalogue y suffit. */
+  const sagging = build({
+    dimensions: { widthMm: 1100, heightMm: 900, depthMm: 300 },
+    compartments: [{ shelves: 1, drawers: 0 }],
+    material: 'mdf',
+    hasBack: true,
+  }).warnings.find((candidate) => candidate.code === 'SHELF_DEFLECTION');
+
+  /** Trois mètres : aucune épaisseur n'y suffit, et il ne reste que deux sorties. */
+  const hopeless = build({
+    dimensions: { widthMm: 3000, heightMm: 900, depthMm: 300 },
+    compartments: [{ shelves: 1, drawers: 0 }],
+    material: 'mdf',
+    hasBack: true,
+  }).warnings.find((candidate) => candidate.code === 'SHELF_DEFLECTION');
+
+  it('donne la dose, pas seulement le remède', () => {
+    expect(sagging).toBeDefined();
+    expect(sagging?.details['thickerMm']).toBeGreaterThan(18);
+
+    const text = warningText(translator('fr'), sagging!);
+
+    expect(text).not.toContain('{{');
+    expect(text).toContain(String(sagging?.details['thickerMm']));
+    expect(text).toContain(String(sagging?.details['maxSpanMm']));
+  });
+
+  it('ne propose pas une épaisseur qui n’existe pas', () => {
+    /*
+     * Aucune épaisseur ne suffit : `thickerMm` vaut zéro. Le message général aurait
+     * affiché « passez en 0 mm » — pire que de se taire, parce qu'on le lit sans y croire
+     * et qu'on cesse alors de lire les autres.
+     */
+    expect(hopeless?.details['thickerMm']).toBe(0);
+
+    const text = warningText(translator('fr'), hopeless!);
+
+    // Sur la phrase qui distingue, et non sur « 0 mm » : la portée de 2960 mm la contient,
+    // et l'assertion passait pour la mauvaise raison.
+    expect(text).not.toContain('passez en');
+    expect(text).toContain('Aucune épaisseur');
+    expect(text).toContain(String(hopeless?.details['maxSpanMm']));
+  });
+});
+
 describe('les catalogues', () => {
   const variablesOf = (message: string) =>
     [...message.matchAll(/\{\{(\w+)\}\}/gu)].map((match) => match[1]).sort();

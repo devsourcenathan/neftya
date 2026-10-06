@@ -167,7 +167,7 @@
     }
   },
   "warning": {
-    "SHELF_DEFLECTION": "A shelf sags beyond the allowed limit. Shorten the span or use a thicker panel.",
+    "SHELF_DEFLECTION": "A {{spanMm}} mm shelf sags {{deflectionMm}} mm under {{loadKg}} kg, against {{limitMm}} mm allowed: it will show. Three ways out — go to {{thickerMm}} mm, shorten the span to {{maxSpanMm}} mm, or add an upright in the middle, which divides the sag by sixteen.",
     "NO_BACK_PANEL": "Without a back panel the carcass racks over time.",
     "FRONT_GAP_OFF_DIVIDER": "A front gap does not sit on its divider.",
     "COMPARTMENT_TOO_NARROW": "A bay is too narrow for what it must hold.",
@@ -184,7 +184,8 @@
     "SPACE_TOO_SHALLOW": "The piece is {{furnitureMm}} mm deep for {{spaceMm}} mm available.",
     "CANNOT_TILT_UP": "It stands, but cannot be raised in place: assembled flat it needs {{tiltMm}} mm to tilt up, and the ceiling is at {{spaceMm}} mm. Assemble it upright, or outside the room.",
     "SKIRTING_HOLDS_OFF": "The skirting board holds the piece {{gapMm}} mm off the wall: it will take {{totalDepthMm}} mm of floor. Notch the back, or allow for the gap.",
-    "DOOR_SWING_CLEARANCE": "The doors need {{clearanceMm}} mm in front of the piece to open."
+    "DOOR_SWING_CLEARANCE": "The doors need {{clearanceMm}} mm in front of the piece to open.",
+    "SHELF_DEFLECTION_NO_THICKNESS": "A {{spanMm}} mm shelf sags {{deflectionMm}} mm under {{loadKg}} kg, against {{limitMm}} mm allowed: it will show. No catalogue thickness is enough — shorten the span to {{maxSpanMm}} mm, or add an upright in the middle, which divides the sag by sixteen."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
