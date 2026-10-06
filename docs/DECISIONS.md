@@ -2324,3 +2324,43 @@ quatre.
 qui parlent du même meuble sans se parler. L'invariant ne vérifie donc pas une valeur, il
 vérifie qu'elles disent la même chose — et c'est le genre de contrôle qu'on n'écrit qu'après
 avoir lu l'écran à la place de celui qui s'en sert.
+
+---
+
+## 2026-10-06 — La fiche de pose : le moteur savait déjà, personne ne le voyait
+
+**Décision.** Chaque étape du montage porte, pour chaque **exemplaire** de pièce : le sens
+d'ouverture, les coordonnées de tous ses trous groupées par face, le fil du bois et les chants
+à plaquer.
+
+**Motif.** Demandé comme « les petits éléments : les outils, les positionnements, si le meuble
+s'ouvre en tirant ou de côté ». En vérifiant, l'essentiel **existait déjà** :
+
+- `hingeEdgeOf` rend gauche ou droite pour chaque vantail depuis le premier jour — c'est ce
+  qui place la poignée du bon côté, « jamais du côté des charnières, où elle empêcherait la
+  porte de s'ouvrir ». Calculé, utilisé, jamais affiché.
+- Chaque trou porte son `x`, son `y`, son diamètre, sa profondeur, son caractère traversant et
+  **la face sur laquelle il se perce**. L'écran n'en montrait que le compte — « 4 × embase de
+  charnière » — pendant que les quatre positions dormaient dans l'export DXF, qui ne sert
+  qu'à une machine à commande numérique.
+- Le fil et les chants vivaient dans le concepteur, absents du dossier de fabrication.
+
+**Ce que ça dit du produit.** Le défaut n'était pas un calcul manquant mais une **restitution**
+manquante : on avait écrit ce qu'il fallait pour une machine, et rien pour la main. C'est le
+genre d'écart qu'on ne voit qu'en lisant l'écran à la place de celui qui s'en sert.
+
+**Une ligne par exemplaire, jamais par pièce.** Les deux vantaux d'une paire sont la même
+pièce en quantité deux, et ils ne se percent pas pareil. C'est le cas qui distingue les deux,
+et c'est celui que le test éprouve — sur deux portes de largeurs différentes, une fiche par
+pièce aurait suffi par accident.
+
+**Les trous groupés par face.** On ne perce pas une pièce en la retournant à chaque trou :
+l'atelier la pose sur une face, fait tout ce qui s'y trouve, puis la retourne. Une liste à
+plat obligerait à trier de tête.
+
+**Une pièce que rien ne perce garde sa ligne.** Le fond entre en rainure ; l'omettre ferait
+croire qu'on l'a oublié.
+
+**Ce qui n'existe toujours pas**, et qui demande du moteur, non de l'affichage : les portes
+coulissantes, l'abattant, le push-to-open, et le choix du type de charnière. `doors` est un
+nombre de 0 à 2, et toutes sont en applique sur charnières.

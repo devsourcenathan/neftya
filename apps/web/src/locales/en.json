@@ -156,6 +156,14 @@
       "back": "Back",
       "left": "Left",
       "right": "Right"
+    },
+    "sides": {
+      "front": "front face",
+      "back": "back face",
+      "edge_x_min": "left edge",
+      "edge_x_max": "right edge",
+      "edge_y_min": "bottom edge",
+      "edge_y_max": "top edge"
     }
   },
   "warning": {
@@ -216,7 +224,18 @@
     "emailSent": "Quotation sent to {{to}}.",
     "emailFailed": "Could not send.",
     "previousStep": "Previous step",
-    "nextStep": "Next step"
+    "nextStep": "Next step",
+    "opensLeft": "Opens to the left — hinges on the right",
+    "opensRight": "Opens to the right — hinges on the left",
+    "grainOf": "Grain: {{grain}}",
+    "edgesOf": "Edges to band: {{edges}}",
+    "noEdgesToBand": "No edge to band",
+    "holeLine": "Ø {{diameter}} · depth {{depth}} · at {{x}} × {{y}}",
+    "holeThrough": "through",
+    "pocketLine": "Recess {{width}} × {{height}} · depth {{depth}} · at {{x}} × {{y}}",
+    "noHoles": "No drilling on this part",
+    "fittingSheet": "Fitting sheet",
+    "copy": "Copy {{index}}"
   },
   "accessory": {
     "screw_4x50": "Screws 4 × 50",

@@ -156,6 +156,14 @@
       "back": "Arrière",
       "left": "Gauche",
       "right": "Droite"
+    },
+    "sides": {
+      "front": "face avant",
+      "back": "face arrière",
+      "edge_x_min": "chant gauche",
+      "edge_x_max": "chant droit",
+      "edge_y_min": "chant bas",
+      "edge_y_max": "chant haut"
     }
   },
   "warning": {
@@ -216,7 +224,18 @@
     "emailSent": "Devis envoyé à {{to}}.",
     "emailFailed": "Envoi impossible.",
     "previousStep": "Étape précédente",
-    "nextStep": "Étape suivante"
+    "nextStep": "Étape suivante",
+    "opensLeft": "S'ouvre vers la gauche — charnières à droite",
+    "opensRight": "S'ouvre vers la droite — charnières à gauche",
+    "grainOf": "Fil : {{grain}}",
+    "edgesOf": "Chants à plaquer : {{edges}}",
+    "noEdgesToBand": "Aucun chant à plaquer",
+    "holeLine": "Ø {{diameter}} · prof. {{depth}} · à {{x}} × {{y}}",
+    "holeThrough": "traversant",
+    "pocketLine": "Empreinte {{width}} × {{height}} · prof. {{depth}} · à {{x}} × {{y}}",
+    "noHoles": "Aucun perçage sur cette pièce",
+    "fittingSheet": "Fiche de pose",
+    "copy": "Exemplaire {{index}}"
   },
   "accessory": {
     "screw_4x50": "Vis 4 × 50",

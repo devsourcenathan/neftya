@@ -272,7 +272,13 @@ export function Manufacturing({ projectId }: { projectId: string }) {
 
         {/* Le pas à pas dessiné d'abord : c'est avec lui qu'on monte. La liste complète
             reste en dessous, pour qui veut voir la séquence entière d'un coup d'œil. */}
-        {furniture && <AssemblyGuide furniture={furniture} steps={data.assembly} />}
+        {furniture && (
+          <AssemblyGuide
+            furniture={furniture}
+            steps={data.assembly}
+            drilled={data.drilling.parts}
+          />
+        )}
 
         <ol className="mt-6 flex flex-col gap-3 text-sm">
           {data.assembly.map((step) => (
