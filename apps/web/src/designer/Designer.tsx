@@ -35,6 +35,7 @@ import { Controls } from './Controls.js';
 import { PartDetails } from './PartDetails.js';
 import { Layers } from './Layers.js';
 import { resizeAt, type DesignerAction } from './model.js';
+import { Budget } from './Budget.js';
 import { warningText } from './warning-text.js';
 import { canRedo, canUndo, initialHistory, reduceHistory } from './history.js';
 import { CompartmentMenu, type MenuTarget } from './CompartmentMenu.js';
@@ -237,7 +238,11 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
             onToggle={() => toggle('settings')}
             className="w-full"
           >
-            <Controls model={model} dispatch={dispatch} />
+            <Controls
+              model={model}
+              dispatch={dispatch}
+              budget={<Budget furniture={furniture} />}
+            />
           </Panel>
         </div>
 

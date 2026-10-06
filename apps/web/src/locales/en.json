@@ -516,5 +516,10 @@
     "forstner": "A flat-bottomed bit that bores large, flat-bottomed holes. It is the only one that makes a clean hinge housing.",
     "countersink": "A tool that widens the mouth of a hole into a cone, so the screw head sits flush instead of holding the board apart.",
     "slide": "The rail a drawer runs on. They are sold in pairs and by length — you buy a pair of 400, not \"some slides\"."
+  },
+  "budget": {
+    "label": "Estimated cost",
+    "missing_one": "{{count}} price to enter",
+    "missing_other": "{{count}} prices to enter"
   }
 }

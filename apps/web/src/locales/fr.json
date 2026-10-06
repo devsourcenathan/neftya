@@ -516,5 +516,10 @@
     "forstner": "Une mèche à bout plat qui perce des trous à fond plat et de grand diamètre. C’est la seule qui fasse un logement de charnière propre.",
     "countersink": "Un outil qui élargit l’entrée d’un trou en cône, pour que la tête de vis s’enfonce au ras du panneau au lieu de le tenir écarté.",
     "slide": "Le rail sur lequel un tiroir coulisse. Elles se vendent par paires et par longueur — on achète une paire de 400, pas « des coulisses »."
+  },
+  "budget": {
+    "label": "Coût estimé",
+    "missing_one": "{{count}} prix à saisir",
+    "missing_other": "{{count}} prix à saisir"
   }
 }

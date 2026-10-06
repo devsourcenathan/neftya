@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useTranslation } from 'react-i18next';
@@ -27,9 +27,18 @@ const MATERIALS: readonly MaterialKey[] = materialKey.options;
 export interface ControlsProps {
   model: ParsedFurnitureInput;
   dispatch: (action: DesignerAction) => void;
+  /**
+   * Le coût estimé, posé par le concepteur.
+   *
+   * Un emplacement plutôt que le composant : `Controls` est un formulaire, et il n'a aucune
+   * raison de savoir qu'un prix s'obtient par une requête. Monté ici, il aurait obligé tout
+   * ce qui l'affiche — un test compris — à fournir un client d'API pour dessiner des
+   * curseurs.
+   */
+  budget?: ReactNode;
 }
 
-export function Controls({ model, dispatch }: ControlsProps) {
+export function Controls({ model, dispatch, budget }: ControlsProps) {
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
 
@@ -169,6 +178,10 @@ export function Controls({ model, dispatch }: ControlsProps) {
           ))}
         </ol>
       </section>
+
+      {/* Le coût sous les cotes et la structure, au-dessus du matériau : c'est là qu'il
+          sert, entre ce qui le fait monter et ce qui le fait changer. */}
+      {budget}
 
       <SpaceControls model={model} dispatch={dispatch} />
 

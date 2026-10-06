@@ -141,6 +141,20 @@ export const createExport = (api: ApiClient, id: string) =>
 export const listExports = (api: ApiClient, id: string) =>
   api<ExportResource[]>(`/v1/projects/${id}/exports`);
 
+export interface PriceReference {
+  reference: string;
+  amount_minor: number;
+  currency: string;
+}
+
+/**
+ * Les prix de référence de l'organisation.
+ *
+ * Lus une fois et partagés : c'est le concepteur qui s'en sert pour chiffrer en direct, et
+ * refaire l'appel à chaque millimètre glissé coûterait une requête par image.
+ */
+export const listPrices = (api: ApiClient) => api<PriceReference[]>('/v1/prices');
+
 export const savePrice = (
   api: ApiClient,
   body: { reference: string; amountMinor: number; currency: string },
