@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { cutPlanSvg } from '@neftya/drawing';
@@ -17,7 +17,16 @@ import {
   useFiles,
 } from '../api/projects.js';
 import { DownloadButton } from '../components/DownloadButton.js';
-import { AssemblyGuide } from './AssemblyGuide.js';
+/**
+ * Three.js pèse un mégaoctet, et le dossier de fabrication est une page de listes.
+ *
+ * Le concepteur charge déjà sa scène paresseusement, pour cette raison exacte. Importer le
+ * guide dessiné sans faire de même l'a ramené dans le paquet principal : **1 490 ko au lieu
+ * de 590**, payés par qui ouvre la liste des projets et n'ira jamais au montage.
+ */
+const AssemblyGuide = lazy(async () => ({
+  default: (await import('./AssemblyGuide.js')).AssemblyGuide,
+}));
 import { Exports } from './Exports.js';
 import { PriceEditor } from './PriceEditor.js';
 import { QuotationEmail } from './QuotationEmail.js';
@@ -273,11 +282,17 @@ export function Manufacturing({ projectId }: { projectId: string }) {
         {/* Le pas à pas dessiné d'abord : c'est avec lui qu'on monte. La liste complète
             reste en dessous, pour qui veut voir la séquence entière d'un coup d'œil. */}
         {furniture && (
-          <AssemblyGuide
-            furniture={furniture}
-            steps={data.assembly}
-            drilled={data.drilling.parts}
-          />
+          <Suspense
+            fallback={
+              <p className="p-4 text-sm text-ink-variant">{t('state.loading')}</p>
+            }
+          >
+            <AssemblyGuide
+              furniture={furniture}
+              steps={data.assembly}
+              drilled={data.drilling.parts}
+            />
+          </Suspense>
         )}
 
         <ol className="mt-6 flex flex-col gap-3 text-sm">
