@@ -16,10 +16,10 @@ import { Button, Card, Field, Input } from '../ui/index.js';
  * rédigé pour : le réécrire ici le ferait dériver au premier changement
  * de règle (douze caractères aujourd'hui, autre chose demain).
  */
-export function AuthScreens() {
+export function AuthScreens({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) {
   const { t } = useTranslation();
   const { enter } = useSession();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState(false);

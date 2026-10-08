@@ -521,5 +521,98 @@
     "label": "Estimated cost",
     "missing_one": "{{count}} price to enter",
     "missing_other": "{{count}} prices to enter"
+  },
+  "landing": {
+    "nav": {
+      "howItWorks": "How it works",
+      "forWho": "For who?",
+      "why": "Why Neftya",
+      "pricing": "Pricing",
+      "login": "Log in",
+      "freeTrial": "Free trial"
+    },
+    "hero": {
+      "title": "From inspiration to",
+      "titleHighlight": "truly manufacturable furniture",
+      "subtitle": "Neftya transforms an idea, an image, or a simple description into a complete project: plans, precise dimensions, cut list, and quotes. Without complex modeling.",
+      "startTrial": "Start free trial",
+      "discoverFlow": "Discover the flow",
+      "visual1Title": "Image & Inspiration",
+      "visual1Desc": "\"An asymmetrical oak bookcase...\"",
+      "visual2Title": "Precise Cut Plan",
+      "visual2Desc": "12 optimized panels, exact dimensions, ready for assembly."
+    },
+    "pipeline": {
+      "title": "The only tool you need before the workshop",
+      "subtitle": "From design to technical export in a continuous flow.",
+      "step1Title": "1. Inspiration",
+      "step1Desc": "Enter an image, a description or an idea. The AI or editor guides you.",
+      "step2Title": "2. 2D/3D Design",
+      "step2Desc": "Adjust structure, thicknesses and materials in real time. Dimensions adapt.",
+      "step3Title": "3. Optimization & Cutting",
+      "step3Desc": "Generate the parts list and layout your panels without waste.",
+      "step4Title": "4. Quotes & Exports",
+      "step4Desc": "Estimate costs, export your technical plans and assembly instructions."
+    },
+    "audiences": {
+      "title": "Designed for how you build",
+      "targetPrimary": "PRIMARY TARGET",
+      "woodworkersTitle": "Woodworkers & Artisans",
+      "woodworkersDesc": "Save precious time between the client quote and the cut plan. Stop wasting hours modeling every board.",
+      "woodworkersPoint1": "Millimeter precision dimensions",
+      "woodworkersPoint2": "Automated and accurate quotes",
+      "woodworkersPoint3": "Cut lists ready for the workshop",
+      "woodworkersCta": "Free Pro Trial",
+      "diyTitle": "Individuals & DIY",
+      "diyDesc": "Go from wanting to build to actually doing it. Neftya calculates what you need to buy and how to assemble it.",
+      "diyPoint1": "Visualize before buying wood",
+      "diyPoint2": "Exact quantities (zero errors)",
+      "diyPoint3": "Step-by-step assembly instructions",
+      "diyCta": "Create my first furniture",
+      "workshopTitle": "Manufacturing Workshops",
+      "workshopDesc": "Standardize your production and collaborate with multiple people on the same projects with centralized management.",
+      "workshopPoint1": "Multi-user and team management",
+      "workshopPoint2": "Standards library",
+      "workshopPoint3": "Client management",
+      "workshopCta": "Discover the Team plan"
+    },
+    "comparison": {
+      "title": "Neftya vs The rest of the world",
+      "subtitle": "Why spend hours on AutoCAD, SketchUp or Fusion 360 when your goal is to build, not become a 3D modeler?",
+      "cadTitle": "Classic CAD Software",
+      "cadPoint1": "Very steep learning curve",
+      "cadPoint2": "Manual modeling of every thickness",
+      "cadPoint3": "Third-party plugins required (e.g. OpenCutList)",
+      "cadPoint4": "Unnecessary complexity for furniture",
+      "neftyaTitle": "Neftya",
+      "neftyaPoint1": "Immediate and structured onboarding",
+      "neftyaPoint2": "Native manufacturing-oriented generation",
+      "neftyaPoint3": "Integrated lists and technical plans",
+      "neftyaPoint4": "Focused on the final result: the furniture"
+    },
+    "pricing": {
+      "title": "Simple pricing. Try it for free.",
+      "freeName": "Free",
+      "freeDesc": "Ideal for designing your first project.",
+      "freePoint1": "3D Design",
+      "freePoint2": "Overall dimensions",
+      "freePoint3": "1 project max",
+      "freeCta": "Start",
+      "proName": "Pro",
+      "proDesc": "For independent artisans.",
+      "proPoint1": "Automated quotes",
+      "proPoint2": "Technical exports & panel layout",
+      "proPoint3": "Unlimited projects",
+      "proCta": "14-day free trial",
+      "profName": "Professional",
+      "profDesc": "For structured workshops.",
+      "profPoint1": "Everything in Pro",
+      "profPoint2": "Multi-user",
+      "profPoint3": "Shared library management",
+      "profCta": "14-day free trial"
+    },
+    "footer": {
+      "copyright": "Neftya. The tool for the woodworkers of tomorrow."
+    }
   }
 }

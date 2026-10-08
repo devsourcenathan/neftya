@@ -6,7 +6,7 @@ import { ApiProvider, FileProvider, getSettings, useApi } from './api/projects.j
 import { createApiClient, createFileClient } from './api/client.js';
 import { PreferencesProvider } from './preferences/PreferencesContext.js';
 import { SessionProvider, useSession } from './sekuu/SessionContext.js';
-import { AuthScreens } from './sekuu/AuthScreens.js';
+import { Landing } from './marketing/Landing.js';
 import { Button, Card } from './ui/index.js';
 import { router } from './router.js';
 
@@ -58,9 +58,8 @@ function Authenticated() {
     );
   }
 
-  // Un visiteur non connecté voit l'entrée — connexion ou inscription — pas un
-  // message d'erreur. Les deux vivent ici, en local.
-  if (state.status === 'anonymous') return <AuthScreens />;
+  // Un visiteur non connecté voit la page d'atterrissage.
+  if (state.status === 'anonymous') return <Landing />;
 
   if (state.status === 'unreachable') {
     return (
