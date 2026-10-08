@@ -38,6 +38,29 @@ export function Landing() {
         .tilt-left { transform: rotateY(-5deg) rotateX(2deg); }
         .tilt-right { transform: rotateY(5deg) rotateX(2deg); }
         .shadow-antigravity { box-shadow: 0 20px 60px -15px rgba(0,0,0,0.1); }
+
+        /* Modern CSS Scroll-driven animations */
+        @media (prefers-reduced-motion: no-preference) {
+          @supports ((animation-timeline: view()) and (animation-range: entry)) {
+            @keyframes fade-slide-in {
+              from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.95);
+                filter: blur(5px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0px);
+              }
+            }
+            .animate-on-scroll {
+              animation: fade-slide-in linear both;
+              animation-timeline: view();
+              animation-range: entry 10% cover 30%;
+            }
+          }
+        }
       `}</style>
       {/* Navigation */}
       <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-hairline bg-surface/80 px-6 py-4 backdrop-blur-md">
@@ -125,7 +148,7 @@ export function Landing() {
               { icon: '✂️', title: t('landing.pipeline.step3Title'), desc: t('landing.pipeline.step3Desc') },
               { icon: '📑', title: t('landing.pipeline.step4Title'), desc: t('landing.pipeline.step4Desc') }
             ].map((step, i) => (
-              <div key={i} className="rounded-xl bg-surface/40 backdrop-blur-md p-6 shadow-sm border border-white/20 hover:shadow-antigravity hover:-translate-y-2 transition-all duration-300">
+              <div key={i} className="animate-on-scroll rounded-xl bg-surface/40 backdrop-blur-md p-6 shadow-sm border border-white/20 hover:shadow-antigravity hover:-translate-y-2 transition-all duration-300">
                 <div className="text-4xl mb-4 animate-float-delay">{step.icon}</div>
                 <h3 className="text-xl font-bold mb-2">{step.title}</h3>
                 <p className="text-ink-variant">{step.desc}</p>
@@ -143,7 +166,7 @@ export function Landing() {
           </div>
           <div className="grid gap-12 lg:grid-cols-3">
             {/* Menuisiers */}
-            <div className="flex flex-col rounded-2xl bg-surface/60 backdrop-blur-xl p-8 shadow-antigravity border-2 border-primary/50 relative hover:border-primary transition-colors">
+            <div className="animate-on-scroll flex flex-col rounded-2xl bg-surface/60 backdrop-blur-xl p-8 shadow-antigravity border-2 border-primary/50 relative hover:border-primary transition-colors">
               <div className="absolute top-0 right-8 -translate-y-1/2 bg-primary text-surface px-4 py-1 rounded-full text-sm font-bold tracking-wide">{t('landing.audiences.targetPrimary')}</div>
               <h3 className="text-2xl font-bold mb-4">{t('landing.audiences.woodworkersTitle')}</h3>
               <p className="text-ink-variant mb-6 flex-1">
@@ -160,7 +183,7 @@ export function Landing() {
             </div>
 
             {/* Particuliers */}
-            <div className="flex flex-col rounded-2xl bg-surface/40 backdrop-blur-md p-8 shadow-lg border border-white/10 hover:shadow-antigravity transition-shadow">
+            <div className="animate-on-scroll flex flex-col rounded-2xl bg-surface/40 backdrop-blur-md p-8 shadow-lg border border-white/10 hover:shadow-antigravity transition-shadow" style={{ animationDelay: '0.1s' }}>
               <h3 className="text-2xl font-bold mb-4">{t('landing.audiences.diyTitle')}</h3>
               <p className="text-ink-variant mb-6 flex-1">
                 {t('landing.audiences.diyDesc')}
@@ -176,7 +199,7 @@ export function Landing() {
             </div>
 
             {/* Ateliers */}
-            <div className="flex flex-col rounded-2xl bg-surface/40 backdrop-blur-md p-8 shadow-lg border border-white/10 hover:shadow-antigravity transition-shadow">
+            <div className="animate-on-scroll flex flex-col rounded-2xl bg-surface/40 backdrop-blur-md p-8 shadow-lg border border-white/10 hover:shadow-antigravity transition-shadow" style={{ animationDelay: '0.2s' }}>
               <h3 className="text-2xl font-bold mb-4">{t('landing.audiences.workshopTitle')}</h3>
               <p className="text-ink-variant mb-6 flex-1">
                 {t('landing.audiences.workshopDesc')}
@@ -236,7 +259,7 @@ export function Landing() {
               { name: t('landing.pricing.proName'), price: '29€/mois', desc: t('landing.pricing.proDesc'), feats: [t('landing.pricing.proPoint1'), t('landing.pricing.proPoint2'), t('landing.pricing.proPoint3')], cta: t('landing.pricing.proCta'), tone: 'primary' },
               { name: t('landing.pricing.profName'), price: '79€/mois', desc: t('landing.pricing.profDesc'), feats: [t('landing.pricing.profPoint1'), t('landing.pricing.profPoint2'), t('landing.pricing.profPoint3')], cta: t('landing.pricing.profCta'), tone: 'surface' }
             ].map((plan, i) => (
-              <div key={i} className={`flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.tone === 'primary' ? 'border-primary/50 shadow-antigravity scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}>
+              <div key={i} className={`animate-on-scroll flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.tone === 'primary' ? 'border-primary/50 shadow-antigravity scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}>
                 <h3 className="text-xl font-bold">{plan.name}</h3>
                 <div className="mt-4 text-4xl font-extrabold">{plan.price}</div>
                 <p className="mt-4 text-sm text-ink-variant h-12">{plan.desc}</p>
