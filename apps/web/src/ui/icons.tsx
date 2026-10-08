@@ -192,3 +192,15 @@ export const GripIcon = (props: IconProps) => (
     <circle cx="15" cy="18" r="1" />
   </Svg>
 );
+
+export const CheckIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M20 6 9 17l-5-5" />
+  </Svg>
+);
+
+export const CloseIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </Svg>
+);
