@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      body {
+        font-family: Inter, system-ui, sans-serif;
+        background: #f7f8fa;
+        display: flex;
+        flex-direction: column;
+        background-image: radial-gradient(#d4d8e0 1px, transparent 1px);
+        background-size: 22px 22px;
+      }
+      .wrap {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 52px;
+        padding: 0 64px;
+      }
+      .left {
+        width: 430px;
+        flex: none;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 34px;
+      }
+      .mark {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: #0b1b36;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .name {
+        font-size: 34px;
+        font-weight: 800;
+        color: #0b1b36;
+        letter-spacing: -0.02em;
+      }
+      h1 {
+        font-size: 50px;
+        line-height: 1.06;
+        font-weight: 800;
+        color: #0b1b36;
+        letter-spacing: -0.025em;
+      }
+      h1 em {
+        font-style: normal;
+        color: #1d4ed8;
+      }
+      p {
+        margin-top: 22px;
+        font-size: 21px;
+        line-height: 1.45;
+        color: #52606d;
+      }
+      .plan {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #dfe3ea;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 26px 60px -24px rgba(11, 27, 54, 0.32);
+      }
+      .plan svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .foot {
+        display: flex;
+        gap: 30px;
+        padding: 0 64px 40px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 17px;
+        color: #52606d;
+      }
+      .foot b {
+        color: #0b1b36;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="left">
+        <div class="brand">
+          <span class="mark"
+            ><svg
+              width="30"
+              height="30"
+              viewBox="0 0 32 32"
+              fill="none"
+              stroke="#fff"
+              stroke-width="1.9"
+              stroke-linejoin="round"
+            >
+              <path d="M16 6 26 11.2v9.6L16 26 6 20.8v-9.6z" />
+              <path d="M6 11.2 16 16.4l10-5.2M16 16.4V26" /></svg
+          ></span>
+          <span class="name">Neftya</span>
+        </div>
+        <h1>Du croquis au plan de découpe, <em>sans modélisation 3D</em></h1>
+        <p>
+          Décrivez un meuble. Récupérez le débit, les plans cotés et le guide de
+          montage.
+        </p>
+      </div>
+      <div class="plan" id="plan"></div>
+    </div>
+    <div class="foot">
+      <span><b>6</b> pièces calepinées</span>
+      <span><b>76,5 %</b> de rendement</span>
+      <span><b>2440 × 1220 × 18</b> mm</span>
+    </div>
+    <script>
+      fetch('./cutplan.svg')
+        .then((r) => r.text())
+        .then((s) => {
+          document.getElementById('plan').innerHTML = s;
+        });
+    </script>
+  </body>
+</html>

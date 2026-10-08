@@ -1,9 +1,64 @@
 <!doctype html>
+<!--
+  `lang` est le défaut, pas une vérité figée : l'interface bascule fr/en à chaud, et
+  `apps/web/src/i18n.ts` met cet attribut à jour. Un lecteur d'écran qui lit de l'anglais
+  avec une voix française est inécoutable.
+-->
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Neftya</title>
+
+    <!--
+      Le titre porte la promesse, pas le nom seul.
+      « Neftya » n'apprend rien à qui ne connaît pas Neftya — c'est-à-dire tout le monde.
+    -->
+    <title>
+      Neftya — De l'inspiration au plan de fabrication, sans modélisation 3D
+    </title>
+    <meta
+      name="description"
+      content="Décrivez un meuble ou partez d'une photo : Neftya en sort le plan de découpe, la liste de débit, les plans cotés et le guide de montage. Sans CAO, prêt pour l'atelier."
+    />
+    <link rel="canonical" href="https://neftya.sekuu.com/" />
+
+    <!--
+      Open Graph et Twitter.
+      Sans eux, un lien partagé dans un groupe WhatsApp d'artisans — le canal réel de ce
+      public — s'affiche en texte nu, sans titre ni image. C'est la différence entre un lien
+      qu'on ouvre et un lien qu'on fait défiler.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Neftya" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:locale:alternate" content="en_GB" />
+    <meta property="og:url" content="https://neftya.sekuu.com/" />
+    <meta
+      property="og:title"
+      content="Neftya — Du croquis au plan de découpe, sans modélisation 3D"
+    />
+    <meta
+      property="og:description"
+      content="Décrivez un meuble ou partez d'une photo : Neftya en sort le plan de découpe, la liste de débit, les plans cotés et le guide de montage."
+    />
+    <!--
+      L'image montre un vrai plan de découpe produit par le moteur, pas une illustration :
+      la promesse de la page est prouvée avant qu'on l'ouvre. Voir scripts/og/README.md
+      pour la refaire — et les cotes déclarées ici sont celles du fichier livré, pas
+      l'idéal de 1200 × 630, qu'une capture sur un écran plus large remplacera.
+    -->
+    <meta property="og:image" content="https://neftya.sekuu.com/og.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="420" />
+    <meta
+      property="og:image:alt"
+      content="Un plan de découpe Neftya : des panneaux calepinés, chaque pièce repérée et cotée."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0b1b36" />
   </head>
   <body>
     <div id="root"></div>

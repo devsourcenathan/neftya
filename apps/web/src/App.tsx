@@ -50,8 +50,8 @@ function Authenticated() {
   const api = useMemo(() => createApiClient(token), [token]);
   const files = useMemo(() => createFileClient(token), [token]);
 
-  const shouldShowLanding = 
-    state.status === 'anonymous' || 
+  const shouldShowLanding =
+    state.status === 'anonymous' ||
     (state.status === 'loading' && window.location.pathname === '/');
 
   if (shouldShowLanding) {

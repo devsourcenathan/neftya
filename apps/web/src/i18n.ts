@@ -24,4 +24,18 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
+/**
+ * `<html lang>` suit la langue affichée.
+ *
+ * Il était figé à `fr` dans la page : basculer en anglais laissait un document déclaré
+ * français, qu'un lecteur d'écran lit alors avec une voix française — inécoutable. C'est
+ * aussi ce que lisent les moteurs de recherche et les traducteurs automatiques.
+ */
+const followDocumentLanguage = (language: string) => {
+  if (typeof document !== 'undefined') document.documentElement.lang = language;
+};
+
+followDocumentLanguage(i18n.language);
+i18n.on('languageChanged', followDocumentLanguage);
+
 export default i18n;
