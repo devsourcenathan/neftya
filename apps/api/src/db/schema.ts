@@ -242,6 +242,64 @@ export interface NotificationsOutboxTable {
   sent_at: Date | null;
 }
 
+/**
+ * Le catalogue d'offres — voir `0014_billing.sql`.
+ *
+ * Les plafonds suivent la convention des quotas : `null` vaut illimité. En
+ * introduire une seconde ici aurait obligé à traduire à chaque lecture.
+ */
+export interface PlansTable {
+  code: string;
+  projects_max: number | null;
+  ai_month_max: number | null;
+  members_max: number | null;
+  rank: number;
+  created_at: CreatedAt;
+}
+
+/**
+ * Un prix par offre, devise et période.
+ *
+ * **L'absence de ligne est une réponse** : une offre sans prix dans une devise
+ * ne s'y vend pas. Convertir au taux du jour donnerait un montant que personne
+ * n'a décidé et qui bouge tout seul.
+ */
+export interface PlanPricesTable {
+  plan_code: string;
+  currency: string;
+  period: BillingPeriod;
+  amount_minor: number;
+}
+
+export type BillingPeriod = 'monthly' | 'yearly';
+export type SubscriptionPeriod = 'free' | BillingPeriod;
+export type PaymentProviderKey = 'stripe' | 'notchpay';
+
+/**
+ * L'abonnement d'une organisation — voir `0014_billing.sql`.
+ *
+ * Une ligne par organisation, l'unicité portée par la clé primaire : deux
+ * webhooks concurrents ne peuvent pas en créer deux.
+ *
+ * `current_period_end` est **la seule** date de fin d'accès. Stripe la pose au
+ * fil de ses renouvellements, le mobile money à l'encaissement d'une période.
+ * Deux colonnes auraient fini par se contredire, et c'est le client qui s'en
+ * serait aperçu, coupé alors qu'il avait payé.
+ */
+export interface SubscriptionsTable {
+  organization_id: string;
+  plan_code: string;
+  status: 'active' | 'past_due' | 'canceled';
+  period: SubscriptionPeriod;
+  current_period_end: Date | null;
+  provider: PaymentProviderKey | null;
+  provider_ref: string | null;
+  /** Défaut en base : omissible à l'insertion, écrit à la mise à jour. */
+  cancel_at_period_end: ColumnType<boolean, boolean | undefined, boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -257,4 +315,7 @@ export interface Database {
   files: FilesTable;
   ai_generations: AiGenerationsTable;
   notifications_outbox: NotificationsOutboxTable;
+  plans: PlansTable;
+  plan_prices: PlanPricesTable;
+  subscriptions: SubscriptionsTable;
 }

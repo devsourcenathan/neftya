@@ -3,6 +3,7 @@ import { sql } from 'kysely';
 import { v7 as uuidv7 } from 'uuid';
 import type { Database } from '../db/schema.js';
 import type { OrganizationRole } from '@neftya/contracts';
+import { FREE_PLAN_CODE } from '../billing/repository.js';
 
 /**
  * Persistance de l'identité locale.
@@ -133,6 +134,26 @@ export class AuthRepository {
     await this.db
       .insertInto('organization_quotas')
       .values({ organization_id: id, ...FREE_TIER })
+      .onConflict((conflict) => conflict.column('organization_id').doNothing())
+      .execute();
+
+    /*
+     * Et un abonnement gratuit, posé au même endroit et pour la même raison.
+     *
+     * Sans lui, « pas de ligne » et « plan gratuit » seraient deux états distincts à
+     * traiter partout où l'on décide d'un accès — et le premier se lirait tôt ou tard comme
+     * « aucune limite ». Les plafonds restent dans `organization_quotas`, qui demeure la
+     * source de vérité des quotas ; cette ligne dit **pourquoi** ils valent ce qu'ils
+     * valent, et c'est elle qu'un paiement fera bouger.
+     */
+    await this.db
+      .insertInto('subscriptions')
+      .values({
+        organization_id: id,
+        plan_code: FREE_PLAN_CODE,
+        status: 'active',
+        period: 'free',
+      })
       .onConflict((conflict) => conflict.column('organization_id').doNothing())
       .execute();
 
