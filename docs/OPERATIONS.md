@@ -310,8 +310,22 @@ Le même dépôt. `vercel.json` porte déjà la commande de construction, le ré
 et la réécriture : il n'y a ni cadre à choisir, ni racine à régler. Une seule variable :
 
 ```
-VITE_API_URL = https://<le-nom-du-service>.onrender.com
+VITE_API_URL  = https://<le-nom-du-service>.onrender.com
+VITE_SITE_URL = https://<le-domaine-du-front>
 ```
+
+**`VITE_SITE_URL` n'est pas facultative : sans elle, la construction s'arrête.** C'est
+voulu. Elle porte le canonical, l'Open Graph et le plan du site — cinq URL absolues qu'on ne
+peut pas deviner. Un domaine d'exemple laissé par défaut se déploierait sans bruit, dirait
+aux moteurs que la vraie page est ailleurs, et rendrait tout lien partagé sans aperçu. Le
+défaut ne se verrait pas ici ; il se verrait chez le visiteur.
+
+Elle s'écrit **sans barre finale**, et une barre oubliée est retirée plutôt que refusée :
+les gabarits concatènent `/og.jpg`, et `https://site//og.jpg` n'est servi que par certains
+hébergeurs. C'est le même piège que `NEFTYA_ALLOWED_ORIGINS`, à l'autre bout de la chaîne.
+
+Le jour où le domaine change, c'est le seul endroit à modifier — puis un redéploiement,
+puisque Vite la lit à la compilation.
 
 Elle est lue **à la compilation**, pas à l'exécution : la changer demande un redéploiement, et
 non un redémarrage.
