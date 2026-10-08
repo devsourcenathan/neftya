@@ -50,6 +50,14 @@ function Authenticated() {
   const api = useMemo(() => createApiClient(token), [token]);
   const files = useMemo(() => createFileClient(token), [token]);
 
+  const shouldShowLanding = 
+    state.status === 'anonymous' || 
+    (state.status === 'loading' && window.location.pathname === '/');
+
+  if (shouldShowLanding) {
+    return <Landing />;
+  }
+
   if (state.status === 'loading') {
     return (
       <Centered>
@@ -57,9 +65,6 @@ function Authenticated() {
       </Centered>
     );
   }
-
-  // Un visiteur non connecté voit la page d'atterrissage.
-  if (state.status === 'anonymous') return <Landing />;
 
   if (state.status === 'unreachable') {
     return (
