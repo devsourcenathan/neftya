@@ -24,6 +24,9 @@ const PASSWORD = 'mot-de-passe-suffisamment-long';
 let harness: Harness;
 let started: CheckoutRequest[] = [];
 
+/** Fait échouer le prochain appel au fournisseur, comme une panne chez lui. */
+let failNextCheckout = false;
+
 /*
  * Un compteur qui ne repart jamais de zéro.
  *
@@ -37,6 +40,12 @@ let sessions = 0;
 /** Un Stripe qui ne parle à personne, mais dont la vérification de signature est réelle. */
 class FakeStripeProvider extends StripeProvider {
   override startCheckout(request: CheckoutRequest): Promise<CheckoutStarted> {
+    if (failNextCheckout) {
+      failNextCheckout = false;
+
+      return Promise.reject(new Error('panne simulée du fournisseur'));
+    }
+
     started.push(request);
     sessions += 1;
 
@@ -72,7 +81,8 @@ const notchpay = new NotchPayProvider(
       status: 201,
       json: () =>
         Promise.resolve({
-          transaction: 'trx_mobile',
+          // La forme réelle : `transaction` est un objet, pas une chaîne.
+          transaction: { reference: 'trx.test_mobile' },
           authorization_url: 'https://pay.notchpay.test/pay_mobile',
         }),
     });
@@ -238,27 +248,33 @@ describe('ouvrir un paiement', () => {
 
   it('ne rouvre pas une session sur un second clic', async () => {
     /*
-     * La clé d'idempotence décrit ce qui est demandé, pas quand : deux clics produisent
-     * la même clé, donc la même ligne au registre. Sans cela, un double clic ouvrirait
-     * deux abonnements à la même organisation.
+     * Un second clic revient à la **même** page de paiement.
+     *
+     * Compter les lignes ne suffit pas : la ligne peut être réutilisée et le fournisseur
+     * rappelé tout de même. NotchPay répondrait alors `409 Reference already existing`,
+     * et le client verrait une erreur au lieu de sa page.
      */
     const { accessToken, organizationId } = await signUp('doubleclic@atelier.test');
 
     const payload = { plan: 'pro', period: 'monthly', currency: 'EUR' };
     const headers = { authorization: `Bearer ${accessToken}` };
+    const before = started.length;
 
-    await harness.app.inject({
+    const first = await harness.app.inject({
       method: 'POST',
       url: '/v1/billing/checkout',
       headers,
       payload,
     });
-    await harness.app.inject({
+    const second = await harness.app.inject({
       method: 'POST',
       url: '/v1/billing/checkout',
       headers,
       payload,
     });
+
+    expect(started.length - before).toBe(1);
+    expect(second.json().data.redirect_url).toBe(first.json().data.redirect_url);
 
     const rows = await harness.db
       .selectFrom('payments')
@@ -267,6 +283,91 @@ describe('ouvrir un paiement', () => {
       .execute();
 
     expect(rows).toHaveLength(1);
+  });
+});
+
+describe('la référence envoyée au fournisseur', () => {
+  it('est neuve à chaque renouvellement', async () => {
+    /*
+     * **Le défaut que seule la vraie API a montré.**
+     *
+     * La clé d'idempotence décrivait l'offre — organisation, plan, période, devise — donc
+     * elle était éternelle. NotchPay refuse une référence déjà employée
+     * (`409 Reference already existing`) : le premier paiement passait, et **tous les
+     * renouvellements échouaient**. C'est-à-dire tout le modèle prépayé après le mois un.
+     *
+     * Aucun test ne pouvait le voir : nos faux acceptaient n'importe quelle référence.
+     */
+    const { accessToken } = await signUp('renouvellement@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+    const payload = { plan: 'pro', period: 'monthly', currency: 'EUR' };
+
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload,
+    });
+    const first = started.at(-1)?.idempotencyKey;
+
+    // Le paiement aboutit : la période est ouverte.
+    await webhook({
+      id: 'evt_renouv_1',
+      type: 'checkout.session.completed',
+      data: { object: { id: `cs_${String(sessions)}`, subscription: 'sub_renouv' } },
+    });
+
+    // Un mois plus tard, le client reprend la même offre.
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload,
+    });
+    const second = started.at(-1)?.idempotencyKey;
+
+    expect(first).toBeDefined();
+    expect(second).not.toBe(first);
+  });
+
+  it('est neuve après un appel au fournisseur qui a échoué', async () => {
+    /*
+     * Une tentative sans page de paiement est abandonnée : le fournisseur a peut-être
+     * déjà enregistré sa référence. La réemployer rendrait la même erreur indéfiniment,
+     * et le client ne pourrait plus jamais payer cette offre.
+     */
+    const { accessToken, organizationId } = await signUp('reprise@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+    const payload = { plan: 'pro', period: 'monthly', currency: 'EUR' };
+
+    failNextCheckout = true;
+    const refused = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload,
+    });
+
+    expect(refused.statusCode).toBe(503);
+
+    const retry = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload,
+    });
+
+    expect(retry.statusCode).toBe(200);
+
+    const rows = await harness.db
+      .selectFrom('payments')
+      .select(['id', 'provider_ref'])
+      .where('organization_id', '=', organizationId)
+      .execute();
+
+    // Deux lignes, deux références : la morte reste au registre pour la réconciliation.
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row) => row.provider_ref !== null)).toHaveLength(1);
   });
 });
 
@@ -522,13 +623,22 @@ describe('NotchPay, en prépayé', () => {
        * d'initialisation rend `transaction`, qui est autre chose. Se fier à lui ferait
        * échouer la correspondance, et le client resterait payé sans service.
        */
+      /*
+       * La forme **réelle** d'un webhook NotchPay : `reference` est la leur,
+       * `merchant_reference` est la nôtre. Leur documentation dit l'inverse, et le test
+       * écrit d'après elle passait pendant que la production aurait refusé chaque
+       * webhook — donc laissé chaque client payé sans accès.
+       */
       const body = JSON.stringify({
         id: 'evt_mobile_1',
         type: 'payment.complete',
         data: {
-          id: 'pay_jamais_vu',
-          reference: notchpayRequests[0]?.reference,
+          reference: 'trx.test_jamais_vu',
+          merchant_reference: notchpayRequests[0]?.reference,
+          trxref: notchpayRequests[0]?.reference,
           status: 'complete',
+          amount: 190000,
+          currency: 'XAF',
         },
       });
 

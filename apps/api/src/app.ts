@@ -236,6 +236,7 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       billing,
       service: billingService,
       auth: authRepository,
+      settings,
       providers,
       appUrl: dependencies.appUrl ?? 'http://localhost:5174',
     });

@@ -5,6 +5,7 @@ import { conflict, forbidden, notFound, serviceUnavailable } from '../http/error
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
 import type { AuthRepository } from '../auth/repository.js';
+import type { SettingsRepository } from '../settings/repository.js';
 import { entitlementOf } from './entitlement.js';
 import { FREE_PLAN_CODE } from './repository.js';
 import type { BillingRepository } from './repository.js';
@@ -31,6 +32,7 @@ export interface BillingDependencies {
   billing: BillingRepository;
   service: BillingService;
   auth: AuthRepository;
+  settings: SettingsRepository;
   /** Les fournisseurs configurés. Un fournisseur sans clé n'est tout simplement pas là. */
   providers: readonly PaymentProvider[];
   /** L'adresse publique de l'interface, où le client revient après avoir payé. */
@@ -80,7 +82,7 @@ export function registerBillingRoutes(
   app: FastifyInstance,
   dependencies: BillingDependencies,
 ): void {
-  const { billing, service, auth, providers, appUrl } = dependencies;
+  const { billing, service, auth, settings, providers, appUrl } = dependencies;
 
   /**
    * L'état de l'abonnement, et ce qu'on peut souscrire.
@@ -93,9 +95,10 @@ export function registerBillingRoutes(
     const context = sekuuOf(request);
     const now = new Date();
 
-    const [offers, subscription] = await Promise.all([
+    const [offers, subscription, organizationSettings] = await Promise.all([
       billing.offers(),
       billing.subscriptionOf(context.organizationId),
+      settings.get(context.organizationId),
     ]);
 
     const plans = new Map(offers.map((offer) => [offer.code, offer]));
@@ -103,7 +106,19 @@ export function registerBillingRoutes(
 
     const sellable = new Set(providers.flatMap((provider) => provider.currencies));
 
+    /*
+     * La devise de l'organisation, déjà choisie pour ses devis.
+     *
+     * Sans elle, chaque offre montrait quatre boutons — mensuel et annuel, en euros et en
+     * francs CFA — dont la moitié ne concerne pas le client. Un menuisier de Douala n'a
+     * pas à trier entre des euros et des francs pour payer, ni un menuisier de Lyon
+     * l'inverse.
+     *
+     * Rendue plutôt qu'appliquée ici : c'est l'interface qui décide quoi montrer, et l'API
+     * garde l'information complète pour qui voudrait payer autrement.
+     */
     return success({
+      currency: organizationSettings.currency,
       subscription: {
         plan: entitlement.planCode,
         /** L'offre payée, quand elle diffère de celle servie — un abonnement expiré. */
@@ -189,15 +204,6 @@ export function registerBillingRoutes(
 
     if (!user) throw notFound('Utilisateur introuvable.');
 
-    /*
-     * La clé d'idempotence décrit **ce qui est demandé**, pas quand.
-     *
-     * Deux clics à une seconde d'intervalle produisent la même clé, donc la même ligne et
-     * la même session chez le fournisseur. Y mêler l'horodatage aurait rendu la clé unique
-     * à chaque clic, c'est-à-dire inutile.
-     */
-    const idempotencyKey = `${context.organizationId}:${body.plan}:${body.period}:${body.currency}`;
-
     const payment = await service.openPayment({
       organizationId: context.organizationId,
       provider: provider.key,
@@ -205,8 +211,30 @@ export function registerBillingRoutes(
       period: body.period,
       currency: body.currency,
       amountMinor,
-      idempotencyKey,
     });
+
+    /*
+     * Une tentative encore en vol renvoie sa propre page de paiement.
+     *
+     * Deux clics sur « Payer » ne doivent pas ouvrir deux sessions : on ne rappelle donc
+     * pas le fournisseur, on renvoie là où le client était déjà attendu.
+     */
+    if (!payment.fresh && payment.providerRef !== null) {
+      const existing = await service.redirectOf(payment.id);
+
+      if (existing !== null) return success({ redirect_url: existing });
+    }
+
+    /*
+     * La référence envoyée au fournisseur est l'identifiant de la ligne.
+     *
+     * Unique par tentative, et c'est indispensable : NotchPay refuse une référence déjà
+     * employée (`409 Reference already existing`), si bien qu'une clé descriptive —
+     * organisation, offre, période, devise — aurait fait échouer tous les renouvellements.
+     * Elle sert aussi de clé d'idempotence à Stripe, pour qui un nouvel essai mérite bien
+     * une nouvelle session.
+     */
+    const idempotencyKey = payment.id;
 
     /*
      * Un encaisseur injoignable n'est pas une erreur interne.
@@ -229,7 +257,9 @@ export function registerBillingRoutes(
         period: body.period,
         currency: body.currency,
         amountMinor,
-        label: `Neftya ${body.plan}`,
+        // Ce libellé part sur la page de paiement et sur la facture du client :
+        // « Neftya pro » en minuscule s'y lisait comme une faute de frappe.
+        label: `Neftya ${body.plan.charAt(0).toUpperCase()}${body.plan.slice(1)}`,
         customerEmail: user.email,
         successUrl: `${appUrl}/facturation?paiement=succes`,
         cancelUrl: `${appUrl}/facturation?paiement=annule`,
@@ -243,7 +273,11 @@ export function registerBillingRoutes(
       );
     }
 
-    await service.attachProviderRef(payment.id, started.providerRef);
+    await service.attachProviderSession(
+      payment.id,
+      started.providerRef,
+      started.redirectUrl,
+    );
 
     return success({ redirect_url: started.redirectUrl });
   });

@@ -125,6 +125,7 @@ export function Billing() {
             <PlanCard
               key={plan.code}
               plan={plan}
+              currency={data.currency}
               current={data.subscription.paid_plan === plan.code}
               highlighted={intended === plan.code}
               busy={checkout.isPending}
@@ -278,12 +279,15 @@ function CurrentPlan({ data, language }: { data: BillingResource; language: stri
 /** Une offre, avec ses prix — ou la raison pour laquelle elle n'en a pas. */
 function PlanCard({
   plan,
+  currency,
   current,
   highlighted,
   busy,
   onChoose,
 }: {
   plan: BillingResource['plans'][number];
+  /** La devise de l'organisation. `null` : on montre tout, faute de savoir. */
+  currency: string | null;
   current: boolean;
   /** Celle que le visiteur avait choisie avant de créer son compte. */
   highlighted: boolean;
@@ -299,14 +303,24 @@ function PlanCard({
    */
   const free = plan.prices.length === 0 && plan.code === 'free';
 
-  const sorted = useMemo(
-    () =>
-      [...plan.prices].sort(
-        (a, b) =>
-          a.currency.localeCompare(b.currency) || a.period.localeCompare(b.period),
-      ),
-    [plan.prices],
-  );
+  /*
+   * Les prix de la devise du client, le mensuel d'abord.
+   *
+   * Montrer les quatre combinaisons donnait un mur de boutons dont la moitié s'adresse à
+   * l'autre continent. Si l'organisation n'a pas choisi de devise, ou si la sienne n'a pas
+   * de prix, on montre tout plutôt que rien : ne rien montrer la laisserait sans moyen de
+   * payer.
+   */
+  const sorted = useMemo(() => {
+    const mine = plan.prices.filter((price) => price.currency === currency);
+    const shown = mine.length > 0 ? mine : plan.prices;
+
+    // Le mensuel avant l'annuel : c'est l'engagement le plus court, donc celui qu'on
+    // propose en premier.
+    return [...shown].sort((a, b) =>
+      a.period === b.period ? 0 : a.period === 'monthly' ? -1 : 1,
+    );
+  }, [plan.prices, currency]);
 
   return (
     <li

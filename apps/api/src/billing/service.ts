@@ -34,8 +34,19 @@ export class BillingService {
   /**
    * Ouvrir une ligne au registre, avant de parler au fournisseur.
    *
-   * Rend la ligne existante si la clé d'idempotence est déjà connue : deux clics sur
-   * « Payer » doivent mener à la même session, pas à deux abonnements.
+   * **La reprise ne vaut que pour une tentative encore en vol.** Une ligne en attente qui
+   * porte déjà une référence du fournisseur veut dire qu'une page de paiement est ouverte
+   * quelque part : deux clics sur « Payer » doivent y revenir, pas en ouvrir une seconde.
+   *
+   * Tout le reste ouvre une ligne neuve, et c'est ce qui rend le prépayé possible.
+   * L'idempotence était d'abord une clé stable — organisation, offre, période, devise —
+   * donc éternelle. NotchPay refuse une référence déjà utilisée (`409 Reference already
+   * existing`) : **chaque renouvellement aurait échoué**, c'est-à-dire tous les paiements
+   * mobile money après le premier. Le défaut ne s'est vu qu'en appelant leur API.
+   *
+   * Une tentative dont l'appel au fournisseur a échoué n'a pas de référence : elle est
+   * abandonnée, et la suivante repart d'une ligne neuve plutôt que de réemployer une
+   * référence que le fournisseur a peut-être déjà enregistrée.
    */
   async openPayment(input: {
     organizationId: string;
@@ -44,19 +55,30 @@ export class BillingService {
     period: 'monthly' | 'yearly';
     currency: string;
     amountMinor: number;
-    idempotencyKey: string;
   }): Promise<{ id: string; providerRef: string | null; fresh: boolean }> {
-    const existing = await this.db
+    const inFlight = await this.db
       .selectFrom('payments')
       .select(['id', 'provider_ref'])
       .where('organization_id', '=', input.organizationId)
-      .where('idempotency_key', '=', input.idempotencyKey)
+      .where('provider', '=', input.provider)
+      .where('plan_code', '=', input.planCode)
+      .where('period', '=', input.period)
+      .where('currency', '=', input.currency)
+      .where('status', '=', 'pending')
+      .where('provider_ref', 'is not', null)
       .executeTakeFirst();
 
-    if (existing) {
-      return { id: existing.id, providerRef: existing.provider_ref, fresh: false };
+    if (inFlight) {
+      return { id: inFlight.id, providerRef: inFlight.provider_ref, fresh: false };
     }
 
+    /*
+     * L'identifiant de la ligne **est** la clé d'idempotence.
+     *
+     * Unique par nature, et c'est lui qu'on donne au fournisseur comme référence : un
+     * webhook le rend, et il désigne une seule tentative. Une clé descriptive aurait
+     * désigné toutes les tentatives de la même offre, passées et à venir.
+     */
     const id = uuidv7();
 
     await this.db
@@ -71,20 +93,40 @@ export class BillingService {
         currency: input.currency,
         amount_minor: input.amountMinor,
         status: 'pending',
-        idempotency_key: input.idempotencyKey,
+        idempotency_key: id,
       })
       .execute();
 
     return { id, providerRef: null, fresh: true };
   }
 
-  /** La référence du fournisseur, une fois la session ouverte chez lui. */
-  async attachProviderRef(paymentId: string, providerRef: string): Promise<void> {
+  /**
+   * La référence et la page du fournisseur, une fois la session ouverte chez lui.
+   *
+   * Les deux ensemble : la référence sert à retrouver la ligne au webhook, la page à
+   * renvoyer un client qui reclique au lieu d'ouvrir une seconde session.
+   */
+  async attachProviderSession(
+    paymentId: string,
+    providerRef: string,
+    redirectUrl: string,
+  ): Promise<void> {
     await this.db
       .updateTable('payments')
-      .set({ provider_ref: providerRef })
+      .set({ provider_ref: providerRef, redirect_url: redirectUrl })
       .where('id', '=', paymentId)
       .execute();
+  }
+
+  /** La page de paiement d'une tentative encore en vol, s'il y en a une. */
+  async redirectOf(paymentId: string): Promise<string | null> {
+    const row = await this.db
+      .selectFrom('payments')
+      .select('redirect_url')
+      .where('id', '=', paymentId)
+      .executeTakeFirst();
+
+    return row?.redirect_url ?? null;
   }
 
   /**
@@ -324,7 +366,7 @@ export class BillingService {
         .selectFrom('payments')
         .select(columns)
         .where('provider', '=', provider)
-        .where('idempotency_key', '=', merchantRef)
+        .where('id', '=', merchantRef)
         .executeTakeFirst();
 
       if (byOurs) return byOurs;

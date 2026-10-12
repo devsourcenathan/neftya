@@ -54,7 +54,19 @@ function fakeFetch(response: { status?: number; body?: unknown } = {}): {
           response.body ?? {
             status: 'Accepted',
             code: 201,
-            transaction: 'trx_abc123',
+            /*
+             * La forme **réelle**, relevée sur l'API avec une clé de test le 12 octobre
+             * 2026. La documentation annonce `transaction: "<identifiant>"` ; elle rend
+             * un objet. Un faux écrit d'après la documentation rendait ce test vert
+             * pendant que l'ouverture d'un paiement échouait en production.
+             */
+            transaction: {
+              amount: 19000,
+              reference: 'trx.test_abc123',
+              merchant_reference: 'org:pro:monthly:XAF',
+              trxref: 'org:pro:monthly:XAF',
+              status: 'pending',
+            },
             authorization_url: 'https://pay.notchpay.co/pay_abc123',
           },
         ),
@@ -101,12 +113,27 @@ describe('ouvrir un paiement', () => {
     expect(body['reference']).toBe('org:pro:monthly:XAF');
   });
 
-  it('rend l’adresse de la page hébergée et la transaction', async () => {
+  it('rend l’adresse de la page hébergée et leur référence', async () => {
     const { impl } = fakeFetch();
     const started = await new NotchPayProvider(config, impl).startCheckout(request);
 
     expect(started.redirectUrl).toBe('https://pay.notchpay.co/pay_abc123');
-    expect(started.providerRef).toBe('trx_abc123');
+    expect(started.providerRef).toBe('trx.test_abc123');
+  });
+
+  it('accepte aussi la forme décrite par la documentation', async () => {
+    // Rien ne dit si c'est la documentation qui est en retard ou l'API qui est en avance.
+    // La tolérance coûte une ligne.
+    const { impl } = fakeFetch({
+      body: {
+        transaction: 'trx_ancienne_forme',
+        authorization_url: 'https://pay.notchpay.co/x',
+      },
+    });
+
+    const started = await new NotchPayProvider(config, impl).startCheckout(request);
+
+    expect(started.providerRef).toBe('trx_ancienne_forme');
   });
 
   it('refuse un rejet sans relayer le corps de l’erreur', async () => {
@@ -126,7 +153,7 @@ describe('ouvrir un paiement', () => {
   });
 
   it('refuse une réponse sans adresse plutôt que d’y envoyer le client', async () => {
-    const { impl } = fakeFetch({ body: { transaction: 'trx_abc123' } });
+    const { impl } = fakeFetch({ body: { transaction: { reference: 'trx.test_x' } } });
 
     await expect(
       new NotchPayProvider(config, impl).startCheckout(request),
@@ -152,10 +179,25 @@ function signed(payload: unknown): {
 const provider = new NotchPayProvider(config);
 
 describe('lire un webhook', () => {
+  /*
+   * La forme **réelle** du paiement, relevée sur `GET /payments/{reference}`.
+   *
+   * `reference` est celle de NotchPay, `merchant_reference` est la nôtre — la
+   * documentation dit l'inverse — et il n'y a pas de champ `id`. Le schéma écrit d'après
+   * la documentation exigeait `data.id` : un vrai webhook aurait été refusé, NotchPay
+   * aurait réessayé indéfiniment, et un client qui a payé n'aurait jamais eu son accès.
+   */
   const complete = {
     id: 'evt_1',
     type: 'payment.complete',
-    data: { id: 'pay_1', reference: 'org:pro:monthly:XAF', status: 'complete' },
+    data: {
+      reference: 'trx.test_abc123',
+      merchant_reference: 'org:pro:monthly:XAF',
+      trxref: 'org:pro:monthly:XAF',
+      status: 'complete',
+      amount: 19000,
+      currency: 'XAF',
+    },
   };
 
   it('accepte une signature juste', () => {
@@ -164,7 +206,8 @@ describe('lire un webhook', () => {
     expect(provider.readEvent(body, headers)).toMatchObject({
       kind: 'payment_settled',
       eventId: 'evt_1',
-      providerRef: 'pay_1',
+      // La leur pour les retrouver chez eux, la nôtre pour retrouver la ligne chez nous.
+      providerRef: 'trx.test_abc123',
       merchantRef: 'org:pro:monthly:XAF',
     });
   });
@@ -193,7 +236,7 @@ describe('lire un webhook', () => {
   it('refuse un corps modifié après signature', () => {
     const { body, headers } = signed(complete);
     const altered = Buffer.from(
-      body.toString('utf8').replace('pay_1', 'pay_2'),
+      body.toString('utf8').replace('trx.test_abc123', 'trx.test_pirate'),
       'utf8',
     );
 
@@ -214,7 +257,8 @@ describe('lire un webhook', () => {
 
       expect(provider.readEvent(body, headers)).toMatchObject({
         kind: 'payment_failed',
-        providerRef: 'pay_1',
+        providerRef: 'trx.test_abc123',
+        merchantRef: 'org:pro:monthly:XAF',
       });
     }
   });

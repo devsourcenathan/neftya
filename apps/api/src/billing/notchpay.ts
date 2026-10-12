@@ -38,9 +38,27 @@ export interface NotchPayConfig {
   baseUrl?: string;
 }
 
-/** Ce que l'initialisation rend. Le reste du corps ne nous regarde pas. */
+/**
+ * Ce que l'initialisation rend **réellement**.
+ *
+ * **La documentation publique décrit autre chose.** Elle annonce
+ * `{ transaction: "<identifiant>" }` ; l'API rend un objet :
+ *
+ *     { "transaction": { "reference": "trx.test_…", "merchant_reference": "…",
+ *                        "trxref": "…", "status": "pending", … },
+ *       "authorization_url": "https://pay.notchpay.co/…" }
+ *
+ * Vérifié en appelant `https://api.notchpay.co/payments` avec une clé de test le
+ * 12 octobre 2026, puis confirmé en relisant le paiement par `GET /payments/{reference}`.
+ * Le schéma écrit d'après la documentation refusait cette réponse, et l'ouverture d'un
+ * paiement échouait — un défaut qu'aucun test ne pouvait voir, puisque les faux étaient
+ * eux aussi écrits d'après la documentation.
+ *
+ * La forme documentée reste acceptée : elle coûte une ligne, et rien ne dit si c'est la
+ * documentation qui est en retard ou l'API qui est en avance.
+ */
 const initialised = z.object({
-  transaction: z.string().min(1),
+  transaction: z.union([z.string().min(1), z.object({ reference: z.string().min(1) })]),
   authorization_url: z.string().url(),
 });
 
@@ -53,10 +71,22 @@ const initialised = z.object({
 const webhookEvent = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
+  /*
+   * **`reference` est la leur, `merchant_reference` est la nôtre.**
+   *
+   * La documentation dit l'inverse — « `reference` : votre référence de commande ». L'API
+   * rend `reference: "trx.test_…"` et range la nôtre dans `merchant_reference`, doublée
+   * dans `trxref`. Et il n'y a pas de champ `id` du tout.
+   *
+   * Le schéma d'origine exigeait `data.id` : un vrai webhook aurait été refusé, NotchPay
+   * aurait réessayé indéfiniment, et un client qui a payé n'aurait jamais eu son accès.
+   * Rien dans nos tests ne pouvait l'attraper — ils reproduisaient la documentation.
+   */
   data: z.object({
-    id: z.string().min(1),
-    /** Notre propre identifiant de paiement, posé à l'initialisation. */
+    id: z.string().min(1).optional(),
     reference: z.string().min(1).optional(),
+    merchant_reference: z.string().min(1).optional(),
+    trxref: z.string().min(1).optional(),
     status: z.string().optional(),
   }),
 });
@@ -123,9 +153,12 @@ export class NotchPayProvider implements PaymentProvider {
       throw new Error('NotchPay a rendu une réponse sans adresse de paiement.');
     }
 
+    const transaction = body.data.transaction;
+
     return {
       redirectUrl: body.data.authorization_url,
-      providerRef: body.data.transaction,
+      providerRef:
+        typeof transaction === 'string' ? transaction : transaction.reference,
     };
   }
 
@@ -170,15 +203,21 @@ export class NotchPayProvider implements PaymentProvider {
     const event = parsed.data;
     const base = { eventId: event.id, type: event.type };
 
+    /*
+     * Leur référence pour retrouver le paiement chez eux, la nôtre pour le retrouver chez
+     * nous. Les deux sont facultatives dans le schéma faute de pouvoir observer un vrai
+     * webhook : on prend ce qui vient, en préférant les champs que l'API rend vraiment.
+     */
+    const theirs = event.data.reference ?? event.data.id ?? '';
+    const ours = event.data.merchant_reference ?? event.data.trxref;
+
     switch (event.type) {
       case 'payment.complete':
         return {
           ...base,
           kind: 'payment_settled',
-          providerRef: event.data.id,
-          ...(event.data.reference !== undefined
-            ? { merchantRef: event.data.reference }
-            : {}),
+          providerRef: theirs,
+          ...(ours !== undefined ? { merchantRef: ours } : {}),
         };
 
       /*
@@ -194,10 +233,8 @@ export class NotchPayProvider implements PaymentProvider {
         return {
           ...base,
           kind: 'payment_failed',
-          providerRef: event.data.id,
-          ...(event.data.reference !== undefined
-            ? { merchantRef: event.data.reference }
-            : {}),
+          providerRef: theirs,
+          ...(ours !== undefined ? { merchantRef: ours } : {}),
         };
 
       default:

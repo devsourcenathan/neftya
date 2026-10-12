@@ -308,6 +308,8 @@ export interface PaymentsTable {
   organization_id: string;
   provider: PaymentProviderKey;
   provider_ref: string | null;
+  /** La page de paiement ouverte chez le fournisseur, le temps de la tentative. */
+  redirect_url: ColumnType<string | null, string | null | undefined, string | null>;
   plan_code: string;
   period: BillingPeriod;
   currency: string;

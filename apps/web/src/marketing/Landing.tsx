@@ -603,7 +603,14 @@ export function Landing() {
                   <div
                     className={`mt-4 text-4xl font-extrabold ${soonOf(plan.code, plan.offer) ? 'text-ink-variant' : ''}`}
                   >
-                    {priceLabel(plan.code, plan.offer, t)}
+                    {priceLabel(plan.code, plan.offer)}
+                    {/* La cadence une seule fois, après les deux devises : « 29,00 € /
+                        mois · 5 000 FCFA / mois » l'aurait dite deux fois. */}
+                    {plan.code !== 'free' && !soonOf(plan.code, plan.offer) && (
+                      <span className="text-base font-medium text-ink-variant">
+                        {t('landing.pricing.per_monthly')}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-4 text-sm text-ink-variant min-h-12">{plan.desc}</p>
                   {soonOf(plan.code, plan.offer) && (
@@ -672,31 +679,27 @@ function soonOf(code: string, offer: PublicPlan | undefined): boolean {
   return (offer?.prices.length ?? 0) === 0;
 }
 
-/** Le prix le plus bas de l'offre, formaté — ou de quoi tenir la place en attendant. */
-function priceLabel(
-  code: string,
-  offer: PublicPlan | undefined,
-  t: (key: string) => string,
-): string {
+/**
+ * Le prix mensuel, dans **chaque** devise où l'offre se vend.
+ *
+ * Il prenait « le moins cher », en comparant des montants de devises différentes : 2 900
+ * centimes d'euro contre 5 000 francs CFA. Le classement n'avait aucun sens — il tombait
+ * juste par accident des chiffres, et le jour où un prix bouge, la page aurait annoncé
+ * 5 000 F CFA à un visiteur français.
+ *
+ * Les deux sont donc affichés. Neftya se vend dans deux zones, et un artisan camerounais
+ * n'a pas à convertir de tête pour savoir si c'est pour lui.
+ */
+function priceLabel(code: string, offer: PublicPlan | undefined): string {
   if (code === 'free') return '0 €';
 
-  const cheapest = [...(offer?.prices ?? [])].sort(
-    (a, b) => a.amount_minor - b.amount_minor,
-  )[0];
+  const monthly = (offer?.prices ?? []).filter((price) => price.period === 'monthly');
 
-  /*
-   * Un tiret, pas « bientôt ».
-   *
-   * La pastille le dit déjà juste au-dessus : l'écrire une seconde fois à la place du
-   * prix donnait « BIENTÔT / Bientôt », deux fois le même mot sur deux lignes. Le tiret
-   * tient la place sans rien répéter.
-   */
-  if (!cheapest) return '—';
+  if (monthly.length === 0) return '—';
 
-  const amount = formatMoney({
-    amount: cheapest.amount_minor,
-    currency: cheapest.currency,
-  });
-
-  return `${amount}${t(`landing.pricing.per_${cheapest.period}`)}`;
+  return monthly
+    .map((price) =>
+      formatMoney({ amount: price.amount_minor, currency: price.currency }),
+    )
+    .join(' · ');
 }

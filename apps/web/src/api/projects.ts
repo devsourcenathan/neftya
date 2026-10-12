@@ -149,6 +149,13 @@ export const listExports = (api: ApiClient, id: string) =>
  * de changer.
  */
 export interface BillingResource {
+  /**
+   * La devise de l'organisation, celle de ses réglages. `null` si elle n'en a pas choisi.
+   *
+   * Elle sert à ne montrer que les prix qui la concernent : sans elle, chaque offre
+   * affichait quatre boutons dont la moitié s'adresse à l'autre continent.
+   */
+  currency: string | null;
   subscription: {
     /** L'offre **servie**. Elle retombe au gratuit quand la période est finie. */
     plan: string;
