@@ -369,13 +369,34 @@ export function registerBillingWebhook(
 
     try {
       event = provider.readEvent(request.body as Buffer, headers);
-    } catch {
+    } catch (error) {
       /*
-       * Une signature fausse reçoit 400, et rien d'autre.
+       * **Un refus laisse une trace, et c'est ce qui manquait.**
        *
-       * Pas de détail : il n'y a aucune raison d'apprendre à qui essaie si c'est
-       * l'empreinte ou l'horodatage qui a manqué. Et pas de 500 : un 5xx ferait réessayer
-       * le fournisseur indéfiniment pour une requête qui ne sera jamais valide.
+       * Un webhook refusé ne disait rien de plus qu'un 400 au fournisseur : de notre côté,
+       * rien. Quand un paiement est resté bloqué, il a été impossible de distinguer
+       * « jamais livré » de « livré et refusé » — et c'est précisément la question à
+       * laquelle il fallait répondre.
+       *
+       * Le corps part au journal, tronqué. Il vient du dehors et peut être volumineux ;
+       * mais sans lui on sait seulement qu'on a refusé, pas pourquoi.
+       */
+      request.log.warn(
+        {
+          provider: provider.key,
+          reason: error instanceof Error ? error.message : String(error),
+          signature_present:
+            headers['x-notch-signature'] !== undefined ||
+            headers['stripe-signature'] !== undefined,
+          body: (request.body as Buffer).toString('utf8').slice(0, 500),
+        },
+        'webhook.rejected',
+      );
+
+      /*
+       * La réponse, elle, ne dit rien : il n'y a aucune raison d'apprendre à qui essaie si
+       * c'est l'empreinte ou l'horodatage qui a manqué. Et pas de 500 — un 5xx ferait
+       * réessayer indéfiniment une requête qui ne sera jamais valide.
        */
       return reply.status(400).send({ success: false });
     }

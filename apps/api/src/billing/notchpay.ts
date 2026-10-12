@@ -69,7 +69,18 @@ const initialised = z.object({
  * lever une erreur de lecture là où il faut un refus propre.
  */
 const webhookEvent = z.object({
-  id: z.string().min(1),
+  /*
+   * **Facultatif, parce que leur documentation s'est déjà trompée sur tout le reste.**
+   *
+   * Elle annonçait un `transaction` qui est un objet, un `data.id` qui n'existe pas, et un
+   * `reference` qui désigne l'inverse de ce qu'elle dit. Exiger un champ qu'on n'a jamais
+   * observé, c'est risquer de refuser un webhook authentique — et un webhook refusé laisse
+   * un client payé sans accès, en silence.
+   *
+   * Absent, l'identifiant se dérive de la référence du paiement : il reste stable d'un
+   * rejeu à l'autre, ce qui est tout ce que la déduplication demande.
+   */
+  id: z.string().min(1).optional(),
   type: z.string().min(1),
   /*
    * **`reference` est la leur, `merchant_reference` est la nôtre.**
@@ -253,14 +264,18 @@ export class NotchPayProvider implements PaymentProvider {
     if (!parsed.success) throw new Error('Webhook NotchPay illisible.');
 
     const event = parsed.data;
-    const base = { eventId: event.id, type: event.type };
+    const theirRef = event.data.reference ?? event.data.id ?? '';
+    const base = {
+      eventId: event.id ?? `${event.type}:${theirRef}`,
+      type: event.type,
+    };
 
     /*
      * Leur référence pour retrouver le paiement chez eux, la nôtre pour le retrouver chez
      * nous. Les deux sont facultatives dans le schéma faute de pouvoir observer un vrai
      * webhook : on prend ce qui vient, en préférant les champs que l'API rend vraiment.
      */
-    const theirs = event.data.reference ?? event.data.id ?? '';
+    const theirs = theirRef;
     const ours = event.data.merchant_reference ?? event.data.trxref;
 
     switch (event.type) {

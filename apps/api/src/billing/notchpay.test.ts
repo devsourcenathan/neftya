@@ -275,6 +275,36 @@ describe('lire un webhook', () => {
     expect(provider.readEvent(body, headers)).toMatchObject({ kind: 'ignored' });
   });
 
+  it('accepte un webhook sans identifiant d’événement', () => {
+    /*
+     * **Le champ qu'on n'a jamais observé.**
+     *
+     * La documentation annonce un `id` au premier niveau ; elle s'est déjà trompée sur le
+     * type de `transaction`, sur l'existence de `data.id` et sur le sens de `reference`.
+     * L'exiger, c'était risquer de refuser un webhook authentique — et un webhook refusé
+     * laisse un client payé sans accès, en silence.
+     */
+    const { body, headers } = signed({
+      type: 'payment.complete',
+      data: {
+        reference: 'trx.test_sansid',
+        merchant_reference: 'org:pro:monthly:XAF',
+        status: 'complete',
+      },
+    });
+
+    const event = provider.readEvent(body, headers);
+
+    expect(event).toMatchObject({
+      kind: 'payment_settled',
+      merchantRef: 'org:pro:monthly:XAF',
+    });
+    // L'identifiant dérivé reste le même d'un rejeu à l'autre : c'est tout ce que la
+    // déduplication demande.
+    expect(event.eventId).toBe('payment.complete:trx.test_sansid');
+    expect(provider.readEvent(body, headers).eventId).toBe(event.eventId);
+  });
+
   it('refuse un corps signé mais illisible', () => {
     /*
      * Signé ne veut pas dire conforme. Un `data` absent ferait lever une erreur de lecture
