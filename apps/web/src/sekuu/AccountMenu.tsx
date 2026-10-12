@@ -91,7 +91,21 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
     <div ref={container} className="relative">
       {open && (
         <div
-          className="absolute bottom-full left-0 z-30 mb-2 w-64 rounded border border-outline-variant bg-surface p-2 shadow-lg lg:left-2 lg:w-[264px]"
+          /*
+           * Le panneau s'ouvre là où il y a de la place, et elle n'est pas la même selon
+           * l'écran.
+           *
+           * Il était écrit pour la barre latérale : vers le haut, depuis le bas de l'écran,
+           * et vers la droite. Dans la barre horizontale du téléphone, le déclencheur est
+           * en **haut à droite** — le panneau partait donc à `top: -206`, au-dessus du
+           * viewport, et débordait de deux cents pixels à droite. Il s'ouvrait bel et bien :
+           * simplement, personne ne pouvait le voir. « Le profil ne répond pas », disait le
+           * client, et il avait raison de le croire.
+           *
+           * Sous `lg` : vers le bas, aligné à droite, largeur bornée à l'écran moins les
+           * marges. Au-dessus : le comportement d'origine.
+           */
+          className="absolute top-full right-0 z-30 mt-2 w-[min(16rem,calc(100vw-2rem))] rounded border border-outline-variant bg-surface p-2 shadow-lg lg:top-auto lg:right-auto lg:bottom-full lg:left-2 lg:mt-0 lg:mb-2 lg:w-[264px]"
           role="menu"
         >
           <div className="border-b border-hairline px-3 pt-2 pb-3">

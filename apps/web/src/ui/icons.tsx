@@ -204,3 +204,10 @@ export const CloseIcon = (props: IconProps) => (
     <path d="M18 6 6 18M6 6l12 12" />
   </Svg>
 );
+
+/** Trois traits : le menu replié d'un téléphone. */
+export const MenuIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M4 6h16M4 12h16M4 18h16" />
+  </Svg>
+);

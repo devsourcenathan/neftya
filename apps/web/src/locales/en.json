@@ -531,7 +531,9 @@
       "pricing": "Pricing",
       "login": "Log in",
       "freeTrial": "Start for free",
-      "freeTrialShort": "Start free"
+      "freeTrialShort": "Start free",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "hero": {
       "title": "From inspiration to manufacturing plan,",

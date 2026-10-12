@@ -531,7 +531,9 @@
       "pricing": "Tarifs",
       "login": "Se connecter",
       "freeTrial": "Commencer gratuitement",
-      "freeTrialShort": "Commencer"
+      "freeTrialShort": "Commencer",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu"
     },
     "hero": {
       "title": "De l'inspiration au plan de fabrication,",

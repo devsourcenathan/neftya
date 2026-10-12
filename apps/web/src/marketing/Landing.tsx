@@ -7,17 +7,35 @@ import { getPublicPlans, type PublicPlan } from '../api/projects.js';
 import { rememberIntendedPlan } from '../billing/intent.js';
 import { AuthScreens } from '../sekuu/AuthScreens.js';
 import {
-  CubeIcon,
-  PlanIcon,
-  ToolsIcon,
   AssistantIcon,
   CheckIcon,
   CloseIcon,
+  CubeIcon,
+  MenuIcon,
+  PlanIcon,
+  ToolsIcon,
 } from '../ui/icons.js';
+
+/** Les sections de la page, et l'ordre dans lequel on les parcourt. */
+const SECTIONS = [
+  { href: '#pipeline', label: 'landing.nav.howItWorks' },
+  { href: '#audiences', label: 'landing.nav.forWho' },
+  { href: '#comparatif', label: 'landing.nav.why' },
+  { href: '#tarifs', label: 'landing.nav.pricing' },
+] as const;
 
 export function Landing() {
   const { t, i18n } = useTranslation();
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
+
+  /*
+   * Le menu des sections, sur téléphone.
+   *
+   * Les quatre liens étaient simplement masqués sous `md`, sans rien pour les atteindre :
+   * un visiteur sur téléphone ne pouvait aller ni aux tarifs, ni au comparatif, ni au
+   * reste. Ils n'étaient pas « moins importants sur petit écran » — ils étaient perdus.
+   */
+  const [sections, setSections] = useState(false);
 
   /*
    * Le catalogue, demandé au serveur — **avant tout retour anticipé**.
@@ -142,33 +160,33 @@ export function Landing() {
             {t('app.name')}
           </span>
         </div>
-        <div className="hidden items-center gap-8 md:flex text-sm font-medium">
-          <a
-            href="#pipeline"
-            className="text-ink-variant hover:text-ink transition-colors"
-          >
-            {t('landing.nav.howItWorks')}
-          </a>
-          <a
-            href="#audiences"
-            className="text-ink-variant hover:text-ink transition-colors"
-          >
-            {t('landing.nav.forWho')}
-          </a>
-          <a
-            href="#comparatif"
-            className="text-ink-variant hover:text-ink transition-colors"
-          >
-            {t('landing.nav.why')}
-          </a>
-          <a
-            href="#tarifs"
-            className="text-ink-variant hover:text-ink transition-colors"
-          >
-            {t('landing.nav.pricing')}
-          </a>
+        {/* Les mêmes liens, deux mises en forme : en ligne au-dessus de `md`, dans un
+            panneau déroulant en dessous. Écrire deux listes aurait garanti qu'un jour
+            l'une oublie une section que l'autre a. */}
+        <div className="hidden items-center gap-8 text-sm font-medium md:flex">
+          {SECTIONS.map((section) => (
+            <a
+              key={section.href}
+              href={section.href}
+              className="text-ink-variant transition-colors hover:text-ink"
+            >
+              {t(section.label)}
+            </a>
+          ))}
         </div>
         <div className="flex items-center gap-1 sm:gap-4">
+          {/* Sous `md`, le seul chemin vers les sections. Sans lui, les quatre liens
+              existaient dans le document et n'étaient atteignables par personne. */}
+          <button
+            type="button"
+            onClick={() => setSections(!sections)}
+            aria-expanded={sections}
+            aria-label={t(sections ? 'landing.nav.closeMenu' : 'landing.nav.openMenu')}
+            className="min-h-11 px-2 text-ink-variant transition-colors hover:text-ink md:hidden"
+          >
+            <span aria-hidden="true">{sections ? <CloseIcon /> : <MenuIcon />}</span>
+          </button>
+
           {/* Les trois contrôles font au moins 44 px de haut : c'est la taille d'un doigt, et
               un sélecteur de langue de 20 px se rate une fois sur deux. */}
           <button
@@ -198,6 +216,22 @@ export function Landing() {
             <span className="hidden sm:inline">{t('landing.nav.freeTrial')}</span>
           </button>
         </div>
+        {sections && (
+          /* Posé sous la barre et non en superposition : un panneau flottant sur un
+             téléphone cache la page qu'on vient chercher. */
+          <div className="absolute inset-x-0 top-full flex flex-col border-b border-hairline bg-surface shadow-lg md:hidden">
+            {SECTIONS.map((section) => (
+              <a
+                key={section.href}
+                href={section.href}
+                onClick={() => setSections(false)}
+                className="min-h-12 border-t border-hairline px-4 py-3 text-sm font-medium text-ink"
+              >
+                {t(section.label)}
+              </a>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -269,7 +303,10 @@ export function Landing() {
       </section>
 
       {/* Pipeline Section */}
-      <section id="pipeline" className="bg-surface-low py-24 px-6 relative">
+      <section
+        id="pipeline"
+        className="scroll-mt-20 bg-surface-low py-24 px-6 relative"
+      >
         <div className="blueprint-grid absolute inset-0 z-0 opacity-10 pointer-events-none" />
         <div className="mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16">
@@ -319,7 +356,7 @@ export function Landing() {
       </section>
 
       {/* Audiences Section */}
-      <section id="audiences" className="py-24 px-6 relative">
+      <section id="audiences" className="scroll-mt-20 py-24 px-6 relative">
         <div className="mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold md:text-4xl">
@@ -450,7 +487,7 @@ export function Landing() {
       {/* Differentiation Section */}
       <section
         id="comparatif"
-        className="bg-ink text-surface py-24 px-6 overflow-hidden"
+        className="scroll-mt-20 bg-ink text-surface py-24 px-6 overflow-hidden"
       >
         <div className="mx-auto max-w-4xl text-center relative z-10 perspective-1000">
           <h2 className="text-3xl font-bold md:text-4xl mb-8">
@@ -527,7 +564,7 @@ export function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section id="tarifs" className="py-24 px-6 bg-surface relative">
+      <section id="tarifs" className="scroll-mt-20 py-24 px-6 bg-surface relative">
         <div className="mx-auto max-w-5xl relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold md:text-4xl">
