@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { build, compartmentAt, type FurnitureInput } from '@neftya/engine';
-import { HANDLE_SIZE_MM, handleLayout } from './Handles.js';
+import { handleLayout, type HandleSpec } from './Handles.js';
 
 /**
  * La disposition des poignées.
@@ -12,6 +12,16 @@ import { HANDLE_SIZE_MM, handleLayout } from './Handles.js';
  *
  * C'est de l'arithmétique. Elle se vérifie sans rien afficher, et rien ne justifiait de
  * l'avoir laissée à l'œil.
+ *
+ * **Et ce test a menti.** Il comparait la distance entre deux centres à une seule valeur
+ * de 60 mm, comme si toutes les poignées étaient des cubes de 60 — alors qu'une barre de
+ * séparateur fait 240 mm de haut. Sur le « meuble bas et large », qui était déjà dans
+ * cette liste, le bouton de profondeur et la barre centrale sont distants de 96 mm et se
+ * chevauchent sur toute leur épaisseur : le test passait au vert pendant qu'un
+ * utilisateur voyait les deux superposés à l'écran.
+ *
+ * Il mesure désormais le recouvrement de volumes réels, avec l'encombrement que le rendu
+ * utilise. Une taille supposée est une mesure qu'on n'a pas faite.
  */
 
 const MODELS: [string, FurnitureInput][] = [
@@ -54,10 +64,32 @@ const MODELS: [string, FurnitureInput][] = [
       compartments: [{ shelves: 0 }, { shelves: 0 }, { shelves: 0 }, { shelves: 0 }],
     },
   ],
+  [
+    /*
+     * **Le cas signalé.** Un banc au plus bas de ce que le produit accepte, avec un
+     * nombre pair de compartiments — donc un séparateur exactement à mi-largeur, là où
+     * se posait le bouton de profondeur.
+     */
+    'banc, à la hauteur minimale',
+    {
+      dimensions: { widthMm: 2400, heightMm: 200, depthMm: 450 },
+      compartments: [{ shelves: 0 }, { shelves: 0 }],
+    },
+  ],
 ];
 
-const distance = (a: readonly number[], b: readonly number[]) =>
-  Math.hypot(...a.map((value, axis) => value - (b[axis] as number)));
+const name = (handle: HandleSpec) =>
+  handle.divider === null
+    ? (handle.dimension as string)
+    : `séparateur ${handle.divider}`;
+
+/** Deux volumes alignés sur les axes se touchent-ils ? Sur les trois axes à la fois. */
+const overlaps = (a: HandleSpec, b: HandleSpec) =>
+  [0, 1, 2].every((axis) => {
+    const gap = Math.abs((a.atMm[axis] as number) - (b.atMm[axis] as number));
+
+    return gap < ((a.sizeMm[axis] as number) + (b.sizeMm[axis] as number)) / 2;
+  });
 
 describe('deux poignées ne se recouvrent jamais', () => {
   it.each(MODELS)('%s', (_name, input) => {
@@ -66,23 +98,35 @@ describe('deux poignées ne se recouvrent jamais', () => {
 
     for (let i = 0; i < handles.length; i += 1) {
       for (let j = i + 1; j < handles.length; j += 1) {
-        const gap = distance(
-          handles[i]?.atMm as number[],
-          handles[j]?.atMm as number[],
-        );
+        const a = handles[i] as HandleSpec;
+        const b = handles[j] as HandleSpec;
 
-        // Deux poignées plus proches que leur propre taille se lisent comme une seule.
-        if (gap < HANDLE_SIZE_MM) {
-          collisions.push(
-            `${handles[i]?.divider ?? handles[i]?.dimension} / ${
-              handles[j]?.divider ?? handles[j]?.dimension
-            } à ${Math.round(gap)} mm`,
-          );
-        }
+        // Deux poignées qui se recouvrent se lisent comme une seule, et celle qu'on
+        // saisit n'est pas celle qu'on croit.
+        if (overlaps(a, b)) collisions.push(`${name(a)} / ${name(b)}`);
       }
     }
 
     expect(collisions).toEqual([]);
+  });
+});
+
+describe('une barre de séparateur tient dans son meuble', () => {
+  it.each(MODELS)('%s', (_name, input) => {
+    /*
+     * Une barre de 240 mm sur un meuble de 200 mm dépassait en haut et en bas.
+     *
+     * Ce n'est pas qu'une question d'allure : une commande qui sort du caisson se lit
+     * comme une pièce du meuble, et on cherche à la visser au lieu de la tirer.
+     */
+    const { heightMm } = input.dimensions;
+
+    for (const handle of handleLayout(build(input))) {
+      if (handle.divider === null) continue;
+
+      expect(handle.atMm[1] - handle.sizeMm[1] / 2).toBeGreaterThanOrEqual(0);
+      expect(handle.atMm[1] + handle.sizeMm[1] / 2).toBeLessThanOrEqual(heightMm);
+    }
   });
 });
 

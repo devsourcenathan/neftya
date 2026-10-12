@@ -43,14 +43,14 @@ const OUTSET_MM = 40;
 const FRONT_MM = 0;
 
 /**
- * La hauteur de la poignée de profondeur, en part de la hauteur du meuble.
+ * La longueur d'une barre de séparateur, bornée à la hauteur du meuble.
  *
- * **Pas au milieu.** Sur une bibliothèque à deux compartiments, le séparateur est au
- * centre : sa poignée et celle de la profondeur tombaient au même point, au millimètre
- * près. Deux poignées empilées se lisent comme une seule, et celle qu'on saisit n'est pas
- * celle qu'on croit.
+ * **Une barre de 240 mm sur un meuble de 200 mm dépassait en haut et en bas.** Elle était
+ * fixe, écrite pour une bibliothèque ; sur un meuble bas elle couvrait toute la façade et
+ * débordait du caisson, ce qui se lit comme une pièce et non comme une commande.
  */
-const DEPTH_HANDLE_HEIGHT = 0.18;
+const BAR_MM = HANDLE_MM * 4;
+const BAR_MAX_SHARE = 0.6;
 
 /** Le monde est en mètres ; le modèle en millimètres. */
 const MM = 0.001;
@@ -100,6 +100,18 @@ export interface HandleSpec {
   axis: Axis;
   dimension?: 'widthMm' | 'heightMm' | 'depthMm';
   atMm: [number, number, number];
+  /**
+   * L'encombrement réel, et non une taille supposée.
+   *
+   * **C'est ce qui manquait, et c'est ce qui a laissé passer un recouvrement.** La taille
+   * vivait dans le composant de rendu ; le test de non-recouvrement, lui, comparait des
+   * distances entre centres à une seule valeur de 60 mm, comme si toutes les poignées
+   * étaient des cubes de 60. Une barre de séparateur fait 240 mm de haut : deux poignées
+   * distantes de 96 mm passaient donc le test en se chevauchant franchement à l'écran.
+   *
+   * Une seule source : ce que le test mesure est exactement ce que le rendu dessine.
+   */
+  sizeMm: [number, number, number];
 }
 
 /**
@@ -114,6 +126,10 @@ export interface HandleSpec {
 export function handleLayout(furniture: Furniture): HandleSpec[] {
   const { widthMm, heightMm, depthMm } = furniture.input.dimensions;
 
+  const knob: [number, number, number] = [HANDLE_MM, HANDLE_MM, HANDLE_MM];
+  const barLengthMm = Math.min(BAR_MM, heightMm * BAR_MAX_SHARE);
+  const bar: [number, number, number] = [HANDLE_MM, barLengthMm, HANDLE_MM * 0.6];
+
   return [
     // Une poignée par cote, en dehors de la face qu'elle repousse.
     {
@@ -121,30 +137,45 @@ export function handleLayout(furniture: Furniture): HandleSpec[] {
       axis: 'x',
       dimension: 'widthMm',
       atMm: [widthMm + OUTSET_MM, heightMm / 2, depthMm / 2],
+      sizeMm: knob,
     },
     {
       divider: null,
       axis: 'y',
       dimension: 'heightMm',
       atMm: [widthMm / 2, heightMm + OUTSET_MM, depthMm / 2],
+      sizeMm: knob,
     },
+    /*
+     * La profondeur passe **sous** le meuble, et non sur sa façade.
+     *
+     * Elle était à mi-largeur et à 18 % de la hauteur, pour éviter le séparateur central
+     * d'une bibliothèque à deux compartiments. Ce décalage ne tient que sur un meuble
+     * haut : sur un meuble bas — un banc, un buffet — la barre du séparateur, longue de
+     * 240 mm, descend jusqu'en bas de la façade et le bouton de profondeur se pose
+     * dessus. Mi-largeur est précisément l'abscisse d'un séparateur dès que le nombre de
+     * compartiments est pair.
+     *
+     * Hors du caisson, elle rejoint la famille : la largeur sort à droite, la hauteur en
+     * haut, la profondeur en bas. Aucun séparateur ne descend sous le meuble, quelle que
+     * soit sa taille — c'est une position sûre par construction, pas par arithmétique.
+     */
     {
       divider: null,
       axis: 'z',
       dimension: 'depthMm',
-      atMm: [widthMm / 2, heightMm * DEPTH_HANDLE_HEIGHT, FRONT_MM - OUTSET_MM],
+      atMm: [widthMm / 2, -OUTSET_MM, FRONT_MM - OUTSET_MM],
+      sizeMm: knob,
     },
     // Les séparateurs restent à mi-hauteur, là où on les cherche.
     ...dividerCentres(furniture).map((xMm, index): HandleSpec => ({
       divider: index,
       axis: 'x',
       atMm: [xMm, heightMm / 2, FRONT_MM - OUTSET_MM],
+      sizeMm: bar,
     })),
   ];
 }
-
-/** L'encombrement d'une poignée : deux ne doivent jamais se recouvrir. */
-export const HANDLE_SIZE_MM = HANDLE_MM;
 
 export function Handles({
   furniture,
@@ -163,6 +194,7 @@ export function Handles({
           key={`${handle.divider ?? handle.dimension}-${index}`}
           axis={handle.axis}
           atMm={handle.atMm}
+          sizeMm={handle.sizeMm}
           {...(handle.divider === null ? {} : { shape: 'bar' as const })}
           {...(handle.divider === null
             ? {}
@@ -198,12 +230,15 @@ function dividerCentres(furniture: Furniture): number[] {
 function DragHandle({
   axis,
   atMm,
+  sizeMm,
   onDrag,
   onStart,
   shape = 'knob',
 }: {
   axis: Axis;
   atMm: readonly [number, number, number];
+  /** L'encombrement décidé par `handleLayout` — la même valeur que le test mesure. */
+  sizeMm: readonly [number, number, number];
   /** Le déplacement **depuis la saisie**, en millimètres le long de l'axe. */
   onDrag: (deltaMm: number) => void;
   onStart?: () => void;
@@ -266,10 +301,7 @@ function DragHandle({
     document.body.style.cursor = '';
   };
 
-  const size: [number, number, number] =
-    shape === 'bar'
-      ? [HANDLE_MM * MM, HANDLE_MM * 4 * MM, HANDLE_MM * 0.6 * MM]
-      : [HANDLE_MM * MM, HANDLE_MM * MM, HANDLE_MM * MM];
+  const size = sizeMm.map((value) => value * MM) as [number, number, number];
 
   return (
     <mesh
@@ -296,7 +328,7 @@ function DragHandle({
       {shape === 'bar' ? (
         <boxGeometry args={size} />
       ) : (
-        <sphereGeometry args={[(HANDLE_MM / 2) * MM, 16, 12]} />
+        <sphereGeometry args={[size[0] / 2, 16, 12]} />
       )}
       {/* Devant le meuble quoi qu'il arrive : une poignée cachée derrière la pièce qu'elle
           règle ne se saisit pas. */}
