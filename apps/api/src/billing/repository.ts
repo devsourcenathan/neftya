@@ -90,6 +90,23 @@ export class BillingRepository {
     return match?.amountMinor ?? null;
   }
 
+  /**
+   * L'identifiant du client chez Stripe, s'il en a un.
+   *
+   * Lu ici plutôt que dans le dépôt d'authentification : c'est une donnée de facturation
+   * posée par un webhook, et la seule raison de la lire est d'ouvrir un portail de
+   * paiement.
+   */
+  async stripeCustomerOf(organizationId: string): Promise<string | null> {
+    const row = await this.db
+      .selectFrom('organizations')
+      .select('stripe_customer_id')
+      .where('id', '=', organizationId)
+      .executeTakeFirst();
+
+    return row?.stripe_customer_id ?? null;
+  }
+
   async subscriptionOf(organizationId: string): Promise<SubscriptionState | undefined> {
     const row = await this.db
       .selectFrom('subscriptions')

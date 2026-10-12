@@ -279,6 +279,24 @@ quelqu'un s'en serve.
 | `OPENAI_MODEL` | `gpt-4o-mini` | `gpt-4o-mini` |
 | `OPENAI_REASONING_EFFORT` | `minimal` | champ omis |
 | `NEFTYA_SMTP_HOST`, `_USER`, `_PASSWORD` | facultatives | l'envoi de devis répond `503` |
+| `NEFTYA_APP_URL` | l'adresse du front | le retour de paiement tombe sur `localhost` |
+| `STRIPE_SECRET_KEY` | `sk_live_…` | aucun paiement par carte n'est proposé |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` | **refus de démarrer** si la clé est posée |
+| `NEFTYA_PRICE_<OFFRE>_<DEVISE>_<PÉRIODE>` | entier, unité mineure | l'offre ne se vend pas dans cette combinaison |
+
+**Stripe va par paire.** Avec la clé seule, un paiement est encaissé sans que rien ne
+l'apprenne : le client est débité et reste sans accès. Le serveur refuse donc de démarrer.
+Absentes toutes les deux, l'API sert le gratuit et ne propose rien — c'est le bon défaut
+pour une installation qui ne vend pas.
+
+**Le webhook se déclare chez Stripe** sur `https://<service>.onrender.com/v1/billing/webhooks/stripe`,
+avec trois événements : `checkout.session.completed`, `customer.subscription.updated` et
+`customer.subscription.deleted`. Le secret qu'il affiche à la création est
+`STRIPE_WEBHOOK_SECRET` — ce n'est pas la clé d'API.
+
+**Les prix sont en unité mineure, sans séparateur** : 29 € s'écrit `2900`, 19 000 F CFA
+s'écrit `19000`. Le serveur refuse une valeur sous 100 — écrire `29` au lieu de `2900`
+encaisserait vingt-neuf centimes par mois, et rien ne le montrerait avant le relevé.
 
 **Une origine n'a pas de chemin.** `https://neftya.sekuu.com`, jamais
 `https://neftya.sekuu.com/` : c'est ce qu'un navigateur envoie dans l'en-tête `Origin`. La

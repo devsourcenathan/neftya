@@ -15,6 +15,8 @@ import type { FileStore, Uploader } from '../storage/file-store.js';
 import { TokenVerifier } from '../sekuu/token-verifier.js';
 import { LocalFileStore } from '../storage/local-store.js';
 import type { SekuuLimits, SekuuRole } from '../sekuu/sekuu-context.js';
+import { loadPrices } from '../billing/prices.js';
+import type { PaymentProvider } from '../billing/provider.js';
 
 /**
  * Le banc d'essai de l'API.
@@ -99,6 +101,18 @@ export interface HarnessOptions {
    * le seraient pas, et chaque test d'auth devrait le réclamer.
    */
   jwtSecret?: string;
+  /** Les encaisseurs. Aucun par défaut : une installation sans clé ne vend rien. */
+  paymentProviders?: readonly PaymentProvider[];
+  /** L'adresse de retour après paiement. */
+  appUrl?: string;
+  /**
+   * Les tarifs, comme l'environnement les donnerait.
+   *
+   * Un objet plutôt qu'une liste déjà analysée : le test éprouve ainsi la lecture des
+   * variables en même temps que le reste, et une faute de format y tombe comme en
+   * production.
+   */
+  env?: Record<string, string>;
 }
 
 /**
@@ -179,6 +193,11 @@ export async function createHarness(
     ...(storage ? { storage } : {}),
     ...(files ? { files } : {}),
     ...(options.mailer ? { mailer: options.mailer } : {}),
+    ...(options.paymentProviders ? { paymentProviders: options.paymentProviders } : {}),
+    ...(options.appUrl ? { appUrl: options.appUrl } : {}),
+    ...(options.env
+      ? { prices: loadPrices(options.env, ['pro', 'professional']) }
+      : {}),
     jwtSecret: options.jwtSecret ?? 'secret-de-test-32-caracteres-minimum',
     ...(options.withoutSekuu
       ? {}

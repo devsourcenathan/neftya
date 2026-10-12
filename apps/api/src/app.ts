@@ -10,6 +10,11 @@ import { ProjectRepository } from './projects/repository.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { SettingsRepository } from './settings/repository.js';
 import { registerSettingsRoutes } from './settings/routes.js';
+import { registerBillingRoutes, registerBillingWebhook } from './billing/routes.js';
+import { BillingRepository } from './billing/repository.js';
+import { BillingService } from './billing/service.js';
+import { loadPrices, type PriceEntry } from './billing/prices.js';
+import type { PaymentProvider } from './billing/provider.js';
 import { TemplateRepository } from './templates/repository.js';
 import { registerTemplateRoutes } from './templates/routes.js';
 import {
@@ -66,6 +71,23 @@ export interface AppDependencies {
    * configuré. Une interprétation n'a pas de version locale.
    */
   ai?: AiService;
+  /**
+   * Les encaisseurs configurés.
+   *
+   * Vide par défaut : une installation sans clé de paiement sert le gratuit et ne propose
+   * rien d'autre. Exiger Stripe pour démarrer aurait rendu la facturation obligatoire à
+   * qui n'en veut pas — la même erreur que les trois variables Sekuu.
+   */
+  paymentProviders?: readonly PaymentProvider[];
+  /** L'adresse publique de l'interface, où le client revient après avoir payé. */
+  appUrl?: string;
+  /**
+   * Les tarifs. Lus de l'environnement du processus par défaut.
+   *
+   * Injectables pour les tests : lire `process.env` les rendrait verts chez qui a posé les
+   * variables et rouges en intégration continue, sans qu'on sache lequel des deux a raison.
+   */
+  prices?: readonly PriceEntry[];
   /** Injectable : les tests lisent ce qui a été journalisé au lieu de le voir passer. */
   logSink?: LogSink;
   /**
@@ -162,6 +184,27 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     });
   }
 
+  /*
+   * La facturation, posée avant le contexte authentifié.
+   *
+   * Le webhook vient du fournisseur : il s'authentifie par une signature, pas par un
+   * jeton, et il doit lire son corps en octets bruts. Il vit donc dans sa propre portée
+   * Fastify — le lecteur de contenu qu'il déclare n'y déborde pas sur les autres routes,
+   * qui continuent de recevoir du JSON analysé.
+   */
+  const providers = dependencies.paymentProviders ?? [];
+  const billing = new BillingRepository(
+    dependencies.db,
+    dependencies.prices ?? loadPrices(process.env, ['pro', 'professional']),
+  );
+  const billingService = new BillingService(dependencies.db, billing);
+
+  if (providers.length > 0) {
+    void app.register(async (webhookScope) => {
+      registerBillingWebhook(webhookScope, { service: billingService, providers });
+    });
+  }
+
   // Toutes les routes métier passent par l'authentification. Elle est posée une fois, sur
   // un contexte encapsulé, plutôt que répétée route par route : une garde qu'on doit
   // penser à écrire est une garde qu'on finit par oublier une fois.
@@ -176,6 +219,13 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
     registerTemplateRoutes(authenticated, new TemplateRepository(dependencies.db));
     registerAssistantRoutes(authenticated, dependencies.ai);
     registerSettingsRoutes(authenticated, settings);
+    registerBillingRoutes(authenticated, {
+      billing,
+      service: billingService,
+      auth: authRepository,
+      providers,
+      appUrl: dependencies.appUrl ?? 'http://localhost:5174',
+    });
     if (jwtSecret) {
       registerProtectedAuthRoutes(authenticated, authRepository, { jwtSecret }, quotas);
     }

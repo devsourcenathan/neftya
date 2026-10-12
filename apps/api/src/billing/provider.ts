@@ -61,8 +61,17 @@ export type ProviderEvent =
       subscriptionRef?: string;
       /** L'identifiant client chez le fournisseur, à retenir pour la suite. */
       customerRef?: string;
-      /** La fin de période, quand le fournisseur la décide lui-même. */
-      currentPeriodEnd?: Date;
+      /*
+       * **Pas d'échéance ici, et c'est voulu.**
+       *
+       * Aucun encaissement n'en porte une : une session Stripe réglée n'a pas de période,
+       * et un paiement mobile money n'en connaît aucune. L'échéance est donc calculée par
+       * nous à l'encaissement — puis, chez Stripe, corrigée dans la seconde par le
+       * `customer.subscription.updated` qui suit, lequel fait autorité.
+       *
+       * Un champ optionnel qu'aucun fournisseur ne remplit aurait été une branche que
+       * rien n'exerce, et dont on aurait cru qu'elle marchait.
+       */
     }
   /** Un encaissement a échoué, été annulé ou a expiré. */
   | { kind: 'payment_failed'; eventId: string; type: string; providerRef: string }

@@ -6,6 +6,7 @@ import { SmtpMailer } from './notify/mailer.js';
 import { SekuuStorage } from './sekuu/storage.js';
 import { LocalFileStore } from './storage/local-store.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
+import { StripeProvider } from './billing/stripe.js';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -50,12 +51,40 @@ if (!jwtSecret || jwtSecret.length < 32) {
   );
 }
 
+/*
+ * Stripe est facultatif.
+ *
+ * Sans clé, aucun encaisseur n'est enregistré : l'API sert le gratuit et ne propose rien
+ * d'autre. Les deux variables vont ensemble — une clé sans secret de webhook donnerait un
+ * paiement qu'on encaisse et qu'on n'apprend jamais, c'est-à-dire un client débité sans
+ * accès. Mieux vaut refuser de démarrer que livrer cette moitié-là.
+ */
+const stripeKey = process.env['STRIPE_SECRET_KEY'];
+const stripeWebhookSecret = process.env['STRIPE_WEBHOOK_SECRET'];
+
+if ((stripeKey === undefined) !== (stripeWebhookSecret === undefined)) {
+  throw new Error(
+    'STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET vont ensemble : avec la première seule, ' +
+      'un paiement est encaissé sans que rien ne l’apprenne — le client est débité et ' +
+      'reste sans accès.',
+  );
+}
+
+const paymentProviders =
+  stripeKey && stripeWebhookSecret
+    ? [new StripeProvider({ secretKey: stripeKey, webhookSecret: stripeWebhookSecret })]
+    : [];
+
 // Sans SMTP, l'envoi de devis répond 503 — comme l'assistant sans modèle.
 // Un devis non envoyé n'est pas un devis perdu : la route ne fait rien sans mailer.
 const smtpHost = process.env['NEFTYA_SMTP_HOST'];
 
 const app = buildApp({
   db,
+  paymentProviders,
+  // Où le client revient après avoir payé. Absente, le retour tomberait sur le serveur de
+  // développement — visible tout de suite en local, invisible en production.
+  appUrl: process.env['NEFTYA_APP_URL'] ?? 'http://localhost:5174',
   // Séparées par des virgules. Vide : aucune origine navigateur n'est admise, ce qui est
   // le bon défaut — une liste oubliée doit empêcher l'interface de fonctionner, pas
   // ouvrir l'API à tout le monde.
