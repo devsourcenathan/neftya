@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import Stripe from 'stripe';
+import { createHmac } from 'node:crypto';
 import { createHarness, type Harness } from '../test-support/harness.js';
 import { StripeProvider } from './stripe.js';
+import { NotchPayProvider } from './notchpay.js';
+import { BillingService } from './service.js';
+import { BillingRepository } from './repository.js';
+import { loadPrices } from './prices.js';
 import type { CheckoutRequest, CheckoutStarted } from './provider.js';
 
 /**
@@ -41,6 +46,38 @@ class FakeStripeProvider extends StripeProvider {
     });
   }
 }
+
+const NOTCH_HASH = 'hash_de_test_pour_les_routes_notchpay';
+
+/**
+ * Les corps reçus par le faux NotchPay.
+ *
+ * Le corps envoyé, pas la demande interne : c'est `reference` qu'il porte, et c'est cette
+ * valeur-là que son webhook nous rendra.
+ */
+const notchpayRequests: { reference?: string }[] = [];
+
+/** Un NotchPay dont le réseau est remplacé, mais dont la signature est réelle. */
+const notchpay = new NotchPayProvider(
+  {
+    publicKey: 'pk_test_x',
+    webhookHash: NOTCH_HASH,
+    baseUrl: 'https://api.notchpay.test',
+  },
+  ((_url: string, init: RequestInit) => {
+    notchpayRequests.push(JSON.parse(init.body as string) as { reference?: string });
+
+    return Promise.resolve({
+      ok: true,
+      status: 201,
+      json: () =>
+        Promise.resolve({
+          transaction: 'trx_mobile',
+          authorization_url: 'https://pay.notchpay.test/pay_mobile',
+        }),
+    });
+  }) as unknown as typeof fetch,
+);
 
 const provider = new FakeStripeProvider({
   secretKey: 'sk_test_x',
@@ -434,5 +471,151 @@ describe('le webhook', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().data.applied).toBe(false);
+  });
+});
+
+/**
+ * Le mobile money, de bout en bout.
+ *
+ * NotchPay n'a pas d'abonnement : c'est nous qui posons l'échéance à l'encaissement, et
+ * c'est le balayage qui coupe quand elle passe. Rien ne notifie un non-renouvellement —
+ * un non-événement ne se notifie pas — donc ce chemin est le seul qui referme l'accès.
+ */
+describe('NotchPay, en prépayé', () => {
+  it('ouvre l’accès au webhook, puis le referme à l’échéance', async () => {
+    const mobile = await createHarness('test_billing_mobile', {
+      paymentProviders: [notchpay],
+      appUrl: 'https://neftya.test',
+      env: { NEFTYA_PRICE_PRO_XAF_MONTHLY: '19000' },
+    });
+
+    try {
+      const signUpResponse = await mobile.app.inject({
+        method: 'POST',
+        url: '/v1/auth/register',
+        payload: {
+          email: 'mobile@atelier.test',
+          password: PASSWORD,
+          firstName: 'Essai',
+          lastName: 'Mobile',
+          organizationName: 'Atelier Mobile',
+        },
+      });
+
+      const { accessToken } = signUpResponse.json().data as { accessToken: string };
+      const headers = { authorization: `Bearer ${accessToken}` };
+
+      const checkout = await mobile.app.inject({
+        method: 'POST',
+        url: '/v1/billing/checkout',
+        headers,
+        payload: { plan: 'pro', period: 'monthly', currency: 'XAF' },
+      });
+
+      expect(checkout.statusCode).toBe(200);
+      expect(checkout.json().data.redirect_url).toContain('pay.notchpay.test');
+
+      /*
+       * Le webhook se relie par **notre** référence, pas par celle de NotchPay.
+       *
+       * Son identifiant à lui — `pay_...` — n'a jamais été écrit chez nous : la réponse
+       * d'initialisation rend `transaction`, qui est autre chose. Se fier à lui ferait
+       * échouer la correspondance, et le client resterait payé sans service.
+       */
+      const body = JSON.stringify({
+        id: 'evt_mobile_1',
+        type: 'payment.complete',
+        data: {
+          id: 'pay_jamais_vu',
+          reference: notchpayRequests[0]?.reference,
+          status: 'complete',
+        },
+      });
+
+      const webhookResponse = await mobile.app.inject({
+        method: 'POST',
+        url: '/v1/billing/webhooks/notchpay',
+        headers: {
+          'content-type': 'application/json',
+          'x-notch-signature': createHmac('sha256', NOTCH_HASH)
+            .update(Buffer.from(body, 'utf8'))
+            .digest('hex'),
+        },
+        payload: body,
+      });
+
+      expect(webhookResponse.json().data.applied).toBe(true);
+
+      const state = await mobile.app.inject({
+        method: 'GET',
+        url: '/v1/billing',
+        headers,
+      });
+
+      expect(state.json().data.subscription).toMatchObject({
+        plan: 'pro',
+        period: 'monthly',
+      });
+
+      /*
+       * L'échéance est reculée dans le passé, et le balayage passe.
+       *
+       * C'est la situation réelle d'un client qui ne renouvelle pas : aucun webhook
+       * n'arrive jamais, et sans ce passage il garderait son accès indéfiniment.
+       */
+      await mobile.db
+        .updateTable('subscriptions')
+        .set({ current_period_end: new Date('2020-01-01T00:00:00.000Z') })
+        .where('period', '<>', 'free')
+        .execute();
+
+      const service = new BillingService(
+        mobile.db,
+        new BillingRepository(mobile.db, loadPrices({}, ['pro'])),
+      );
+
+      expect(await service.expire()).toBeGreaterThan(0);
+
+      const after = await mobile.app.inject({
+        method: 'GET',
+        url: '/v1/billing',
+        headers,
+      });
+
+      expect(after.json().data.subscription.plan).toBe('free');
+      expect(after.json().data.quotas.projects_max).toBe(3);
+
+      /*
+       * **Et le plafond mord vraiment.**
+       *
+       * `/v1/billing` calcule ses chiffres depuis l'abonnement ; les projets lisent
+       * `organization_quotas`. Retirer l'écriture de cette table ne faisait tomber aucune
+       * assertion ci-dessus : la page annonçait « trois projets » pendant que le produit
+       * en laissait créer autant qu'on voulait. Un abonnement expiré aurait continué de
+       * servir l'offre payante — c'est l'erreur qui coûte de l'argent, et elle est muette.
+       */
+      const model = {
+        dimensions: { widthMm: 1200, heightMm: 900, depthMm: 450 },
+        compartments: [{ shelves: 1, drawers: 0 }],
+        material: 'mdf',
+        hasBack: true,
+      };
+
+      const createProject = (name: string) =>
+        mobile.app.inject({
+          method: 'POST',
+          url: '/v1/projects',
+          headers,
+          payload: { name, model },
+        });
+
+      for (const name of ['un', 'deux', 'trois']) {
+        expect((await createProject(name)).statusCode).toBe(201);
+      }
+
+      expect((await createProject('quatre')).statusCode).toBe(409);
+    } finally {
+      await mobile.close();
+    }
   });
 });

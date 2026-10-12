@@ -57,6 +57,15 @@ export type ProviderEvent =
       eventId: string;
       type: string;
       providerRef: string;
+      /**
+       * Notre propre identifiant, quand le fournisseur nous le rend.
+       *
+       * NotchPay renvoie dans `data.reference` ce qu'on lui a donné à l'initialisation.
+       * C'est la correspondance la plus sûre : son webhook peut arriver **avant** que
+       * notre requête d'initialisation ne soit revenue, donc avant qu'on ait pu écrire
+       * son identifiant à lui. Chercher par le nôtre ne dépend d'aucun ordre d'arrivée.
+       */
+      merchantRef?: string;
       /** L'abonnement chez le fournisseur, quand il en tient un. */
       subscriptionRef?: string;
       /** L'identifiant client chez le fournisseur, à retenir pour la suite. */
@@ -74,7 +83,13 @@ export type ProviderEvent =
        */
     }
   /** Un encaissement a échoué, été annulé ou a expiré. */
-  | { kind: 'payment_failed'; eventId: string; type: string; providerRef: string }
+  | {
+      kind: 'payment_failed';
+      eventId: string;
+      type: string;
+      providerRef: string;
+      merchantRef?: string;
+    }
   /** L'abonnement du fournisseur a changé : échéance repoussée, résiliation, impayé. */
   | {
       kind: 'subscription_changed';

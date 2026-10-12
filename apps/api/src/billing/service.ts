@@ -126,7 +126,11 @@ export class BillingService {
     event: Extract<ProviderEvent, { kind: 'payment_settled' }>,
     now: Date,
   ): Promise<ApplyResult> {
-    const payment = await this.paymentOf(provider.key, event.providerRef);
+    const payment = await this.paymentOf(
+      provider.key,
+      event.providerRef,
+      event.merchantRef,
+    );
 
     /*
      * Un encaissement sans ligne au registre est un incident, pas un cas d'usage.
@@ -299,10 +303,36 @@ export class BillingService {
     return count;
   }
 
-  private async paymentOf(provider: PaymentProviderKey, providerRef: string) {
+  /**
+   * Retrouver la ligne que l'événement concerne.
+   *
+   * **Par notre référence d'abord.** NotchPay rend dans `data.reference` ce qu'on lui a
+   * donné, et son webhook peut arriver avant que notre requête d'initialisation ne soit
+   * revenue — donc avant qu'on ait pu écrire son identifiant à lui. Chercher par le nôtre
+   * ne dépend d'aucun ordre d'arrivée ; Stripe, qui n'en rend pas, tombe sur le second
+   * chemin.
+   */
+  private async paymentOf(
+    provider: PaymentProviderKey,
+    providerRef: string,
+    merchantRef?: string,
+  ) {
+    const columns = ['id', 'organization_id', 'plan_code', 'period'] as const;
+
+    if (merchantRef !== undefined) {
+      const byOurs = await this.db
+        .selectFrom('payments')
+        .select(columns)
+        .where('provider', '=', provider)
+        .where('idempotency_key', '=', merchantRef)
+        .executeTakeFirst();
+
+      if (byOurs) return byOurs;
+    }
+
     return this.db
       .selectFrom('payments')
-      .select(['id', 'organization_id', 'plan_code', 'period'])
+      .select(columns)
       .where('provider', '=', provider)
       .where('provider_ref', '=', providerRef)
       .executeTakeFirst();

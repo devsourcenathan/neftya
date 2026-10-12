@@ -7,6 +7,11 @@ import { SekuuStorage } from './sekuu/storage.js';
 import { LocalFileStore } from './storage/local-store.js';
 import { TokenVerifier } from './sekuu/token-verifier.js';
 import { StripeProvider } from './billing/stripe.js';
+import { NotchPayProvider } from './billing/notchpay.js';
+import { startExpirySweeper } from './billing/sweeper.js';
+import { BillingService } from './billing/service.js';
+import { BillingRepository } from './billing/repository.js';
+import { loadPrices } from './billing/prices.js';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -70,10 +75,45 @@ if ((stripeKey === undefined) !== (stripeWebhookSecret === undefined)) {
   );
 }
 
-const paymentProviders =
-  stripeKey && stripeWebhookSecret
+/*
+ * NotchPay est facultatif, et ses deux variables vont ensemble pour la même raison que
+ * celles de Stripe : encaisser sans rien apprendre, c'est un client débité sans accès.
+ *
+ * Le « Hash Key » n'est ni la clé publique ni la clé privée — c'est un troisième secret,
+ * propre au point de terminaison. Les confondre donne une signature qui ne vaut jamais, et
+ * un webhook refusé dont rien ne dit pourquoi.
+ */
+const notchPublicKey = process.env['NOTCHPAY_PUBLIC_KEY'];
+const notchWebhookHash = process.env['NOTCHPAY_WEBHOOK_HASH'];
+
+if ((notchPublicKey === undefined) !== (notchWebhookHash === undefined)) {
+  throw new Error(
+    'NOTCHPAY_PUBLIC_KEY et NOTCHPAY_WEBHOOK_HASH vont ensemble : avec la première ' +
+      'seule, un paiement mobile money est encaissé sans que rien ne l’apprenne.',
+  );
+}
+
+/*
+ * Les tarifs, lus une fois pour toutes.
+ *
+ * Partagés entre l'application et le balayeur : les relire deux fois ouvrirait la porte à
+ * deux catalogues de prix dans le même processus.
+ */
+const prices = loadPrices(process.env, ['pro', 'professional']);
+
+const paymentProviders = [
+  ...(stripeKey && stripeWebhookSecret
     ? [new StripeProvider({ secretKey: stripeKey, webhookSecret: stripeWebhookSecret })]
-    : [];
+    : []),
+  ...(notchPublicKey && notchWebhookHash
+    ? [
+        new NotchPayProvider({
+          publicKey: notchPublicKey,
+          webhookHash: notchWebhookHash,
+        }),
+      ]
+    : []),
+];
 
 // Sans SMTP, l'envoi de devis répond 503 — comme l'assistant sans modèle.
 // Un devis non envoyé n'est pas un devis perdu : la route ne fait rien sans mailer.
@@ -82,6 +122,7 @@ const smtpHost = process.env['NEFTYA_SMTP_HOST'];
 const app = buildApp({
   db,
   paymentProviders,
+  prices,
   // Où le client revient après avoir payé. Absente, le retour tomberait sur le serveur de
   // développement — visible tout de suite en local, invisible en production.
   appUrl: process.env['NEFTYA_APP_URL'] ?? 'http://localhost:5174',
@@ -148,6 +189,24 @@ const app = buildApp({
 const applied = await migrate(db);
 if (applied.length > 0) {
   console.log(`Migrations appliquées : ${applied.join(', ')}`);
+}
+
+/*
+ * Le balayage des abonnements finis.
+ *
+ * Il ne tourne que s'il y a de quoi encaisser : sans fournisseur, aucun abonnement payant
+ * n'existe, et un minuteur qui interroge la base toutes les heures pour ne jamais rien
+ * trouver est du bruit.
+ *
+ * Monté après `buildApp` et avant l'écoute : un déploiement rattrape ainsi ce qu'une
+ * instance endormie a laissé passer, avant même de servir la première requête.
+ */
+if (paymentProviders.length > 0) {
+  startExpirySweeper(new BillingService(db, new BillingRepository(db, prices)), {
+    report: (message, details) => {
+      console.log(JSON.stringify({ level: 'info', message, ...details }));
+    },
+  });
 }
 
 app.listen({ port, host }).catch((error: unknown) => {

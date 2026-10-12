@@ -282,6 +282,8 @@ quelqu'un s'en serve.
 | `NEFTYA_APP_URL` | l'adresse du front | le retour de paiement tombe sur `localhost` |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | aucun paiement par carte n'est proposé |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | **refus de démarrer** si la clé est posée |
+| `NOTCHPAY_PUBLIC_KEY` | `pk_live_…` | aucun paiement mobile money n'est proposé |
+| `NOTCHPAY_WEBHOOK_HASH` | le « Hash Key » | **refus de démarrer** si la clé est posée |
 | `NEFTYA_PRICE_<OFFRE>_<DEVISE>_<PÉRIODE>` | entier, unité mineure | l'offre ne se vend pas dans cette combinaison |
 
 **Stripe va par paire.** Avec la clé seule, un paiement est encaissé sans que rien ne
@@ -293,6 +295,20 @@ pour une installation qui ne vend pas.
 avec trois événements : `checkout.session.completed`, `customer.subscription.updated` et
 `customer.subscription.deleted`. Le secret qu'il affiche à la création est
 `STRIPE_WEBHOOK_SECRET` — ce n'est pas la clé d'API.
+
+**NotchPay a trois secrets, et il ne faut pas les confondre** : la clé publique (`pk_…`),
+la clé privée (`sk_…`, inutile ici) et le « Hash Key » du point de terminaison, qui signe
+les webhooks. Vérifier une signature avec l'une des deux premières donne un webhook
+toujours refusé, sans que rien ne dise pourquoi. Son webhook se déclare sur
+`/v1/billing/webhooks/notchpay`.
+
+**NotchPay n'a pas d'abonnement.** Chaque période se prépaie, et rien n'est notifié quand
+un client ne renouvelle pas — un non-événement ne se notifie pas. C'est le **balayage
+horaire** qui coupe l'accès à l'échéance ; il démarre avec le processus, et seulement si un
+encaisseur est configuré. Sur l'offre gratuite de Render, l'instance s'endort : un balayage
+y est donc manqué, ce qui est sans conséquence — les plafonds ne mordent que lorsque
+quelqu'un se sert du produit, c'est-à-dire quand l'instance est réveillée. Le premier
+passage a lieu au démarrage, ce qui rattrape ce qu'un sommeil a laissé passer.
 
 **Les prix sont en unité mineure, sans séparateur** : 29 € s'écrit `2900`, 19 000 F CFA
 s'écrit `19000`. Le serveur refuse une valeur sous 100 — écrire `29` au lieu de `2900`
