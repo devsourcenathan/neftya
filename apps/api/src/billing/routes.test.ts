@@ -37,8 +37,17 @@ let failNextCheckout = false;
  */
 let sessions = 0;
 
+/** Ce que la sonde Stripe rendra, quand le test en a besoin. */
+let verifyResult: ((ref: string) => Promise<unknown>) | null = null;
+
 /** Un Stripe qui ne parle à personne, mais dont la vérification de signature est réelle. */
 class FakeStripeProvider extends StripeProvider {
+  override verify(providerRef: string) {
+    return (verifyResult?.(providerRef) ?? Promise.resolve(null)) as ReturnType<
+      StripeProvider['verify']
+    >;
+  }
+
   override startCheckout(request: CheckoutRequest): Promise<CheckoutStarted> {
     if (failNextCheckout) {
       failNextCheckout = false;
@@ -118,6 +127,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   started = [];
+  verifyResult = null;
 });
 
 async function signUp(email: string) {
@@ -371,6 +381,143 @@ describe('la référence envoyée au fournisseur', () => {
   });
 });
 
+describe('la sonde au retour du client', () => {
+  it('ouvre l’accès quand le webhook n’est jamais arrivé', async () => {
+    /*
+     * **Le cas qui s'est produit le jour de la mise en service.**
+     *
+     * Le point de terminaison n'était pas déclaré chez le fournisseur : l'argent est
+     * parti, aucun webhook n'est venu, et le client est resté devant « nous attendons la
+     * confirmation ». Attendre un message qu'on ne contrôle pas est une dépendance ; aller
+     * demander n'en est pas une.
+     */
+    const { accessToken } = await signUp('sonde@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload: { plan: 'pro', period: 'monthly', currency: 'EUR' },
+    });
+
+    const session = `cs_${String(sessions)}`;
+
+    // Aucun webhook. Le fournisseur, lui, sait que c'est payé.
+    verifyResult = (ref) =>
+      Promise.resolve({
+        kind: 'payment_settled',
+        eventId: `verify:stripe:${ref}`,
+        type: 'checkout.session.complete',
+        providerRef: ref,
+        subscriptionRef: 'sub_sonde',
+      });
+
+    const probe = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/verify',
+      headers,
+      payload: {},
+    });
+
+    expect(probe.json().data.changed).toBe(1);
+    expect(session).toBe(`cs_${String(sessions)}`);
+
+    const state = await harness.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+
+    expect(state.json().data.subscription.plan).toBe('pro');
+  });
+
+  it('ne règle pas deux fois ce que le webhook a déjà réglé', async () => {
+    /*
+     * La sonde et le webhook arrivent par deux portes, avec deux identifiants d'événement.
+     * La déduplication par message ne les distingue pas : c'est la garde sur le **paiement**
+     * qui empêche de prolonger la période deux fois — sinon un client gagnerait un mois à
+     * chaque retour sur la page.
+     */
+    const { accessToken } = await signUp('sonde-double@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload: { plan: 'pro', period: 'monthly', currency: 'EUR' },
+    });
+
+    const session = `cs_${String(sessions)}`;
+
+    await webhook({
+      id: 'evt_sonde_1',
+      type: 'checkout.session.completed',
+      data: { object: { id: session, subscription: 'sub_sonde_2' } },
+    });
+
+    const before = await harness.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+
+    verifyResult = (ref) =>
+      Promise.resolve({
+        kind: 'payment_settled',
+        eventId: `verify:stripe:${ref}`,
+        type: 'checkout.session.complete',
+        providerRef: ref,
+        subscriptionRef: 'sub_sonde_2',
+      });
+
+    const probe = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/verify',
+      headers,
+      payload: {},
+    });
+
+    expect(probe.json().data.changed).toBe(0);
+
+    const after = await harness.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+
+    expect(after.json().data.subscription.current_period_end).toBe(
+      before.json().data.subscription.current_period_end,
+    );
+  });
+
+  it('ne tombe pas quand le fournisseur ne répond pas', async () => {
+    // Une panne chez eux ne doit pas transformer un retour de paiement en page d'erreur.
+    const { accessToken } = await signUp('sonde-panne@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload: { plan: 'pro', period: 'monthly', currency: 'EUR' },
+    });
+
+    verifyResult = () => Promise.reject(new Error('panne simulée'));
+
+    const probe = await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/verify',
+      headers,
+      payload: {},
+    });
+
+    expect(probe.statusCode).toBe(200);
+    expect(probe.json().data.changed).toBe(0);
+  });
+});
+
 describe('le webhook', () => {
   it('refuse une signature qui ne vaut pas, sans réessai possible', async () => {
     const response = await harness.app.inject({
@@ -516,6 +663,58 @@ describe('le webhook', () => {
 
     // Un mois, pas deux : le rejeu n'a rien prolongé.
     expect(months).toBeLessThan(1.3);
+  });
+
+  it('ne prolonge pas deux fois sur deux événements différents', async () => {
+    /*
+     * La déduplication par identifiant d'événement ne protège que du **même** message
+     * rejoué. Deux messages distincts annonçant le même encaissement — ce que les deux
+     * fournisseurs admettent — passeraient au travers, et le client gagnerait un mois.
+     *
+     * La garde porte donc sur le paiement, pas sur le message : c'est lui, l'unité
+     * d'argent encaissé.
+     */
+    const { accessToken } = await signUp('doubleevent@atelier.test');
+    const headers = { authorization: `Bearer ${accessToken}` };
+
+    await harness.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload: { plan: 'pro', period: 'monthly', currency: 'EUR' },
+    });
+
+    const object = { id: `cs_${String(sessions)}`, subscription: 'sub_double_evt' };
+
+    await webhook({
+      id: 'evt_double_a',
+      type: 'checkout.session.completed',
+      data: { object },
+    });
+
+    const after = await harness.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+    const end = after.json().data.subscription.current_period_end as string;
+
+    // Le même encaissement, annoncé une seconde fois sous un autre identifiant.
+    const second = await webhook({
+      id: 'evt_double_b',
+      type: 'checkout.session.completed',
+      data: { object },
+    });
+
+    expect(second.json().data.applied).toBe(false);
+
+    const later = await harness.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+
+    expect(later.json().data.subscription.current_period_end).toBe(end);
   });
 
   it('coupe l’accès quand la période se termine', async () => {

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '@neftya/units';
 import { ApiRequestError } from '../api/client.js';
@@ -8,6 +8,7 @@ import {
   openBillingPortal,
   startCheckout,
   useApi,
+  verifyPayments,
   type BillingResource,
 } from '../api/projects.js';
 import { Badge, Button, DataPoint, SectionTitle } from '../ui/index.js';
@@ -37,6 +38,7 @@ function outcomeFromLocation(): Outcome {
 export function Billing() {
   const { t, i18n } = useTranslation();
   const api = useApi();
+  const queryClient = useQueryClient();
 
   /*
    * Lu une fois, au montage.
@@ -69,6 +71,27 @@ export function Billing() {
         ? 2000
         : false,
   });
+
+  /*
+   * Au retour d'un paiement, on va demander plutôt que d'attendre.
+   *
+   * Le webhook reste le chemin normal — il arrive même quand le client ferme l'onglet.
+   * Mais il peut ne jamais venir : mal déclaré chez le fournisseur, perdu, refusé. Le
+   * client voyait alors « nous attendons la confirmation » indéfiniment, son argent parti.
+   *
+   * Une seule fois, au montage : la sonde interroge un service tiers, et la relancer à
+   * chaque rendu en ferait une boucle d'appels payants.
+   */
+  useEffect(() => {
+    if (outcome !== 'succes') return;
+
+    void verifyPayments(api)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['billing'] }))
+      .catch(() => {
+        // Le compte à rebours du rafraîchissement prend le relais : une sonde ratée ne
+        // doit pas transformer un retour de paiement en page d'erreur.
+      });
+  }, [outcome, api, queryClient]);
 
   const checkout = useMutation({
     mutationFn: (choice: {

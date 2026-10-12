@@ -285,3 +285,76 @@ describe('lire un webhook', () => {
     expect(() => provider.readEvent(body, headers)).toThrow(/illisible/u);
   });
 });
+
+/**
+ * La sonde.
+ *
+ * Un webhook peut ne jamais arriver — c'est arrivé le jour de la mise en service, avec un
+ * point de terminaison non déclaré chez le fournisseur. Le client restait devant « nous
+ * attendons la confirmation » pendant que son argent était parti.
+ */
+describe('demander l’état d’un paiement', () => {
+  const retrieve = (status: string) =>
+    fakeFetch({
+      body: {
+        transaction: {
+          reference: 'trx.test_abc123',
+          merchant_reference: 'org:pro:monthly:XAF',
+          status,
+        },
+      },
+    });
+
+  it('interroge leur référence, pas la nôtre', async () => {
+    // `GET /payments/{reference}` ne connaît pas `merchant_reference` : un essai avec la
+    // nôtre rend 404, et le paiement resterait bloqué.
+    const { impl, calls } = retrieve('complete');
+    await new NotchPayProvider(config, impl).verify('trx.test_abc123');
+
+    expect(calls[0]?.url).toContain('/payments/trx.test_abc123');
+  });
+
+  it('règle un paiement abouti, en portant les deux références', async () => {
+    const { impl } = retrieve('complete');
+    const event = await new NotchPayProvider(config, impl).verify('trx.test_abc123');
+
+    expect(event).toMatchObject({
+      kind: 'payment_settled',
+      providerRef: 'trx.test_abc123',
+      merchantRef: 'org:pro:monthly:XAF',
+    });
+  });
+
+  it('ne conclut rien tant que le client valide encore', async () => {
+    /*
+     * `pending` et `processing` : il est peut-être devant son téléphone, en train de taper
+     * son code. Fermer la tentative ici lui ferait perdre un paiement en cours.
+     */
+    for (const status of ['pending', 'processing']) {
+      const { impl } = retrieve(status);
+
+      expect(
+        await new NotchPayProvider(config, impl).verify('trx.test_abc123'),
+      ).toBeNull();
+    }
+  });
+
+  it('ferme une tentative perdue', async () => {
+    for (const status of ['failed', 'canceled', 'expired']) {
+      const { impl } = retrieve(status);
+
+      expect(
+        await new NotchPayProvider(config, impl).verify('trx.test_abc123'),
+      ).toMatchObject({ kind: 'payment_failed' });
+    }
+  });
+
+  it('ne conclut rien quand le fournisseur ne répond pas', async () => {
+    // Une panne chez eux ne doit pas fermer une tentative qui a peut-être abouti.
+    const { impl } = fakeFetch({ status: 503, body: {} });
+
+    expect(
+      await new NotchPayProvider(config, impl).verify('trx.test_abc123'),
+    ).toBeNull();
+  });
+});

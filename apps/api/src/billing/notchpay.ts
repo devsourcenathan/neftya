@@ -91,6 +91,15 @@ const webhookEvent = z.object({
   }),
 });
 
+/** Ce que `GET /payments/{reference}` rend. Même objet que le webhook. */
+const retrieved = z.object({
+  transaction: z.object({
+    reference: z.string().min(1),
+    merchant_reference: z.string().min(1).optional(),
+    status: z.string().min(1),
+  }),
+});
+
 export class NotchPayProvider implements PaymentProvider {
   readonly key: PaymentProviderKey = 'notchpay';
   readonly currencies = NOTCHPAY_CURRENCIES;
@@ -160,6 +169,49 @@ export class NotchPayProvider implements PaymentProvider {
       providerRef:
         typeof transaction === 'string' ? transaction : transaction.reference,
     };
+  }
+
+  /**
+   * L'état d'un paiement, demandé à NotchPay.
+   *
+   * Par **leur** référence : `GET /payments/{reference}` ne connaît pas la nôtre — un
+   * essai avec `merchant_reference` rend 404.
+   *
+   * L'événement fabriqué ici porte un identifiant stable, dérivé de la référence. Le vrai
+   * webhook, s'il finit par arriver, en portera un autre : ce n'est pas lui qui empêche le
+   * double règlement, c'est la garde sur le paiement lui-même.
+   */
+  async verify(providerRef: string): Promise<ProviderEvent | null> {
+    const response = await this.fetchImpl(
+      `${this.baseUrl}/payments/${encodeURIComponent(providerRef)}`,
+      { headers: { authorization: this.config.publicKey } },
+    );
+
+    if (!response.ok) return null;
+
+    const body = retrieved.safeParse(await response.json());
+
+    if (!body.success) return null;
+
+    const transaction = body.data.transaction;
+    const base = {
+      eventId: `verify:notchpay:${providerRef}`,
+      type: `payment.${transaction.status}`,
+      providerRef,
+      ...(transaction.merchant_reference !== undefined
+        ? { merchantRef: transaction.merchant_reference }
+        : {}),
+    };
+
+    if (transaction.status === 'complete') return { ...base, kind: 'payment_settled' };
+
+    if (['failed', 'canceled', 'expired'].includes(transaction.status)) {
+      return { ...base, kind: 'payment_failed' };
+    }
+
+    // `pending` ou `processing` : le client est peut-être encore en train de valider sur
+    // son téléphone. Rien à conclure, et surtout rien à fermer.
+    return null;
   }
 
   readEvent(

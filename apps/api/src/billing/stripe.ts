@@ -106,6 +106,45 @@ export class StripeProvider implements PaymentProvider {
     return { redirectUrl: session.url, providerRef: session.id };
   }
 
+  /**
+   * L'état d'une session, demandé à Stripe.
+   *
+   * On relit la session plutôt que l'abonnement : c'est elle que notre registre connaît,
+   * et `payment_status` dit en un champ si l'argent est arrivé. Une session `expired` n'a
+   * rien encaissé et ne le fera plus — le registre doit le savoir, sans quoi un client
+   * repartira indéfiniment sur une page morte.
+   */
+  async verify(providerRef: string): Promise<ProviderEvent | null> {
+    const session = await this.stripe.checkout.sessions.retrieve(providerRef);
+
+    const base = {
+      eventId: `verify:stripe:${providerRef}`,
+      type: `checkout.session.${session.status ?? 'unknown'}`,
+      providerRef,
+    };
+
+    if (
+      session.payment_status === 'paid' ||
+      session.payment_status === 'no_payment_required'
+    ) {
+      return {
+        ...base,
+        kind: 'payment_settled',
+        ...(typeof session.subscription === 'string'
+          ? { subscriptionRef: session.subscription }
+          : {}),
+        ...(typeof session.customer === 'string'
+          ? { customerRef: session.customer }
+          : {}),
+      };
+    }
+
+    if (session.status === 'expired') return { ...base, kind: 'payment_failed' };
+
+    // `open` : le client est peut-être encore sur la page de Stripe.
+    return null;
+  }
+
   readEvent(
     rawBody: Buffer,
     headers: Record<string, string | undefined>,

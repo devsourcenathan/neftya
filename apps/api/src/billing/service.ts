@@ -185,6 +185,21 @@ export class BillingService {
       return { applied: false, reason: 'aucun paiement pour cette référence' };
 
     /*
+     * **Un paiement déjà réglé ne se règle pas une seconde fois.**
+     *
+     * La déduplication par identifiant d'événement ne protège que des rejeux du *même*
+     * message. Elle ne protège pas de deux chemins qui apprennent la même nouvelle : le
+     * webhook et la vérification au retour du client arrivent par des portes différentes,
+     * avec des identifiants différents, et prolongeraient la période deux fois.
+     *
+     * La garde porte donc sur le paiement, pas sur le message : c'est lui, l'unité
+     * d'argent encaissé.
+     */
+    if (payment.status === 'settled') {
+      return { applied: false, reason: 'paiement déjà réglé' };
+    }
+
+    /*
      * L'échéance est calculée ici, et elle est provisoire chez Stripe.
      *
      * Aucun encaissement n'en porte une. Celle-ci ouvre l'accès tout de suite — sans quoi
@@ -295,6 +310,57 @@ export class BillingService {
   }
 
   /**
+   * Demander aux fournisseurs où en sont les paiements encore en vol.
+   *
+   * **C'est le filet du webhook**, et il est arrivé qu'il serve dès le premier jour : un
+   * webhook mal déclaré chez le fournisseur, et le client reste sur « nous attendons la
+   * confirmation » pendant que son argent est parti. Attendre un message qu'on ne contrôle
+   * pas est une dépendance ; aller demander n'en est pas une.
+   *
+   * Rend le nombre de paiements dont l'issue a changé.
+   */
+  async verifyPending(
+    organizationId: string,
+    providers: readonly PaymentProvider[],
+  ): Promise<number> {
+    const pending = await this.db
+      .selectFrom('payments')
+      .select(['provider', 'provider_ref'])
+      .where('organization_id', '=', organizationId)
+      .where('status', '=', 'pending')
+      .where('provider_ref', 'is not', null)
+      .execute();
+
+    let changed = 0;
+
+    for (const row of pending) {
+      const provider = providers.find((candidate) => candidate.key === row.provider);
+
+      if (!provider || row.provider_ref === null) continue;
+
+      /*
+       * Une sonde qui échoue n'arrête pas les autres.
+       *
+       * Un fournisseur indisponible ne doit pas empêcher de vérifier les paiements faits
+       * chez l'autre — et surtout pas transformer un retour de paiement en page d'erreur.
+       */
+      try {
+        const event = await provider.verify(row.provider_ref);
+
+        if (!event) continue;
+
+        const result = await this.apply(provider, event);
+
+        if (result.applied) changed += 1;
+      } catch {
+        continue;
+      }
+    }
+
+    return changed;
+  }
+
+  /**
    * Replacer au gratuit les abonnements dont la période est finie.
    *
    * **Un webhook peut ne jamais arriver.** Stripe envoie une résiliation, NotchPay n'envoie
@@ -359,7 +425,7 @@ export class BillingService {
     providerRef: string,
     merchantRef?: string,
   ) {
-    const columns = ['id', 'organization_id', 'plan_code', 'period'] as const;
+    const columns = ['id', 'organization_id', 'plan_code', 'period', 'status'] as const;
 
     if (merchantRef !== undefined) {
       const byOurs = await this.db

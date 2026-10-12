@@ -283,6 +283,27 @@ export function registerBillingRoutes(
   });
 
   /**
+   * Aller demander où en sont les paiements, au lieu d'attendre.
+   *
+   * Appelée au retour d'une page de paiement. Un webhook peut ne jamais arriver — mal
+   * déclaré, perdu, refusé — et le client reste alors devant « nous attendons la
+   * confirmation » pendant que son argent est parti. C'est arrivé le jour de la mise en
+   * service.
+   *
+   * **Rien n'est accordé sur la foi de l'adresse de retour.** Le fournisseur renvoie le
+   * client avec `status=complete` dans l'URL : s'y fier laisserait n'importe qui ouvrir un
+   * abonnement en tapant cette adresse à la main. C'est le fournisseur qu'on interroge, et
+   * lui seul.
+   */
+  app.post('/v1/billing/verify', async (request) => {
+    const context = sekuuOf(request);
+
+    const changed = await service.verifyPending(context.organizationId, providers);
+
+    return success({ changed });
+  });
+
+  /**
    * Le portail du fournisseur, où le client change de carte et résilie lui-même.
    *
    * Le faire chez nous aurait voulu dire toucher aux moyens de paiement — ce qu'on évite

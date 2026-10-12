@@ -201,6 +201,15 @@ export const startCheckout = (
   body: { plan: string; period: 'monthly' | 'yearly'; currency: string },
 ) => api<{ redirect_url: string }>('/v1/billing/checkout', { method: 'POST', body });
 
+/**
+ * Demander à l'API d'aller interroger les fournisseurs.
+ *
+ * Appelée au retour d'un paiement. Un webhook peut ne jamais arriver, et le client resterait
+ * alors devant « nous attendons la confirmation » pendant que son argent est parti.
+ */
+export const verifyPayments = (api: ApiClient) =>
+  api<{ changed: number }>('/v1/billing/verify', { method: 'POST', body: {} });
+
 export const openBillingPortal = (api: ApiClient) =>
   api<{ redirect_url: string }>('/v1/billing/portal', { method: 'POST', body: {} });
 

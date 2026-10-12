@@ -128,6 +128,20 @@ export interface PaymentProvider {
   ): ProviderEvent;
 
   /**
+   * Demander au fournisseur où en est un paiement.
+   *
+   * **Un webhook peut ne jamais arriver.** Mal déclaré, perdu, refusé par une signature
+   * qui ne va pas : dans les trois cas le client a payé et n'a rien. C'est arrivé le jour
+   * même de la mise en service, et la documentation de Sekuu Payments l'annonçait —
+   * « un produit qui ne met en place que le webhook aura, tôt ou tard, un client payé sans
+   * service et aucun moyen de s'en apercevoir ».
+   *
+   * Cette sonde est l'autre moitié : au retour du client, on va demander plutôt que
+   * d'attendre. Rend `null` quand le paiement n'est pas conclu — ni réglé, ni perdu.
+   */
+  verify(providerRef: string): Promise<ProviderEvent | null>;
+
+  /**
    * L'adresse du portail où le client change de carte ou résilie, s'il en existe un.
    *
    * `null` pour un fournisseur qui n'en a pas : en mobile money il n'y a pas de carte à
