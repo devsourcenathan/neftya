@@ -257,20 +257,6 @@ export interface PlansTable {
   created_at: CreatedAt;
 }
 
-/**
- * Un prix par offre, devise et période.
- *
- * **L'absence de ligne est une réponse** : une offre sans prix dans une devise
- * ne s'y vend pas. Convertir au taux du jour donnerait un montant que personne
- * n'a décidé et qui bouge tout seul.
- */
-export interface PlanPricesTable {
-  plan_code: string;
-  currency: string;
-  period: BillingPeriod;
-  amount_minor: number;
-}
-
 export type BillingPeriod = 'monthly' | 'yearly';
 export type SubscriptionPeriod = 'free' | BillingPeriod;
 export type PaymentProviderKey = 'stripe' | 'notchpay';
@@ -316,6 +302,5 @@ export interface Database {
   ai_generations: AiGenerationsTable;
   notifications_outbox: NotificationsOutboxTable;
   plans: PlansTable;
-  plan_prices: PlanPricesTable;
   subscriptions: SubscriptionsTable;
 }

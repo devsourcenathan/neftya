@@ -1,7 +1,6 @@
 -- Le catalogue d'offres, et ce qu'on sait d'elles aujourd'hui.
 --
--- **Seuls les prix décidés sont ici.** Il manque l'annuel et il manque le franc
--- CFA ; ils ne sont pas à zéro ni convertis au taux du jour, ils sont absents.
+-- Les plafonds seulement : les prix vivent dans l'environnement depuis 0016.
 -- Une offre sans prix dans une devise ne s'y vend pas, et l'interface le dit
 -- plutôt que d'afficher un montant que personne n'a arrêté. C'est la même règle
 -- que le devis de fabrication, qui refuse de totaliser tant qu'un prix manque.
@@ -13,11 +12,6 @@ INSERT INTO plans (code, projects_max, ai_month_max, members_max, rank) VALUES
     -- « Projets illimités » est déjà annoncé sur la page d'accueil : NULL le dit.
     ('pro',           NULL, 200,  1,    1),
     ('professional',  NULL, 1000, NULL, 2);
-
-INSERT INTO plan_prices (plan_code, currency, period, amount_minor) VALUES
-    -- 29 € et 79 € par mois : les deux seuls prix annoncés publiquement.
-    ('pro',          'EUR', 'monthly', 2900),
-    ('professional', 'EUR', 'monthly', 7900);
 
 -- Toute organisation existante est au gratuit.
 --

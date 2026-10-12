@@ -1,0 +1,11 @@
+-- Les prix quittent la base pour l'environnement.
+--
+-- Semés par migration, changer un tarif demandait une migration, donc un
+-- déploiement, donc un développeur — pour une décision commerciale qui se prend
+-- un matin. Ils vivent désormais dans `NEFTYA_PRICE_<OFFRE>_<DEVISE>_<PÉRIODE>`,
+-- où l'hébergeur les expose et où les changer coûte un redémarrage.
+--
+-- La table est supprimée plutôt que laissée vide : deux sources pour un prix,
+-- c'est la garantie qu'un jour l'une dira 29 € et l'autre 39 €, et que
+-- l'encaissement ne suivra pas l'affichage.
+DROP TABLE plan_prices;

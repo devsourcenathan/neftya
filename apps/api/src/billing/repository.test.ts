@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createHarness, type Harness } from '../test-support/harness.js';
 import { FREE_TIER } from '../auth/repository.js';
 import { BillingRepository, FREE_PLAN_CODE } from './repository.js';
+import { loadPrices } from './prices.js';
 import { entitlementOf } from './entitlement.js';
 
 /**
@@ -19,7 +20,17 @@ let organizationId: string;
 
 beforeAll(async () => {
   harness = await createHarness('test_billing');
-  billing = new BillingRepository(harness.db);
+  /*
+   * Les prix viennent de l'environnement, et ce test se donne le sien.
+   *
+   * Lire `process.env` ici ferait dépendre le résultat de la machine : vert chez qui a
+   * posé les variables, rouge en intégration continue, et personne ne saurait lequel des
+   * deux a raison.
+   */
+  billing = new BillingRepository(
+    harness.db,
+    loadPrices({ NEFTYA_PRICE_PRO_EUR_MONTHLY: '2900' }, ['pro', 'professional']),
+  );
 
   /*
    * Une vraie organisation, créée par le chemin normal.
@@ -70,16 +81,16 @@ describe('le catalogue', () => {
     expect(free?.membersMax).toBe(FREE_TIER.members_max);
   });
 
-  it('ne vend pas une offre dans une devise sans prix', async () => {
+  it('ne vend pas une offre dans une devise sans prix', () => {
     /*
      * Le franc CFA n'a pas encore de prix décidé. Rendre `null` plutôt que convertir 29 €
      * au taux du jour : un montant que personne n'a arrêté, qui bouge tout seul, et qu'il
      * faudrait expliquer au client.
      */
-    expect(await billing.priceOf('pro', 'EUR', 'monthly')).toBe(2900);
-    expect(await billing.priceOf('pro', 'XAF', 'monthly')).toBeNull();
+    expect(billing.priceOf('pro', 'EUR', 'monthly')).toBe(2900);
+    expect(billing.priceOf('pro', 'XAF', 'monthly')).toBeNull();
     // L'annuel n'est pas davantage décidé que le franc CFA.
-    expect(await billing.priceOf('pro', 'EUR', 'yearly')).toBeNull();
+    expect(billing.priceOf('pro', 'EUR', 'yearly')).toBeNull();
   });
 
   it('ne met aucun prix sur le gratuit', async () => {

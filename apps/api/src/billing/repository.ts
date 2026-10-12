@@ -6,6 +6,7 @@ import type {
   SubscriptionPeriod,
 } from '../db/schema.js';
 import type { PlanLimits, SubscriptionState } from './entitlement.js';
+import type { PriceEntry } from './prices.js';
 
 /**
  * Le catalogue et les abonnements, lus et écrits.
@@ -24,27 +25,30 @@ export interface PlanOffer extends PlanLimits {
 }
 
 export class BillingRepository {
-  constructor(private readonly db: Kysely<Database>) {}
+  /**
+   * Les prix arrivent par le constructeur, lus de l'environnement au démarrage.
+   *
+   * Passés plutôt que relus à chaque appel : ils ne changent pas en cours de vie du
+   * processus, et les relire aurait fait croire qu'ils le peuvent.
+   */
+  constructor(
+    private readonly db: Kysely<Database>,
+    private readonly prices: readonly PriceEntry[] = [],
+  ) {}
 
   /**
    * Le catalogue complet, prix compris.
    *
-   * Deux requêtes et une jointure en mémoire plutôt qu'une jointure SQL : le catalogue
-   * tient en trois offres, et une jointure aurait rendu une ligne par prix, qu'il aurait
-   * fallu regrouper de toute façon.
+   * Les plafonds viennent de la base, les prix de l'environnement. Les assembler ici
+   * plutôt que dans chaque appelant : une offre se présente toujours avec ses prix, et
+   * deux lectures séparées auraient fini par en oublier une.
    */
   async offers(): Promise<PlanOffer[]> {
-    const [plans, prices] = await Promise.all([
-      this.db
-        .selectFrom('plans')
-        .select(['code', 'projects_max', 'ai_month_max', 'members_max', 'rank'])
-        .orderBy('rank')
-        .execute(),
-      this.db
-        .selectFrom('plan_prices')
-        .select(['plan_code', 'currency', 'period', 'amount_minor'])
-        .execute(),
-    ]);
+    const plans = await this.db
+      .selectFrom('plans')
+      .select(['code', 'projects_max', 'ai_month_max', 'members_max', 'rank'])
+      .orderBy('rank')
+      .execute();
 
     return plans.map((plan) => ({
       code: plan.code,
@@ -52,12 +56,12 @@ export class BillingRepository {
       aiMonthMax: plan.ai_month_max,
       membersMax: plan.members_max,
       rank: plan.rank,
-      prices: prices
-        .filter((price) => price.plan_code === plan.code)
+      prices: this.prices
+        .filter((price) => price.planCode === plan.code)
         .map((price) => ({
           currency: price.currency,
           period: price.period,
-          amountMinor: price.amount_minor,
+          amountMinor: price.amountMinor,
         })),
     }));
   }
@@ -75,20 +79,15 @@ export class BillingRepository {
    * ne s'y vend pas : c'est ce qui remplace une conversion au taux du jour, qui donnerait
    * un montant que personne n'a décidé.
    */
-  async priceOf(
-    planCode: string,
-    currency: string,
-    period: BillingPeriod,
-  ): Promise<number | null> {
-    const row = await this.db
-      .selectFrom('plan_prices')
-      .select('amount_minor')
-      .where('plan_code', '=', planCode)
-      .where('currency', '=', currency)
-      .where('period', '=', period)
-      .executeTakeFirst();
+  priceOf(planCode: string, currency: string, period: BillingPeriod): number | null {
+    const match = this.prices.find(
+      (price) =>
+        price.planCode === planCode &&
+        price.currency === currency &&
+        price.period === period,
+    );
 
-    return row?.amount_minor ?? null;
+    return match?.amountMinor ?? null;
   }
 
   async subscriptionOf(organizationId: string): Promise<SubscriptionState | undefined> {
