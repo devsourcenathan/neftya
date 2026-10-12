@@ -9,7 +9,8 @@
     "cancel": "Cancel",
     "retry": "Try again",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "dismiss": "Dismiss"
   },
   "auth": {
     "required": "Sign in to use Neftya.",
@@ -616,6 +617,46 @@
     },
     "footer": {
       "copyright": "Neftya. The tool for the woodworkers of tomorrow."
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "lead": "Your plan, what it allows, and how to change it. Payment methods and invoices stay with our payment provider: we never handle your card.",
+    "current": "Your plan",
+    "offers": "Change plan",
+    "manage": "Manage subscription",
+    "manageHint": "Change card, view invoices or cancel. You keep your access until the end of the period you have already paid for.",
+    "openPortal": "Open the payment portal",
+    "yours": "Current",
+    "soon": "Coming soon",
+    "freeAlways": "Active by default, no card needed.",
+    "unlimited": "Unlimited",
+    "projects": "Projects",
+    "aiMonth": "AI per month",
+    "members": "Users",
+    "renewsOn": "Renews",
+    "endsOn": "Access ends",
+    "lapsed": "Your {{plan}} plan has expired: you are back on the free plan. Take it up again below to restore your limits.",
+    "pastDue": "The last payment failed. Your access runs until the end of the period; update your card so you do not lose it.",
+    "thanks": "Thank you — your plan is active.",
+    "confirming": "Payment received. We are waiting for the provider to confirm: this takes a few seconds, and this page updates itself.",
+    "canceled": "Payment abandoned. Nothing was charged.",
+    "unlimitedProjects": "Unlimited projects",
+    "nProjects_one": "{{count}} project",
+    "nProjects_other": "{{count}} projects",
+    "nAi_one": "{{count}} AI interpretation per month",
+    "nAi_other": "{{count}} AI interpretations per month",
+    "unlimitedMembers": "Unlimited users",
+    "nMembers_one": "{{count}} user",
+    "nMembers_other": "{{count}} users",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "professional": "Professional"
+    },
+    "period": {
+      "monthly": "{{amount}} per month",
+      "yearly": "{{amount}} per year"
     }
   }
 }

@@ -13,6 +13,7 @@ import { AccountMenu } from './sekuu/AccountMenu.js';
 import { useMediaQuery } from './ui/useMediaQuery.js';
 import { usePersisted } from './ui/usePersisted.js';
 import { Settings } from './settings/Settings.js';
+import { Billing } from './billing/Billing.js';
 import { ProjectDesigner } from './routes/ProjectDesigner.js';
 import { Projects } from './routes/Projects.js';
 
@@ -221,6 +222,20 @@ const plansRoute = createRoute({
   },
 });
 
+const billingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  /*
+   * `/facturation`, en français dans l'adresse.
+   *
+   * C'est celle que l'API donne aux fournisseurs pour le retour de paiement, et elle est
+   * donc inscrite dans des tableaux de bord qu'on ne redéploie pas. La changer plus tard
+   * renverrait les clients sur une page qui n'existe plus, au pire moment — juste après
+   * avoir payé.
+   */
+  path: '/facturation',
+  component: Billing,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
@@ -230,6 +245,7 @@ const settingsRoute = createRoute({
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     settingsRoute,
+    billingRoute,
     projectsRoute,
     designerRoute,
     manufacturingRoute,

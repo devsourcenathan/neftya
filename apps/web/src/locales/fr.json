@@ -9,7 +9,8 @@
     "cancel": "Annuler",
     "retry": "Réessayer",
     "undo": "Annuler",
-    "redo": "Rétablir"
+    "redo": "Rétablir",
+    "dismiss": "Fermer"
   },
   "auth": {
     "required": "Connectez-vous pour accéder à Neftya.",
@@ -616,6 +617,46 @@
     },
     "footer": {
       "copyright": "Neftya. L'outil des menuisiers de demain."
+    }
+  },
+  "billing": {
+    "title": "Facturation",
+    "lead": "Votre offre, ce qu'elle permet, et comment en changer. Les moyens de paiement et les factures restent chez notre encaisseur : nous ne touchons pas à votre carte.",
+    "current": "Votre offre",
+    "offers": "Changer d’offre",
+    "manage": "Gérer l’abonnement",
+    "manageHint": "Changer de carte, consulter vos factures ou résilier. Vous gardez votre accès jusqu’à la fin de la période déjà payée.",
+    "openPortal": "Ouvrir le portail de paiement",
+    "yours": "En cours",
+    "soon": "Bientôt disponible",
+    "freeAlways": "Active par défaut, sans carte bancaire.",
+    "unlimited": "Illimité",
+    "projects": "Projets",
+    "aiMonth": "IA par mois",
+    "members": "Utilisateurs",
+    "renewsOn": "Renouvellement",
+    "endsOn": "Fin d’accès",
+    "lapsed": "Votre offre {{plan}} est arrivée à échéance : vous êtes revenu au gratuit. Reprenez-la ci-dessous pour retrouver vos plafonds.",
+    "pastDue": "Le dernier prélèvement a échoué. Votre accès court jusqu’à la fin de la période ; mettez votre carte à jour pour ne pas le perdre.",
+    "thanks": "Merci — votre offre est active.",
+    "confirming": "Paiement reçu. Nous attendons la confirmation de l’encaisseur : cela prend quelques secondes, cette page se met à jour toute seule.",
+    "canceled": "Paiement abandonné. Rien n’a été débité.",
+    "unlimitedProjects": "Projets illimités",
+    "nProjects_one": "{{count}} projet",
+    "nProjects_other": "{{count}} projets",
+    "nAi_one": "{{count}} interprétation IA par mois",
+    "nAi_other": "{{count}} interprétations IA par mois",
+    "unlimitedMembers": "Utilisateurs illimités",
+    "nMembers_one": "{{count}} utilisateur",
+    "nMembers_other": "{{count}} utilisateurs",
+    "plan": {
+      "free": "Gratuit",
+      "pro": "Pro",
+      "professional": "Professional"
+    },
+    "period": {
+      "monthly": "{{amount}} par mois",
+      "yearly": "{{amount}} par an"
     }
   }
 }

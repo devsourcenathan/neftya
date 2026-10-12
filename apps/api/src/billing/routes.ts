@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { success } from '@neftya/contracts';
-import { conflict, forbidden, notFound } from '../http/errors.js';
+import { conflict, forbidden, notFound, serviceUnavailable } from '../http/errors.js';
 import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
 import type { AuthRepository } from '../auth/repository.js';
@@ -169,18 +169,40 @@ export function registerBillingRoutes(
       idempotencyKey,
     });
 
-    const started = await provider.startCheckout({
-      organizationId: context.organizationId,
-      planCode: body.plan,
-      period: body.period,
-      currency: body.currency,
-      amountMinor,
-      label: `Neftya ${body.plan}`,
-      customerEmail: user.email,
-      successUrl: `${appUrl}/facturation?paiement=succes`,
-      cancelUrl: `${appUrl}/facturation?paiement=annule`,
-      idempotencyKey,
-    });
+    /*
+     * Un encaisseur injoignable n'est pas une erreur interne.
+     *
+     * Une clé périmée, une panne chez le fournisseur, un réseau qui tombe : le client n'y
+     * est pour rien et il n'a rien à corriger. « Une erreur interne est survenue » le
+     * laisse devant un bouton mort ; un 503 qui dit de réessayer lui donne la seule
+     * conduite utile. Le détail, lui, part au journal — il peut porter des éléments du
+     * compte marchand.
+     *
+     * La ligne « en cours » reste au registre : le prochain essai la retrouvera par sa clé
+     * d'idempotence plutôt que d'en ouvrir une seconde.
+     */
+    let started;
+
+    try {
+      started = await provider.startCheckout({
+        organizationId: context.organizationId,
+        planCode: body.plan,
+        period: body.period,
+        currency: body.currency,
+        amountMinor,
+        label: `Neftya ${body.plan}`,
+        customerEmail: user.email,
+        successUrl: `${appUrl}/facturation?paiement=succes`,
+        cancelUrl: `${appUrl}/facturation?paiement=annule`,
+        idempotencyKey,
+      });
+    } catch (error) {
+      request.log.error({ err: error, provider: provider.key }, 'checkout.failed');
+
+      throw serviceUnavailable(
+        'Le paiement est momentanément indisponible. Réessayez dans un instant — rien n’a été débité.',
+      );
+    }
 
     await service.attachProviderRef(payment.id, started.providerRef);
 

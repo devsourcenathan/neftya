@@ -141,6 +141,50 @@ export const createExport = (api: ApiClient, id: string) =>
 export const listExports = (api: ApiClient, id: string) =>
   api<ExportResource[]>(`/v1/projects/${id}/exports`);
 
+/**
+ * L'état de la facturation, et ce qu'on peut souscrire.
+ *
+ * Les deux arrivent ensemble : deux appels auraient pu rendre un catalogue et un
+ * abonnement pris à des instants différents, et l'écran aurait annoncé une offre qui vient
+ * de changer.
+ */
+export interface BillingResource {
+  subscription: {
+    /** L'offre **servie**. Elle retombe au gratuit quand la période est finie. */
+    plan: string;
+    /** L'offre payée, qui peut différer de celle servie. */
+    paid_plan: string;
+    status: 'active' | 'past_due' | 'canceled';
+    period: 'free' | 'monthly' | 'yearly';
+    current_period_end: string | null;
+    /** Vrai quand l'accès est retombé au gratuit faute de paiement en cours. */
+    lapsed: boolean;
+  };
+  quotas: {
+    projects_max: number | null;
+    ai_month_max: number | null;
+    members_max: number | null;
+  };
+  plans: {
+    code: string;
+    projects_max: number | null;
+    ai_month_max: number | null;
+    members_max: number | null;
+    /** Seuls les prix qu'un encaisseur configuré sait prendre. */
+    prices: { currency: string; period: 'monthly' | 'yearly'; amount_minor: number }[];
+  }[];
+}
+
+export const getBilling = (api: ApiClient) => api<BillingResource>('/v1/billing');
+
+export const startCheckout = (
+  api: ApiClient,
+  body: { plan: string; period: 'monthly' | 'yearly'; currency: string },
+) => api<{ redirect_url: string }>('/v1/billing/checkout', { method: 'POST', body });
+
+export const openBillingPortal = (api: ApiClient) =>
+  api<{ redirect_url: string }>('/v1/billing/portal', { method: 'POST', body: {} });
+
 export interface PriceReference {
   reference: string;
   amount_minor: number;

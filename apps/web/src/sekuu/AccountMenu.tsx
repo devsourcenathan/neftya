@@ -142,6 +142,15 @@ export function AccountMenu({ collapsed }: { collapsed: boolean }) {
               règlent une fois et ne se visitent pas. La barre garde les lieux où l'on
               travaille. */}
           <Link
+            to="/facturation"
+            role="menuitem"
+            className="block rounded px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-low"
+            onClick={() => setOpen(false)}
+          >
+            {t('billing.title')}
+          </Link>
+
+          <Link
             to="/settings"
             role="menuitem"
             className="block rounded px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-low"
