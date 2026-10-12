@@ -19,6 +19,15 @@ import type { PaymentProvider, ProviderEvent } from './provider.js';
  * client a payé et reste plafonné — ou l'inverse.
  */
 
+/**
+ * Au-delà de ce délai, une tentative de paiement ne décrira plus rien.
+ *
+ * Vingt-quatre heures : la durée de vie d'une session Stripe, et l'ordre de grandeur chez
+ * NotchPay. Plus court fermerait des pages encore ouvertes ; plus long ferait sonder des
+ * références que le fournisseur a lui-même oubliées.
+ */
+export const PENDING_TTL_MS = 24 * 60 * 60 * 1000;
+
 export interface ApplyResult {
   /** Faux quand l'événement avait déjà été traité. Le fournisseur les rejoue. */
   applied: boolean;
@@ -242,9 +251,40 @@ export class BillingService {
       }
 
       await this.writeQuotas(trx, payment.organization_id, payment.plan_code);
+      await this.seedCurrency(trx, payment.organization_id, payment.currency);
     });
 
     return { applied: true };
+  }
+
+  /**
+   * Retenir la devise dans laquelle l'organisation a payé — si elle n'en avait pas.
+   *
+   * **Un réglage que personne ne renseignait.** La facturation ne montre que les prix de
+   * la devise de l'organisation ; `organization_settings.currency` étant nulle par défaut,
+   * ce filtre n'a jamais servi à personne et chaque offre affichait ses quatre
+   * combinaisons — euros et francs, mensuel et annuel. Un mur de huit boutons dont la
+   * moitié s'adresse à l'autre continent.
+   *
+   * Payer est une décision, pas une préférence devinée : on l'enregistre. `COALESCE` la
+   * rend non destructive — une organisation qui a choisi sa devise dans ses réglages la
+   * garde, même si un membre paie dans une autre.
+   */
+  private async seedCurrency(
+    trx: Kysely<Database>,
+    organizationId: string,
+    currency: string,
+  ): Promise<void> {
+    await trx
+      .insertInto('organization_settings')
+      .values({ organization_id: organizationId, currency, unit_system: 'metric' })
+      .onConflict((conflict) =>
+        conflict.column('organization_id').doUpdateSet((eb) => ({
+          currency: eb.fn.coalesce('organization_settings.currency', eb.val(currency)),
+          updated_at: new Date(),
+        })),
+      )
+      .execute();
   }
 
   private async fail(
@@ -326,11 +366,70 @@ export class BillingService {
     const pending = await this.db
       .selectFrom('payments')
       .select(['provider', 'provider_ref'])
-      .where('organization_id', '=', organizationId)
       .where('status', '=', 'pending')
       .where('provider_ref', 'is not', null)
+      .where('organization_id', '=', organizationId)
       .execute();
 
+    return this.probe(pending, providers);
+  }
+
+  /**
+   * La même sonde, pour tout le monde, sans personne devant l'écran.
+   *
+   * **Le trou que la sonde du retour ne bouche pas.** Celle-ci ne part que si le client
+   * revient sur la page de facturation ; qui ferme l'onglet après avoir payé ne déclenche
+   * rien, et si le webhook n'arrive pas — mal déclaré, perdu, refusé — son argent reste
+   * parti sans service. Les deux encaissements observés en production ont été constatés
+   * par la sonde, pas par un webhook : le chemin de secours est devenu le chemin normal,
+   * et il ne tenait qu'à la présence du client.
+   *
+   * Bornée dans le temps : au-delà, `expireStalePayments` a fermé les lignes, et les
+   * interroger encore ferait grossir une liste d'appels payants sans fin.
+   */
+  async verifyAllPending(
+    providers: readonly PaymentProvider[],
+    now: Date = new Date(),
+  ): Promise<number> {
+    const pending = await this.db
+      .selectFrom('payments')
+      .select(['provider', 'provider_ref'])
+      .where('status', '=', 'pending')
+      .where('provider_ref', 'is not', null)
+      .where('created_at', '>', new Date(now.getTime() - PENDING_TTL_MS))
+      .execute();
+
+    return this.probe(pending, providers);
+  }
+
+  /**
+   * Clore les tentatives qu'aucun encaissement ne viendra plus honorer.
+   *
+   * Une page de paiement a une durée de vie — vingt-quatre heures chez Stripe, du même
+   * ordre chez NotchPay. Passé ce délai, la ligne `pending` ne décrira plus jamais rien :
+   * la laisser ouverte la ferait sonder indéfiniment, et surtout `openPayment` la
+   * rouvrirait, renvoyant un client vers une page de paiement morte.
+   *
+   * **Clore n'est pas renoncer.** Un encaissement qui arriverait quand même retrouve sa
+   * ligne par sa référence et la règle : la garde de `settle` ne refuse que ce qui est
+   * déjà réglé, jamais ce qui a été clos. L'argent décide, pas notre comptabilité.
+   */
+  async expireStalePayments(now: Date = new Date()): Promise<number> {
+    const result = await this.db
+      .updateTable('payments')
+      .set({ status: 'expired' })
+      .where('status', '=', 'pending')
+      .where('created_at', '<=', new Date(now.getTime() - PENDING_TTL_MS))
+      .executeTakeFirst();
+
+    return Number(result.numUpdatedRows ?? 0n);
+  }
+
+  /** Interroger les fournisseurs sur une liste de tentatives, et appliquer ce qu'ils disent. */
+  private async probe(
+    pending: { provider: PaymentProviderKey; provider_ref: string | null }[],
+    providers: readonly PaymentProvider[],
+  ): Promise<number> {
     let changed = 0;
 
     for (const row of pending) {
@@ -425,7 +524,14 @@ export class BillingService {
     providerRef: string,
     merchantRef?: string,
   ) {
-    const columns = ['id', 'organization_id', 'plan_code', 'period', 'status'] as const;
+    const columns = [
+      'id',
+      'organization_id',
+      'plan_code',
+      'period',
+      'status',
+      'currency',
+    ] as const;
 
     if (merchantRef !== undefined) {
       const byOurs = await this.db

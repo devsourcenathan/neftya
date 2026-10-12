@@ -3,7 +3,7 @@ import { startExpirySweeper } from './sweeper.js';
 import type { BillingService } from './service.js';
 
 /**
- * Le balayage des abonnements finis.
+ * Le balayage horaire de la facturation.
  *
  * C'est le seul mécanisme qui coupe un prépayé non renouvelé : le mobile money ne notifie
  * rien quand un client ne repaie pas. Ce qui est tenu ici n'est pas le compte des lignes
@@ -12,8 +12,16 @@ import type { BillingService } from './service.js';
  * entière tomberait parce qu'un travail de fond a échoué.
  */
 
-const serviceThat = (expire: () => Promise<number>) =>
-  ({ expire }) as unknown as BillingService;
+const serviceThat = (
+  expire: () => Promise<number>,
+  rest: Partial<BillingService> = {},
+) =>
+  ({
+    expire,
+    expireStalePayments: () => Promise.resolve(0),
+    verifyAllPending: () => Promise.resolve(0),
+    ...rest,
+  }) as unknown as BillingService;
 
 describe('le balayage', () => {
   it('passe une première fois au démarrage', async () => {
@@ -71,10 +79,60 @@ describe('le balayage', () => {
     await expect(sweeper.run()).resolves.toBe(0);
     sweeper.stop();
 
-    expect(lines.map((line) => line.message)).toContain('billing.expiry_failed');
+    expect(lines.map((line) => line.message)).toContain('billing.sweep_failed');
     // Le message de l'erreur part au journal : sans lui, on sait qu'il a échoué et pas
     // pourquoi.
     expect(lines[lines.length - 1]?.details['error']).toMatch(/ne répond pas/u);
+  });
+
+  it('va demander aux encaisseurs ce que le webhook n’a pas dit', async () => {
+    /*
+     * Le cas qui a coûté un accès en production : deux encaissements réels, aucun webhook
+     * reçu, et la seule sonde qui existait ne partait que si le client revenait sur la
+     * page. Sans fournisseur, rien à sonder — et surtout pas une erreur.
+     */
+    const verifyAllPending = vi.fn(() => Promise.resolve(2));
+    const lines: string[] = [];
+    const report = (message: string) => lines.push(message);
+
+    const blind = startExpirySweeper(
+      serviceThat(() => Promise.resolve(0), { verifyAllPending }),
+      { report },
+    );
+    await blind.run();
+    blind.stop();
+
+    expect(verifyAllPending).not.toHaveBeenCalled();
+
+    const sighted = startExpirySweeper(
+      serviceThat(() => Promise.resolve(0), { verifyAllPending }),
+      { report, providers: [{ key: 'notchpay' }] as never },
+    );
+    await sighted.run();
+    sighted.stop();
+
+    // Pas un compte : le premier passage a lieu au démarrage, sans être attendu.
+    expect(verifyAllPending).toHaveBeenCalled();
+    expect(lines).toContain('billing.confirmed_late');
+  });
+
+  it('clôt les tentatives qu’aucun encaissement n’honorera plus', async () => {
+    /*
+     * Une page de paiement périmée que `openPayment` rouvrirait renverrait un client qui
+     * reclique vers une adresse morte. Et une ligne jamais close serait sondée sans fin.
+     */
+    const expireStalePayments = vi.fn(() => Promise.resolve(3));
+    const lines: string[] = [];
+
+    const sweeper = startExpirySweeper(
+      serviceThat(() => Promise.resolve(0), { expireStalePayments }),
+      { report: (message) => lines.push(message) },
+    );
+    await sweeper.run();
+    sweeper.stop();
+
+    expect(expireStalePayments).toHaveBeenCalled();
+    expect(lines).toContain('billing.payments_expired');
   });
 
   it('repasse à l’intervalle demandé, et s’arrête quand on le lui dit', async () => {

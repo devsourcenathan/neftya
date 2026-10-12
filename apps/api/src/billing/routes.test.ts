@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { sql } from 'kysely';
 import Stripe from 'stripe';
 import { createHmac } from 'node:crypto';
 import { createHarness, type Harness } from '../test-support/harness.js';
@@ -75,15 +76,54 @@ const NOTCH_HASH = 'hash_de_test_pour_les_routes_notchpay';
  */
 const notchpayRequests: { reference?: string }[] = [];
 
-/** Un NotchPay dont le réseau est remplacé, mais dont la signature est réelle. */
+/**
+ * L'état qu'un paiement NotchPay aura quand on ira le demander.
+ *
+ * `null` : la sonde ne conclut rien, comme pour un client encore devant son téléphone.
+ */
+let notchpayStatus: string | null = null;
+
+/**
+ * Un NotchPay dont le réseau est remplacé, mais dont la signature est réelle.
+ *
+ * Deux appels passent par là et il faut les distinguer : l'initialisation porte un corps,
+ * l'interrogation d'un paiement n'en a pas. Les confondre faisait analyser `undefined`
+ * comme du JSON.
+ *
+ * **Une référence différente par tentative.** La base refuse deux encaissements sous la
+ * même référence de fournisseur, et elle a raison : un prépayé qui se renouvelle ouvre
+ * bien une nouvelle transaction à chaque fois.
+ */
 const notchpay = new NotchPayProvider(
   {
     publicKey: 'pk_test_x',
     webhookHash: NOTCH_HASH,
     baseUrl: 'https://api.notchpay.test',
   },
-  ((_url: string, init: RequestInit) => {
-    notchpayRequests.push(JSON.parse(init.body as string) as { reference?: string });
+  ((url: string, init: RequestInit | undefined) => {
+    if (init?.body === undefined) {
+      const reference = decodeURIComponent(url.split('/payments/')[1] ?? '');
+      const merchant = notchpayRequests.find(
+        (request) => `trx.test_mobile_${request.reference ?? ''}` === reference,
+      );
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            transaction: {
+              reference,
+              status: notchpayStatus ?? 'pending',
+              ...(merchant ? { merchant_reference: merchant.reference } : {}),
+            },
+          }),
+      });
+    }
+
+    const request = JSON.parse(init.body as string) as { reference?: string };
+
+    notchpayRequests.push(request);
 
     return Promise.resolve({
       ok: true,
@@ -91,7 +131,7 @@ const notchpay = new NotchPayProvider(
       json: () =>
         Promise.resolve({
           // La forme réelle : `transaction` est un objet, pas une chaîne.
-          transaction: { reference: 'trx.test_mobile' },
+          transaction: { reference: `trx.test_mobile_${request.reference ?? ''}` },
           authorization_url: 'https://pay.notchpay.test/pay_mobile',
         }),
     });
@@ -200,15 +240,25 @@ describe('l’état de la facturation', () => {
 
     const plans = response.json().data.plans as {
       code: string;
-      prices: { currency: string; period: string }[];
+      prices: { currency: string; period: string; amount_minor: number }[];
     }[];
 
     const pro = plans.find((plan) => plan.code === 'pro');
 
-    // Le prix XAF existe dans l'environnement, mais Stripe ne l'encaisse pas.
-    expect(pro?.prices).toEqual([
-      { currency: 'EUR', period: 'monthly', amount_minor: 2900 },
-    ]);
+    /*
+     * Le prix XAF existe dans l'environnement, mais Stripe ne l'encaisse pas.
+     *
+     * Les trois champs cités, et non la ligne entière : ce qui est éprouvé ici est
+     * **quels prix apparaissent**, et figer la forme complète ferait tomber ce test au
+     * premier champ ajouté à côté — sans qu'aucun prix ait changé.
+     */
+    expect(
+      pro?.prices.map((price) => ({
+        currency: price.currency,
+        period: price.period,
+        amount_minor: price.amount_minor,
+      })),
+    ).toEqual([{ currency: 'EUR', period: 'monthly', amount_minor: 2900 }]);
   });
 });
 
@@ -926,5 +976,253 @@ describe('NotchPay, en prépayé', () => {
     } finally {
       await mobile.close();
     }
+  });
+});
+
+/**
+ * Un atelier qui paie en mobile money.
+ *
+ * **Un seul harnais pour les quatre tests qui suivent.** Chacun migrait son propre schéma
+ * et le fichier passait de cinq à dix minutes : un banc d'essai qu'on n'a plus envie de
+ * lancer ne protège plus rien. Chaque test crée son organisation, ce qui suffit à les
+ * rendre indépendants — à condition de ne jamais compter de lignes au-delà de la sienne,
+ * ce que les deux travaux de balayage, eux, font sur toute la base.
+ */
+let prepaid: Harness;
+
+async function prepaidWorkshop(slug: string) {
+  const signUpResponse = await prepaid.app.inject({
+    method: 'POST',
+    url: '/v1/auth/register',
+    payload: {
+      email: `${slug}@atelier.test`,
+      password: PASSWORD,
+      firstName: 'Essai',
+      lastName: 'Prépayé',
+      organizationName: `Atelier ${slug}`,
+    },
+  });
+
+  expect(signUpResponse.statusCode).toBe(201);
+
+  const { accessToken, organizationId } = signUpResponse.json().data as {
+    accessToken: string;
+    organizationId: string;
+  };
+  const headers = { authorization: `Bearer ${accessToken}` };
+
+  const checkout = (period: 'monthly' | 'yearly' = 'monthly') =>
+    prepaid.app.inject({
+      method: 'POST',
+      url: '/v1/billing/checkout',
+      headers,
+      payload: { plan: 'pro', period, currency: 'XAF' },
+    });
+
+  /** Payer, et faire arriver le webhook de l'encaissement. */
+  const payOnce = async (period: 'monthly' | 'yearly' = 'monthly') => {
+    const before = notchpayRequests.length;
+
+    expect((await checkout(period)).statusCode).toBe(200);
+
+    const ours = notchpayRequests[before]?.reference;
+    const body = JSON.stringify({
+      type: 'payment.complete',
+      data: {
+        reference: `trx.test_mobile_${ours ?? ''}`,
+        merchant_reference: ours,
+        status: 'complete',
+      },
+    });
+
+    const applied = await prepaid.app.inject({
+      method: 'POST',
+      url: '/v1/billing/webhooks/notchpay',
+      headers: {
+        'content-type': 'application/json',
+        'x-notch-signature': createHmac('sha256', NOTCH_HASH)
+          .update(Buffer.from(body, 'utf8'))
+          .digest('hex'),
+      },
+      payload: body,
+    });
+
+    expect(applied.json().data.applied).toBe(true);
+  };
+
+  const state = async () => {
+    const response = await prepaid.app.inject({
+      method: 'GET',
+      url: '/v1/billing',
+      headers,
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    return response.json().data as {
+      currency: string | null;
+      subscription: { current_period_end: string | null; provider: string | null };
+      plans: {
+        code: string;
+        prices: { period: string; currency: string; access_until: string }[];
+      }[];
+      payments: { reference: string | null; status: string; amount_minor: number }[];
+    };
+  };
+
+  const service = () =>
+    new BillingService(
+      prepaid.db,
+      new BillingRepository(prepaid.db, loadPrices({}, ['pro'])),
+    );
+
+  /** Les tentatives de **cette** organisation, par période. */
+  const paymentRows = () =>
+    prepaid.db
+      .selectFrom('payments')
+      .select(['period', 'status'])
+      .where('organization_id', '=', organizationId)
+      .execute();
+
+  return { headers, checkout, payOnce, state, service, paymentRows, organizationId };
+}
+
+describe('la facturation en prépayé', () => {
+  beforeAll(async () => {
+    prepaid = await createHarness('test_billing_prepaid', {
+      paymentProviders: [notchpay],
+      appUrl: 'https://neftya.test',
+      env: {
+        NEFTYA_PRICE_PRO_XAF_MONTHLY: '19000',
+        NEFTYA_PRICE_PRO_XAF_YEARLY: '190000',
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prepaid.close();
+  });
+
+  it('annonce où un paiement de plus porterait l’accès, et tient son annonce', async () => {
+    /*
+     * **Le défaut qui a fait payer deux fois.** Un client avait Pro jusqu'au 12/11, a
+     * repayé un mois en croyant que le premier n'avait pas abouti, et s'est retrouvé au
+     * 12/12 sans qu'aucun écran ne l'ait prévenu que les mois se cumulent.
+     *
+     * Le calcul était juste. Ce qui manquait, c'est que la page puisse le dire — et elle
+     * ne peut le dire que si le serveur rend la date : la refaire dans l'interface en
+     * ferait une seconde arithmétique, qui dérive au premier cas limite.
+     *
+     * L'assertion qui compte est la dernière : **l'échéance obtenue est exactement celle
+     * qui avait été annoncée**. Calculer `access_until` depuis maintenant au lieu de
+     * l'échéance en cours la fait tomber.
+     */
+    const { payOnce, state } = await prepaidWorkshop('cumul');
+
+    await payOnce();
+
+    const first = await state();
+    const end = first.subscription.current_period_end;
+
+    expect(end).not.toBeNull();
+
+    const announced = first.plans
+      .find((plan) => plan.code === 'pro')
+      ?.prices.find((price) => price.period === 'monthly')?.access_until;
+
+    expect(announced).toBeDefined();
+
+    // Un mois de plus que l'échéance en cours, et non un mois à partir d'aujourd'hui.
+    const months = (date: string) =>
+      new Date(date).getUTCFullYear() * 12 + new Date(date).getUTCMonth();
+
+    expect(months(announced as string) - months(end as string)).toBe(1);
+
+    await payOnce();
+
+    expect((await state()).subscription.current_period_end).toBe(announced);
+  });
+
+  it('garde la trace des encaissements, et retient la devise', async () => {
+    /*
+     * Sans l'historique, « jusqu'au 12/12 » reste invérifiable : la réponse — deux
+     * encaissements d'un mois — existait en base et aucune page ne la montrait.
+     *
+     * La devise, elle, était nulle pour **toutes** les organisations : le filtre qui ne
+     * devait montrer que les prix du client n'a donc jamais servi à personne, et chaque
+     * offre affichait ses quatre combinaisons. Payer est une décision : on la retient.
+     */
+    const { payOnce, state } = await prepaidWorkshop('trace');
+
+    await payOnce();
+    await payOnce();
+
+    const after = await state();
+
+    expect(after.payments).toHaveLength(2);
+    expect(after.payments.every((payment) => payment.status === 'settled')).toBe(true);
+    expect(after.payments.every((payment) => payment.reference !== null)).toBe(true);
+    expect(after.payments[0]?.amount_minor).toBe(19000);
+
+    expect(after.currency).toBe('XAF');
+    expect(after.subscription.provider).toBe('notchpay');
+  });
+
+  it('constate un encaissement dont le webhook n’est jamais venu', async () => {
+    /*
+     * **C'est l'état réel de la production.** Aucun webhook NotchPay n'est jamais arrivé ;
+     * les deux encaissements observés l'ont été par la sonde du retour de paiement, qui ne
+     * part que si le client revient sur la page. Qui ferme l'onglet après avoir payé ne
+     * déclenchait rien du tout.
+     */
+    const { checkout, state, service } = await prepaidWorkshop('sonde');
+
+    expect((await checkout()).statusCode).toBe(200);
+    expect((await state()).subscription.current_period_end).toBeNull();
+
+    const sweep = service();
+
+    // Tant que l'encaisseur ne conclut rien, rien ne bouge : un client en train de
+    // valider sur son téléphone n'a pas encore payé.
+    notchpayStatus = 'pending';
+    await sweep.verifyAllPending([notchpay]);
+
+    expect((await state()).subscription.current_period_end).toBeNull();
+
+    notchpayStatus = 'complete';
+    await sweep.verifyAllPending([notchpay]);
+
+    expect((await state()).subscription.current_period_end).not.toBeNull();
+  });
+
+  it('clôt les tentatives périmées, et laisse les autres', async () => {
+    /*
+     * Une page de paiement vit un jour. Passé ce délai, la ligne ne décrira plus rien :
+     * laissée ouverte, elle serait sondée sans fin, et `openPayment` y renverrait un
+     * client qui reclique — vers une adresse que le fournisseur a oubliée.
+     */
+    const { checkout, service, paymentRows, organizationId } =
+      await prepaidWorkshop('peremption');
+
+    expect((await checkout('monthly')).statusCode).toBe(200);
+    expect((await checkout('yearly')).statusCode).toBe(200);
+
+    /*
+     * En SQL direct : `created_at` est posée par la base et le type l'interdit à la mise
+     * à jour, ce qui est juste — personne n'a à réécrire la date de naissance d'une
+     * ligne. Vieillir celle-ci est le seul moyen d'éprouver la péremption sans attendre
+     * un jour.
+     */
+    await sql`update payments set created_at = now() - interval '25 hours'
+              where organization_id = ${organizationId} and period = 'monthly'`.execute(
+      prepaid.db,
+    );
+
+    await service().expireStalePayments();
+
+    const rows = await paymentRows();
+
+    expect(rows.find((row) => row.period === 'monthly')?.status).toBe('expired');
+    expect(rows.find((row) => row.period === 'yearly')?.status).toBe('pending');
   });
 });

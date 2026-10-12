@@ -620,7 +620,15 @@
       "per_yearly": " / an",
       "titleSelling": "Des tarifs simples, sans engagement.",
       "proCtaBuy": "Choisir Pro",
-      "profCtaBuy": "Choisir Professional"
+      "profCtaBuy": "Choisir Professional",
+      "cadence_monthly": "Mensuel",
+      "cadence_yearly": "Annuel",
+      "payIn": "Payer en",
+      "monthsFree_one": "{{count}} mois offert",
+      "monthsFree_other": "{{count}} mois offerts",
+      "percentOff": "−{{percent}} %",
+      "perMonthEquivalent": "soit {{amount}} par mois",
+      "recommended": "Recommandé"
     },
     "footer": {
       "copyright": "Neftya. L'outil des menuisiers de demain."
@@ -641,13 +649,8 @@
     "projects": "Projets",
     "aiMonth": "IA par mois",
     "members": "Utilisateurs",
-    "renewsOn": "Renouvellement",
-    "endsOn": "Fin d’accès",
     "lapsed": "Votre offre {{plan}} est arrivée à échéance : vous êtes revenu au gratuit. Reprenez-la ci-dessous pour retrouver vos plafonds.",
     "pastDue": "Le dernier prélèvement a échoué. Votre accès court jusqu’à la fin de la période ; mettez votre carte à jour pour ne pas le perdre.",
-    "thanks": "Merci — votre offre est active.",
-    "confirming": "Paiement reçu. Nous attendons la confirmation de l’encaisseur : cela prend quelques secondes, cette page se met à jour toute seule.",
-    "canceled": "Paiement abandonné. Rien n’a été débité.",
     "unlimitedProjects": "Projets illimités",
     "nProjects_one": "{{count}} projet",
     "nProjects_other": "{{count}} projets",
@@ -663,8 +666,50 @@
     },
     "period": {
       "monthly": "{{amount}} par mois",
-      "yearly": "{{amount}} par an"
+      "yearly": "{{amount}} par an",
+      "monthlyName": "mensuel",
+      "yearlyName": "annuel"
     },
-    "chosen": "Votre choix"
+    "chosen": "Votre choix",
+    "payIn": "Payer en",
+    "history": "Vos paiements",
+    "renewal": {
+      "autoLabel": "Prochain prélèvement",
+      "autoHint": "Votre carte sera prélevée automatiquement à cette date. Vous pouvez arrêter à tout moment depuis le portail ci-dessous.",
+      "manualLabel": "Accès jusqu’au",
+      "manualHint": "Rien ne se renouvelle tout seul en mobile money : repayez avant cette date pour garder votre accès. Un nouveau paiement s’ajoute à ce qu’il vous reste, il ne le remplace pas.",
+      "endsLabel": "Fin d’accès",
+      "endsHint": "Votre abonnement ne sera pas renouvelé. Vous gardez tout votre accès jusqu’à cette date."
+    },
+    "outcome": {
+      "confirmedTitle": "C’est payé — votre offre est ouverte.",
+      "confirmedBody": "L’encaissement est confirmé. Vos nouveaux plafonds s’appliquent dès maintenant, sur tous vos projets.",
+      "waitingTitle": "Paiement reçu, en attente de confirmation.",
+      "waitingBody": "Nous interrogeons l’encaisseur. Cette page se met à jour toute seule, vous n’avez rien à faire — et rien ne sera perdu si vous la fermez.",
+      "waitingTooLong": "C’est plus long que d’habitude. Votre paiement n’est pas perdu : nous le vérifions aussi de notre côté, chaque heure. Écrivez-nous avec la référence ci-dessous si rien ne change.",
+      "refusedTitle": "Paiement refusé.",
+      "refusedBody": "L’encaisseur n’a pas validé l’opération — code incorrect, solde insuffisant ou délai dépassé. Votre offre n’a pas changé. Vous pouvez réessayer ci-dessous.",
+      "unfinishedTitle": "Paiement non finalisé.",
+      "unfinishedBody": "L’opération n’a pas abouti et votre offre n’a pas changé. Si un montant a été retenu par votre opérateur, citez-lui la référence ci-dessous.",
+      "planLabel": "Offre",
+      "amountLabel": "Montant",
+      "reference": "Référence : {{reference}}"
+    },
+    "confirm": {
+      "title": "Vous avez déjà un abonnement en cours",
+      "body": "Votre accès {{plan}} court jusqu’au {{from}}. Ce paiement de {{amount}} ne le remplace pas : il s’y ajoute et le portera au {{to}}.",
+      "go": "Prolonger mon accès"
+    },
+    "payment": {
+      "pending": "En attente",
+      "settled": "Encaissé",
+      "failed": "Refusé",
+      "canceled": "Annulé",
+      "expired": "Expiré"
+    }
+  },
+  "currency": {
+    "EUR": "Euro",
+    "XAF": "FCFA"
   }
 }

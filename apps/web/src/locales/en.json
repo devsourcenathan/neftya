@@ -620,7 +620,15 @@
       "per_yearly": " / year",
       "titleSelling": "Simple pricing, no commitment.",
       "proCtaBuy": "Choose Pro",
-      "profCtaBuy": "Choose Professional"
+      "profCtaBuy": "Choose Professional",
+      "cadence_monthly": "Monthly",
+      "cadence_yearly": "Yearly",
+      "payIn": "Pay in",
+      "monthsFree_one": "{{count}} month free",
+      "monthsFree_other": "{{count}} months free",
+      "percentOff": "−{{percent}}%",
+      "perMonthEquivalent": "that is {{amount}} per month",
+      "recommended": "Recommended"
     },
     "footer": {
       "copyright": "Neftya. The tool for the woodworkers of tomorrow."
@@ -641,13 +649,8 @@
     "projects": "Projects",
     "aiMonth": "AI per month",
     "members": "Users",
-    "renewsOn": "Renews",
-    "endsOn": "Access ends",
     "lapsed": "Your {{plan}} plan has expired: you are back on the free plan. Take it up again below to restore your limits.",
     "pastDue": "The last payment failed. Your access runs until the end of the period; update your card so you do not lose it.",
-    "thanks": "Thank you — your plan is active.",
-    "confirming": "Payment received. We are waiting for the provider to confirm: this takes a few seconds, and this page updates itself.",
-    "canceled": "Payment abandoned. Nothing was charged.",
     "unlimitedProjects": "Unlimited projects",
     "nProjects_one": "{{count}} project",
     "nProjects_other": "{{count}} projects",
@@ -663,8 +666,50 @@
     },
     "period": {
       "monthly": "{{amount}} per month",
-      "yearly": "{{amount}} per year"
+      "yearly": "{{amount}} per year",
+      "monthlyName": "monthly",
+      "yearlyName": "yearly"
     },
-    "chosen": "Your choice"
+    "chosen": "Your choice",
+    "payIn": "Pay in",
+    "history": "Your payments",
+    "renewal": {
+      "autoLabel": "Next charge",
+      "autoHint": "Your card will be charged automatically on this date. You can stop at any time from the portal below.",
+      "manualLabel": "Access until",
+      "manualHint": "Nothing renews on its own with mobile money: pay again before this date to keep your access. A new payment adds to what is left, it does not replace it.",
+      "endsLabel": "Access ends",
+      "endsHint": "Your subscription will not be renewed. You keep full access until this date."
+    },
+    "outcome": {
+      "confirmedTitle": "Paid — your plan is open.",
+      "confirmedBody": "The payment is confirmed. Your new limits apply right away, across all your projects.",
+      "waitingTitle": "Payment received, awaiting confirmation.",
+      "waitingBody": "We are checking with the payment provider. This page updates on its own — there is nothing for you to do, and nothing is lost if you close it.",
+      "waitingTooLong": "This is taking longer than usual. Your payment is not lost: we also check it on our side, every hour. Write to us with the reference below if nothing changes.",
+      "refusedTitle": "Payment declined.",
+      "refusedBody": "The provider did not approve the operation — wrong code, insufficient funds or a timeout. Your plan has not changed. You can try again below.",
+      "unfinishedTitle": "Payment not completed.",
+      "unfinishedBody": "The operation did not go through and your plan has not changed. If your operator held an amount, quote the reference below to them.",
+      "planLabel": "Plan",
+      "amountLabel": "Amount",
+      "reference": "Reference: {{reference}}"
+    },
+    "confirm": {
+      "title": "You already have an active subscription",
+      "body": "Your {{plan}} access runs until {{from}}. This {{amount}} payment does not replace it: it adds to it and will carry it to {{to}}.",
+      "go": "Extend my access"
+    },
+    "payment": {
+      "pending": "Pending",
+      "settled": "Paid",
+      "failed": "Declined",
+      "canceled": "Cancelled",
+      "expired": "Expired"
+    }
+  },
+  "currency": {
+    "EUR": "Euro",
+    "XAF": "CFA franc"
   }
 }

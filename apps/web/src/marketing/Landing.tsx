@@ -3,8 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '@neftya/units';
 import { anonymousApi } from '../api/client.js';
-import { getPublicPlans, type PublicPlan } from '../api/projects.js';
+import { getPublicPlans } from '../api/projects.js';
+import {
+  currenciesOf,
+  preferredCurrency,
+  rememberCurrency,
+} from '../billing/currency.js';
 import { rememberIntendedPlan } from '../billing/intent.js';
+import { monthlyEquivalent, yearlyAdvantage } from '../billing/offers.js';
 import { AuthScreens } from '../sekuu/AuthScreens.js';
 import {
   AssistantIcon,
@@ -59,6 +65,29 @@ export function Landing() {
     staleTime: 5 * 60 * 1000,
   });
 
+  /*
+   * La cadence affichée. Mensuelle d'abord : c'est l'engagement le plus court.
+   *
+   * **L'annuel n'était visible nulle part.** La page ne gardait que les prix mensuels, si
+   * bien que deux mois offerts sur douze — le seul vrai levier commercial du produit —
+   * n'apparaissaient qu'après la création d'un compte. Personne ne crée un compte pour
+   * découvrir un prix.
+   */
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
+
+  /*
+   * La devise affichée, **une seule à la fois**.
+   *
+   * La page montrait « 29,00 € · 5 000 FCFA » sur chaque carte : cinq nombres et deux
+   * monnaies pour trois offres, et un visiteur qui doit trier avant de comprendre. Elle
+   * est devinée du fuseau horaire, et le bouton à côté des tarifs permet d'en changer —
+   * deviner sans laisser corriger serait pire que tout afficher.
+   *
+   * `null` jusqu'au premier rendu du catalogue : on ne choisit pas parmi des devises
+   * qu'on ne connaît pas encore.
+   */
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(null);
+
   if (authMode) {
     return <AuthScreens initialMode={authMode} />;
   }
@@ -84,6 +113,56 @@ export function Landing() {
   const selling = [...priced.values()].some(
     (plan) => plan.code !== 'free' && plan.prices.length > 0,
   );
+
+  const everyPrice = [...priced.values()].flatMap((plan) => plan.prices);
+  const currencies = currenciesOf(everyPrice);
+  const currency = chosenCurrency ?? preferredCurrency(currencies);
+
+  const pickCurrencyFor = (code: string) => {
+    setChosenCurrency(code);
+    rememberCurrency(code);
+  };
+
+  /** Le prix d'une offre dans la devise et la cadence affichées, ou `undefined`. */
+  const priceOf = (code: string, forPeriod: 'monthly' | 'yearly' = period) =>
+    priced
+      .get(code)
+      ?.prices.find(
+        (price) => price.currency === currency && price.period === forPeriod,
+      );
+
+  /*
+   * L'annuel ne se propose que s'il existe quelque part dans cette devise.
+   *
+   * Un bouton « Annuel » qui ne révélerait que des « bientôt » poserait une question au
+   * visiteur là où il n'y a pas de réponse.
+   */
+  const hasYearly = everyPrice.some(
+    (price) => price.currency === currency && price.period === 'yearly',
+  );
+
+  /*
+   * L'avantage de l'annuel, **calculé des prix réels**.
+   *
+   * Écrit à la main, il mentirait au premier changement de tarif ; et il n'est annoncé que
+   * s'il existe, car prétendre une remise qui n'existe pas se vérifie en une division. On
+   * le prend sur l'offre mise en avant, qui est celle que le badge accompagne.
+   */
+  const advantage = (() => {
+    const monthly = priceOf('pro', 'monthly');
+    const yearly = priceOf('pro', 'yearly');
+
+    if (!monthly || !yearly) return null;
+
+    return yearlyAdvantage(monthly.amount_minor, yearly.amount_minor);
+  })();
+
+  const advantageLabel =
+    advantage === null
+      ? null
+      : advantage.kind === 'months'
+        ? t('landing.pricing.monthsFree', { count: advantage.months })
+        : t('landing.pricing.percentOff', { percent: advantage.percent });
 
   /**
    * Partir vers l'inscription **en retenant l'offre choisie**.
@@ -566,11 +645,68 @@ export function Landing() {
       {/* Pricing Section */}
       <section id="tarifs" className="scroll-mt-20 py-24 px-6 bg-surface relative">
         <div className="mx-auto max-w-5xl relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center">
             <h2 className="text-3xl font-bold md:text-4xl">
               {t(selling ? 'landing.pricing.titleSelling' : 'landing.pricing.title')}
             </h2>
           </div>
+
+          {/* Les deux réglages de l'affichage : la cadence, puis la devise. */}
+          <div className="mt-8 mb-14 flex flex-col items-center gap-4">
+            {hasYearly && (
+              <div className="inline-flex items-center rounded-full border border-hairline bg-surface-low p-1">
+                {(['monthly', 'yearly'] as const).map((candidate) => (
+                  <button
+                    key={candidate}
+                    type="button"
+                    onClick={() => setPeriod(candidate)}
+                    aria-pressed={period === candidate}
+                    className={`min-h-11 rounded-full px-5 text-sm font-bold transition-colors ${
+                      period === candidate
+                        ? 'bg-primary text-surface'
+                        : 'text-ink-variant hover:text-ink'
+                    }`}
+                  >
+                    {t(`landing.pricing.cadence_${candidate}`)}
+                  </button>
+                ))}
+                {/* L'économie est nommée **sur le bouton**, là où le choix se fait. */}
+                {advantageLabel !== null && (
+                  <span className="px-3 text-xs font-bold whitespace-nowrap text-primary">
+                    {advantageLabel}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/*
+             * Le sélecteur n'apparaît que s'il y a un choix à faire.
+             *
+             * Avec une seule devise encaissable, il n'offrirait rien et laisserait croire
+             * qu'un autre tarif existe ailleurs.
+             */}
+            {currencies.length > 1 && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-ink-variant">{t('landing.pricing.payIn')}</span>
+                {currencies.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => pickCurrencyFor(code)}
+                    aria-pressed={currency === code}
+                    className={`min-h-11 rounded-full px-3 font-bold transition-colors ${
+                      currency === code
+                        ? 'text-ink underline decoration-primary decoration-2 underline-offset-4'
+                        : 'text-ink-variant hover:text-ink'
+                    }`}
+                  >
+                    {t(`currency.${code}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="grid gap-8 md:grid-cols-3">
             {[
               /*
@@ -578,9 +714,8 @@ export function Landing() {
                *
                * Écrits dans cette page, ils auraient annoncé 29 € le jour où
                * l'environnement en dit 39 — et c'est le montant de l'environnement qui est
-               * débité. Une offre dont l'API ne rend aucun prix porte « bientôt » : c'est
-               * le cas tant qu'aucun encaisseur ne prend sa devise, et un bouton y mènerait
-               * tout droit à un refus.
+               * débité. Une offre sans prix dans la devise et la cadence affichées porte
+               * « bientôt » : un bouton y mènerait tout droit à un refus.
                */
               {
                 code: 'free',
@@ -592,7 +727,6 @@ export function Landing() {
                   t('landing.pricing.freePoint3'),
                 ],
                 cta: t('landing.pricing.freeCta'),
-                tone: 'primary',
               },
               {
                 code: 'pro',
@@ -606,7 +740,6 @@ export function Landing() {
                 cta: t(
                   selling ? 'landing.pricing.proCtaBuy' : 'landing.pricing.proCta',
                 ),
-                tone: 'surface',
               },
               {
                 code: 'professional',
@@ -620,41 +753,93 @@ export function Landing() {
                 cta: t(
                   selling ? 'landing.pricing.profCtaBuy' : 'landing.pricing.profCta',
                 ),
-                tone: 'surface',
               },
             ]
-              .map((plan) => ({ ...plan, offer: priced.get(plan.code) }))
-              .map((plan, i) => (
+              .map((plan) => ({
+                ...plan,
+                price: plan.code === 'free' ? undefined : priceOf(plan.code),
+                /*
+                 * L'offre mise en avant est celle qu'on recommande — **pas la gratuite**.
+                 *
+                 * L'emphase était sur « Découverte » : la carte la plus visible, agrandie
+                 * et ombrée, était celle qui ne rapporte rien et qui plafonne à trois
+                 * projets. Une page de tarifs qui met en avant son offre gratuite se bat
+                 * contre elle-même.
+                 */
+                featured: plan.code === 'pro',
+              }))
+              .map((plan) => ({
+                ...plan,
+                /* Une offre payante sans prix encaissable ne se vend pas encore. */
+                soon: plan.code !== 'free' && plan.price === undefined,
+              }))
+              .map((plan) => (
                 <div
-                  key={i}
-                  className={`animate-on-scroll flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.tone === 'primary' ? 'border-primary/50 shadow-antigravity lg:scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}
+                  key={plan.code}
+                  className={`animate-on-scroll flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.featured ? 'border-primary/50 shadow-antigravity lg:scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-xl font-bold">{plan.name}</h3>
-                    {soonOf(plan.code, plan.offer) && (
+                    {plan.soon && (
                       <span className="rounded-full bg-surface-high px-3 py-1 text-xs font-bold tracking-wide text-ink-variant uppercase">
                         {t('landing.pricing.soon')}
                       </span>
                     )}
-                  </div>
-                  <div
-                    className={`mt-4 text-4xl font-extrabold ${soonOf(plan.code, plan.offer) ? 'text-ink-variant' : ''}`}
-                  >
-                    {priceLabel(plan.code, plan.offer)}
-                    {/* La cadence une seule fois, après les deux devises : « 29,00 € /
-                        mois · 5 000 FCFA / mois » l'aurait dite deux fois. */}
-                    {plan.code !== 'free' && !soonOf(plan.code, plan.offer) && (
-                      <span className="text-base font-medium text-ink-variant">
-                        {t('landing.pricing.per_monthly')}
+                    {/*
+                     * « Recommandé », et non « le plus choisi ».
+                     *
+                     * La seconde formule serait une statistique, et nous n'en avons
+                     * aucune : ce serait la même invention que l'essai de quatorze jours
+                     * qui figurait ici sans une ligne de code pour le soutenir. Une
+                     * recommandation, elle, nous appartient.
+                     */}
+                    {!plan.soon && plan.featured && (
+                      <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold tracking-wide text-surface uppercase">
+                        {t('landing.pricing.recommended')}
                       </span>
                     )}
                   </div>
+
+                  <div
+                    className={`mt-4 text-4xl font-extrabold ${plan.soon ? 'text-ink-variant' : ''}`}
+                  >
+                    {plan.soon
+                      ? '—'
+                      : formatMoney({
+                          amount: plan.price?.amount_minor ?? 0,
+                          currency: plan.price?.currency ?? currency ?? 'EUR',
+                        })}
+                    {!plan.soon && plan.price !== undefined && (
+                      <span className="text-base font-medium text-ink-variant">
+                        {t(`landing.pricing.per_${plan.price.period}`)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/*
+                   * Le mensuel équivalent, sous un prix annuel.
+                   *
+                   * « 290 €/an » et « 29 €/mois » ne se comparent pas de tête, et le
+                   * visiteur qui essaie se trompe aussi souvent qu'il réussit.
+                   */}
+                  {plan.price?.period === 'yearly' && (
+                    <p className="mt-1 text-sm text-ink-variant">
+                      {t('landing.pricing.perMonthEquivalent', {
+                        amount: formatMoney({
+                          amount: monthlyEquivalent(plan.price.amount_minor),
+                          currency: plan.price.currency,
+                        }),
+                      })}
+                    </p>
+                  )}
+
                   <p className="mt-4 text-sm text-ink-variant min-h-12">{plan.desc}</p>
-                  {soonOf(plan.code, plan.offer) && (
+                  {plan.soon && (
                     <p className="mt-2 text-xs text-outline">
                       {t('landing.pricing.soonNote')}
                     </p>
                   )}
+
                   <div className="my-8 flex-1">
                     <ul className="space-y-3">
                       {plan.feats.map((f, j) => (
@@ -670,6 +855,7 @@ export function Landing() {
                       ))}
                     </ul>
                   </div>
+
                   {/* Une offre qu'on ne peut pas encore vendre n'a pas de bouton : il
                     mènerait à une inscription suivie d'une impasse. */}
                   <button
@@ -678,8 +864,8 @@ export function Landing() {
                         ? navigateToAuth('register')
                         : choosePlan(plan.code)
                     }
-                    disabled={soonOf(plan.code, plan.offer)}
-                    className={`w-full py-3 rounded-full font-bold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${plan.tone === 'primary' ? 'bg-primary text-surface hover:bg-primary/90 hover:-translate-y-1' : 'bg-surface-high/80 text-ink hover:bg-surface-highest'}`}
+                    disabled={plan.soon}
+                    className={`w-full py-3 rounded-full font-bold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${plan.featured ? 'bg-primary text-surface hover:bg-primary/90 hover:-translate-y-1' : 'bg-surface-high/80 text-ink hover:bg-surface-highest'}`}
                   >
                     {plan.cta}
                   </button>
@@ -701,42 +887,4 @@ export function Landing() {
       </footer>
     </div>
   );
-}
-
-/**
- * Le gratuit n'est jamais « bientôt » : il est disponible par définition.
- *
- * Pour le reste, une offre sans prix encaissable ne se vend pas — soit son tarif n'est pas
- * arrêté, soit aucun encaisseur ne prend sa devise. Tant que le catalogue n'est pas
- * revenu, on ne promet rien non plus.
- */
-function soonOf(code: string, offer: PublicPlan | undefined): boolean {
-  if (code === 'free') return false;
-
-  return (offer?.prices.length ?? 0) === 0;
-}
-
-/**
- * Le prix mensuel, dans **chaque** devise où l'offre se vend.
- *
- * Il prenait « le moins cher », en comparant des montants de devises différentes : 2 900
- * centimes d'euro contre 5 000 francs CFA. Le classement n'avait aucun sens — il tombait
- * juste par accident des chiffres, et le jour où un prix bouge, la page aurait annoncé
- * 5 000 F CFA à un visiteur français.
- *
- * Les deux sont donc affichés. Neftya se vend dans deux zones, et un artisan camerounais
- * n'a pas à convertir de tête pour savoir si c'est pour lui.
- */
-function priceLabel(code: string, offer: PublicPlan | undefined): string {
-  if (code === 'free') return '0 €';
-
-  const monthly = (offer?.prices ?? []).filter((price) => price.period === 'monthly');
-
-  if (monthly.length === 0) return '—';
-
-  return monthly
-    .map((price) =>
-      formatMoney({ amount: price.amount_minor, currency: price.currency }),
-    )
-    .join(' · ');
 }

@@ -192,7 +192,7 @@ if (applied.length > 0) {
 }
 
 /*
- * Le balayage des abonnements finis.
+ * Le balayage horaire de la facturation.
  *
  * Il ne tourne que s'il y a de quoi encaisser : sans fournisseur, aucun abonnement payant
  * n'existe, et un minuteur qui interroge la base toutes les heures pour ne jamais rien
@@ -203,6 +203,7 @@ if (applied.length > 0) {
  */
 if (paymentProviders.length > 0) {
   startExpirySweeper(new BillingService(db, new BillingRepository(db, prices)), {
+    providers: paymentProviders,
     report: (message, details) => {
       console.log(JSON.stringify({ level: 'info', message, ...details }));
     },

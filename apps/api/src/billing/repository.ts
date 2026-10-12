@@ -18,6 +18,35 @@ import type { PriceEntry } from './prices.js';
 /** L'offre servie à qui n'a jamais payé. Son code est en base comme les autres. */
 export const FREE_PLAN_CODE = 'free';
 
+/**
+ * L'abonnement tel qu'il est en base, et non tel que la décision d'accès le voit.
+ *
+ * `entitlementOf` n'a besoin que de quatre champs et reste volontairement ignorant des
+ * encaisseurs : lui apprendre ce qu'est NotchPay ferait d'un module pur un module qui
+ * connaît des fournisseurs. Ces deux champs-ci ne servent qu'à **dire la vérité au
+ * client** — « renouvellement automatique » quand une carte est en place, « à renouveler
+ * avant » quand rien ne se renouvellera tout seul.
+ */
+export interface SubscriptionRow extends SubscriptionState {
+  provider: PaymentProviderKey | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+/** Une tentative de paiement, telle qu'on la montre au client. */
+export interface PaymentRecord {
+  id: string;
+  provider: PaymentProviderKey;
+  /** La référence du fournisseur, celle que le client voit sur son téléphone. */
+  providerRef: string | null;
+  planCode: string;
+  period: BillingPeriod;
+  currency: string;
+  amountMinor: number;
+  status: 'pending' | 'settled' | 'failed' | 'canceled' | 'expired';
+  createdAt: Date;
+  settledAt: Date | null;
+}
+
 export interface PlanOffer extends PlanLimits {
   rank: number;
   /** Un prix par devise et par période. Une combinaison absente ne se vend pas. */
@@ -107,10 +136,17 @@ export class BillingRepository {
     return row?.stripe_customer_id ?? null;
   }
 
-  async subscriptionOf(organizationId: string): Promise<SubscriptionState | undefined> {
+  async subscriptionOf(organizationId: string): Promise<SubscriptionRow | undefined> {
     const row = await this.db
       .selectFrom('subscriptions')
-      .select(['plan_code', 'status', 'period', 'current_period_end'])
+      .select([
+        'plan_code',
+        'status',
+        'period',
+        'current_period_end',
+        'provider',
+        'cancel_at_period_end',
+      ])
       .where('organization_id', '=', organizationId)
       .executeTakeFirst();
 
@@ -121,7 +157,54 @@ export class BillingRepository {
       status: row.status,
       period: row.period,
       currentPeriodEnd: row.current_period_end,
+      provider: row.provider,
+      cancelAtPeriodEnd: row.cancel_at_period_end,
     };
+  }
+
+  /**
+   * Les dernières tentatives de paiement d'une organisation.
+   *
+   * **Ce qui rend une échéance vérifiable.** Sans cette liste, un client qui voit
+   * « jusqu'au 12/12 » après avoir cru acheter un mois n'a aucun moyen de comprendre : la
+   * réponse — deux encaissements, un mois chacun — existait en base et aucune page ne la
+   * montrait. Il fallait demander à quelqu'un qui sait lire du SQL.
+   *
+   * Bornée : personne ne remonte au-delà de quelques lignes, et une organisation qui paie
+   * depuis trois ans n'a pas à télécharger trente-six lignes pour lire la dernière.
+   */
+  async paymentsOf(organizationId: string, limit = 10): Promise<PaymentRecord[]> {
+    const rows = await this.db
+      .selectFrom('payments')
+      .select([
+        'id',
+        'provider',
+        'provider_ref',
+        'plan_code',
+        'period',
+        'currency',
+        'amount_minor',
+        'status',
+        'created_at',
+        'settled_at',
+      ])
+      .where('organization_id', '=', organizationId)
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .execute();
+
+    return rows.map((row) => ({
+      id: row.id,
+      provider: row.provider,
+      providerRef: row.provider_ref,
+      planCode: row.plan_code,
+      period: row.period,
+      currency: row.currency,
+      amountMinor: row.amount_minor,
+      status: row.status,
+      createdAt: row.created_at,
+      settledAt: row.settled_at,
+    }));
   }
 
   /**

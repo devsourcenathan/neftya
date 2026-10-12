@@ -166,6 +166,15 @@ export interface BillingResource {
     current_period_end: string | null;
     /** Vrai quand l'accès est retombé au gratuit faute de paiement en cours. */
     lapsed: boolean;
+    /**
+     * Qui encaisse. `null` quand personne n'a jamais payé.
+     *
+     * Il décide de ce qu'on a le droit d'annoncer à l'échéance : une carte se prélève
+     * seule, un prépayé ne se renouvelle pas tout seul. Sans lui, l'écran promettait un
+     * renouvellement à tout le monde.
+     */
+    provider: 'stripe' | 'notchpay' | null;
+    cancel_at_period_end: boolean;
   };
   quotas: {
     projects_max: number | null;
@@ -178,9 +187,43 @@ export interface BillingResource {
     ai_month_max: number | null;
     members_max: number | null;
     /** Seuls les prix qu'un encaisseur configuré sait prendre. */
-    prices: { currency: string; period: 'monthly' | 'yearly'; amount_minor: number }[];
+    prices: {
+      currency: string;
+      period: 'monthly' | 'yearly';
+      amount_minor: number;
+      /**
+       * Jusqu'où ce paiement porterait l'accès, s'il était fait maintenant.
+       *
+       * **Rendu par le serveur, et non recalculé ici.** Un abonnement en cours se
+       * prolonge depuis son échéance : refaire l'arithmétique dans l'interface en ferait
+       * une seconde source de vérité, qui dérive au premier cas limite et annoncerait une
+       * date que le serveur ne posera pas.
+       */
+      access_until: string;
+    }[];
+  }[];
+  /**
+   * Les dernières tentatives, réussies comme ratées.
+   *
+   * C'est ce qui rend une échéance vérifiable : « renouvellement le 12/12 » après avoir
+   * cru acheter un mois n'a de réponse que là. Et c'est le seul endroit où un échec se
+   * voit — l'état « refusé » était écrit en base et lu par personne.
+   */
+  payments: {
+    id: string;
+    /** La référence de l'encaisseur, celle que le client lit sur son téléphone. */
+    reference: string | null;
+    plan_code: string;
+    period: 'monthly' | 'yearly';
+    currency: string;
+    amount_minor: number;
+    status: 'pending' | 'settled' | 'failed' | 'canceled' | 'expired';
+    created_at: string;
+    settled_at: string | null;
   }[];
 }
+
+export type PaymentAttempt = BillingResource['payments'][number];
 
 export const getBilling = (api: ApiClient) => api<BillingResource>('/v1/billing');
 

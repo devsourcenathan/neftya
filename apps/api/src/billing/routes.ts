@@ -6,7 +6,7 @@ import { sekuuOf } from '../sekuu/authenticate.js';
 import { can } from '../sekuu/permission-resolver.js';
 import type { AuthRepository } from '../auth/repository.js';
 import type { SettingsRepository } from '../settings/repository.js';
-import { entitlementOf } from './entitlement.js';
+import { entitlementOf, nextPeriodEnd } from './entitlement.js';
 import { FREE_PLAN_CODE } from './repository.js';
 import type { BillingRepository } from './repository.js';
 import type { BillingService } from './service.js';
@@ -95,10 +95,11 @@ export function registerBillingRoutes(
     const context = sekuuOf(request);
     const now = new Date();
 
-    const [offers, subscription, organizationSettings] = await Promise.all([
+    const [offers, subscription, organizationSettings, payments] = await Promise.all([
       billing.offers(),
       billing.subscriptionOf(context.organizationId),
       settings.get(context.organizationId),
+      billing.paymentsOf(context.organizationId),
     ]);
 
     const plans = new Map(offers.map((offer) => [offer.code, offer]));
@@ -127,6 +128,16 @@ export function registerBillingRoutes(
         period: subscription?.period ?? 'free',
         current_period_end: subscription?.currentPeriodEnd?.toISOString() ?? null,
         lapsed: entitlement.lapsed,
+        /*
+         * Qui encaisse, et s'il renouvellera de lui-même.
+         *
+         * L'interface disait « Renouvellement » à tout le monde. En mobile money rien ne
+         * se renouvelle : le libellé promettait un prélèvement qui n'arrivera jamais, et
+         * l'accès tomberait le jour dit sans que personne n'ait été averti. Dire qui
+         * encaisse est la seule façon de dire la vérité sur ce qui suit.
+         */
+        provider: subscription?.provider ?? null,
+        cancel_at_period_end: subscription?.cancelAtPeriodEnd ?? false,
       },
       quotas: {
         projects_max: entitlement.quotas.projectsMax,
@@ -150,7 +161,44 @@ export function registerBillingRoutes(
             currency: price.currency,
             period: price.period,
             amount_minor: price.amountMinor,
+            /*
+             * Jusqu'à quand ce paiement porterait l'accès, s'il était fait maintenant.
+             *
+             * **Calculé ici, et nulle part ailleurs.** Un abonnement en cours se prolonge
+             * depuis son échéance et non depuis aujourd'hui : refaire cette arithmétique
+             * dans l'interface en aurait fait une seconde source de vérité, qui dérive au
+             * premier cas limite — un 31 janvier, une année bissextile — et annoncerait
+             * une date que le serveur ne posera pas.
+             *
+             * C'est ce que l'interface doit pouvoir dire avant d'encaisser : « vous avez
+             * jusqu'au 12/11, ce paiement vous portera au 12/12 ». Faute de le dire, un
+             * client paie deux fois en croyant que la première n'avait pas marché.
+             */
+            access_until: nextPeriodEnd(
+              subscription?.currentPeriodEnd ?? null,
+              price.period,
+              now,
+            ).toISOString(),
           })),
+      })),
+      /*
+       * Les dernières tentatives, réussies comme ratées.
+       *
+       * C'est ce qui rend une échéance vérifiable — « jusqu'au 12/12 » après avoir cru
+       * acheter un mois n'a de réponse que là. Et c'est le seul endroit où un échec se
+       * voit : `payments.status = 'failed'` était écrit en base et lu par personne.
+       */
+      payments: payments.map((payment) => ({
+        id: payment.id,
+        /** La référence du fournisseur : celle que le client lit sur son téléphone. */
+        reference: payment.providerRef,
+        plan_code: payment.planCode,
+        period: payment.period,
+        currency: payment.currency,
+        amount_minor: payment.amountMinor,
+        status: payment.status,
+        created_at: payment.createdAt.toISOString(),
+        settled_at: payment.settledAt?.toISOString() ?? null,
       })),
     });
   });

@@ -1,7 +1,12 @@
+import type { PaymentProvider } from './provider.js';
 import type { BillingService } from './service.js';
 
 /**
- * Le balayage des abonnements finis.
+ * Le balayage horaire de la facturation.
+ *
+ * Trois travaux, pour trois choses dont personne ne nous prévient : les abonnements
+ * arrivés à terme, les encaissements dont le webhook n'est jamais venu, et les tentatives
+ * qu'aucun encaissement n'honorera plus.
  *
  * **Sans lui, un prépayé expiré sert indéfiniment.** Stripe envoie une résiliation quand
  * il cesse de prélever ; NotchPay n'envoie rien du tout quand un client ne repaie pas —
@@ -37,13 +42,52 @@ export function startExpirySweeper(
     intervalMs?: number;
     /** Où dire ce qui s'est passé. Un balayage muet ne se diagnostique pas. */
     report?: (message: string, details: Record<string, unknown>) => void;
+    /**
+     * Les encaisseurs à interroger sur les paiements restés en attente.
+     *
+     * Absents, le balayage se limite aux échéances. C'est le cas d'un déploiement sans
+     * clés : il n'y a alors aucun paiement à sonder, et une liste vide est une réponse.
+     */
+    providers?: readonly PaymentProvider[];
   } = {},
 ): Sweeper {
   const intervalMs = options.intervalMs ?? SWEEP_INTERVAL_MS;
   const report = options.report ?? (() => {});
+  const providers = options.providers ?? [];
 
   const run = async (): Promise<number> => {
     try {
+      /*
+       * La sonde d'abord, les échéances ensuite.
+       *
+       * **Le webhook n'est pas arrivé une seule fois en production.** Les deux
+       * encaissements observés l'ont été par la sonde du retour de paiement — qui ne part
+       * que si le client revient sur la page. Qui ferme l'onglet après avoir payé ne
+       * déclenchait rien : son argent était parti et son accès restait fermé, sans que
+       * personne de notre côté ait de quoi s'en apercevoir.
+       *
+       * Dans cet ordre parce qu'un encaissement constaté maintenant repousse une échéance
+       * que le passage suivant aurait coupée.
+       */
+      const confirmed =
+        providers.length > 0 ? await service.verifyAllPending(providers) : 0;
+
+      if (confirmed > 0) {
+        report('billing.confirmed_late', { confirmed });
+      }
+
+      /*
+       * Les tentatives trop vieilles sont closes.
+       *
+       * Sans quoi la sonde les interrogerait sans fin, et `openPayment` renverrait un
+       * client qui reclique vers une page de paiement que le fournisseur a oubliée.
+       */
+      const abandoned = await service.expireStalePayments();
+
+      if (abandoned > 0) {
+        report('billing.payments_expired', { abandoned });
+      }
+
       const downgraded = await service.expire();
 
       /*
@@ -66,7 +110,7 @@ export function startExpirySweeper(
        * capturé : l'API entière tomberait parce qu'un balayage de fond a échoué. On note
        * et on réessaiera dans une heure.
        */
-      report('billing.expiry_failed', {
+      report('billing.sweep_failed', {
         error: error instanceof Error ? error.message : String(error),
       });
 
