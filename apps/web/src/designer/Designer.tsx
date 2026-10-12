@@ -241,6 +241,12 @@ export function Designer({ initialModel, onSave, saving = false }: DesignerProps
             <Controls
               model={model}
               dispatch={dispatch}
+              /* Les nombres du moteur, et non un partage refait dans le panneau : deux
+                 calculs de la même répartition finissent par ne plus donner le même. */
+              resolved={{
+                compartmentWidths: furniture.compartmentWidths,
+                shelfSpaces: furniture.compartmentShelfSpaces,
+              }}
               budget={<Budget furniture={furniture} />}
             />
           </Panel>

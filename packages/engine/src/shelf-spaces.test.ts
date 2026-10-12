@@ -167,3 +167,39 @@ describe('la règle partagée', () => {
     expect(crowded.mismatch).toBe(true);
   });
 });
+
+describe('les hauteurs rendues au panneau', () => {
+  it('sont celles des étagères réellement posées', () => {
+    /*
+     * **La même vérité, lue de deux côtés.** `compartmentShelfSpaces` est rendu pour que
+     * le panneau affiche la hauteur obtenue sous un champ laissé souple ; s'il disait
+     * autre chose que ce que les étagères font, le menuisier saisirait une correction à
+     * partir d'un nombre faux. On compare donc au seul juge : la position des pièces.
+     */
+    const input: FurnitureInput = {
+      ...BOOKCASE,
+      compartments: [{ shelves: 3, shelfSpacesMm: [400, null, null, null] }],
+    };
+
+    expect(build(input).compartmentShelfSpaces[0]).toEqual(spacesOf(input));
+  });
+
+  it('donne un espace par compartiment, même sans étagère', () => {
+    /*
+     * `n` étagères font `n + 1` espaces, sans exception : un compartiment vide en a un, de
+     * toute sa hauteur utile. Rendre un tableau vide aurait obligé chaque lecteur à
+     * traiter ce cas à part, pour une règle qui n'en a pas.
+     */
+    const furniture = build({
+      dimensions: { widthMm: 1800, heightMm: 2000, depthMm: 400 },
+      compartments: [{ shelves: 0 }, { shelves: 2 }],
+    });
+
+    expect(furniture.compartmentShelfSpaces.map((spaces) => spaces.length)).toEqual([
+      1, 3,
+    ]);
+
+    // Le compartiment sans étagère reçoit toute la hauteur intérieure, et non zéro.
+    expect(furniture.compartmentShelfSpaces[0]?.[0]).toBe(2000 - 2 * 18);
+  });
+});

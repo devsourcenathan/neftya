@@ -28,6 +28,20 @@ export interface ControlsProps {
   model: ParsedFurnitureInput;
   dispatch: (action: DesignerAction) => void;
   /**
+   * Les largeurs et les hauteurs d'espace **réellement obtenues**, du moteur.
+   *
+   * Sans elles, un champ laissé souple n'afficherait aucun nombre : le menuisier saurait
+   * qu'il n'a rien imposé, pas ce qu'il obtient. Il saisirait alors une correction sans
+   * savoir à partir de quoi — ou pire, taperait un nombre qu'il croyait déjà appliqué.
+   *
+   * Les nombres du moteur, et non un partage refait ici : deux calculs de la même
+   * répartition finissent par ne plus donner le même, et c'est l'écran qui mentirait.
+   */
+  resolved: {
+    compartmentWidths: readonly number[];
+    shelfSpaces: readonly (readonly number[])[];
+  };
+  /**
    * Le coût estimé, posé par le concepteur.
    *
    * Un emplacement plutôt que le composant : `Controls` est un formulaire, et il n'a aucune
@@ -38,7 +52,7 @@ export interface ControlsProps {
   budget?: ReactNode;
 }
 
-export function Controls({ model, dispatch, budget }: ControlsProps) {
+export function Controls({ model, dispatch, resolved, budget }: ControlsProps) {
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
 
@@ -152,6 +166,26 @@ export function Controls({ model, dispatch, budget }: ControlsProps) {
                 </span>
               )}
               <div className="flex flex-col gap-2">
+                {/*
+                  La largeur en premier : c'est la cote du compartiment, avant son contenu.
+
+                  Souple par défaut, et le champ le montre — il affiche la largeur obtenue
+                  en filigrane. Imposer les quatre largeurs d'un meuble régulier n'apporte
+                  rien et empêche le partage de se refaire quand on élargit le caisson.
+                */}
+                {model.compartments.length > 1 && (
+                  <OptionalLengthControl
+                    label={t('designer.compartmentWidth')}
+                    valueMm={compartment.widthMm}
+                    resolvedMm={resolved.compartmentWidths[index] ?? 0}
+                    min={LIMITS.compartmentWidthMm.min}
+                    max={LIMITS.compartmentWidthMm.max}
+                    onChange={(widthMm) =>
+                      dispatch({ type: 'compartmentWidth', index, widthMm })
+                    }
+                  />
+                )}
+
                 <CountControl
                   label={t('designer.shelves')}
                   value={compartment.shelves}
@@ -159,6 +193,27 @@ export function Controls({ model, dispatch, budget }: ControlsProps) {
                   max={LIMITS.shelves.max}
                   onChange={(count) => dispatch({ type: 'shelves', index, count })}
                 />
+
+                {/*
+                  Les hauteurs d'espace, du **bas vers le haut**.
+
+                  Le moteur sait les imposer depuis toujours ; aucun écran ne le proposait,
+                  et la capacité restait inatteignable — un espace de 400 mm en bas pour
+                  les cartons à archives ne s'exprimait pas.
+
+                  Repliées derrière un bouton : douze étagères font treize champs, qui
+                  noieraient les trois compteurs qu'on vient régler.
+                */}
+                {compartment.shelves > 0 && (
+                  <ShelfSpaces
+                    shelves={compartment.shelves}
+                    imposedMm={compartment.shelfSpacesMm}
+                    resolvedMm={resolved.shelfSpaces[index] ?? []}
+                    onChange={(space, heightMm) =>
+                      dispatch({ type: 'shelfSpace', index, space, heightMm })
+                    }
+                  />
+                )}
                 <CountControl
                   label={t('designer.drawers')}
                   value={compartment.drawers}
@@ -341,6 +396,168 @@ function LengthControl({ label, valueMm, min, max, onChange }: LengthControlProp
         <p className="text-xs text-accent">
           {t('designer.roundedDisplay', { exact: `${valueMm} mm` })}
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Une longueur qu'on peut laisser décider par le meuble.
+ *
+ * **Trois états, et il faut les trois.** Imposée, le champ porte le nombre saisi. Souple,
+ * il est vide et montre en filigrane ce que le partage donne : c'est la seule façon de
+ * savoir ce qu'on s'apprête à remplacer. Et le bouton « Libre » rend la main, sans quoi
+ * une cote posée une fois ne se retirerait plus qu'en annulant — et une annulation ne se
+ * rattrape pas trois séances plus tard.
+ *
+ * Pas de curseur : la liste en compte jusqu'à treize, et treize curseurs dans un panneau
+ * latéral ne se visent plus.
+ */
+function OptionalLengthControl({
+  label,
+  valueMm,
+  resolvedMm,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  /** La cote imposée, ou `undefined` si l'espace est souple. */
+  valueMm: number | undefined;
+  /** Ce que le moteur donne réellement — affiché en filigrane quand rien n'est imposé. */
+  resolvedMm: number;
+  min: number;
+  max: number;
+  onChange: (valueMm: number | undefined) => void;
+}) {
+  const { t } = useTranslation();
+  const { format, parse } = usePreferences();
+  const [draft, setDraft] = useState<string | null>(null);
+  const [rejected, setRejected] = useState(false);
+
+  const commit = (text: string) => {
+    setDraft(null);
+
+    // Un champ vidé rend la main au partage : c'est le second chemin vers « libre », et
+    // c'est celui qu'on trouve sans y penser.
+    if (text.trim() === '') {
+      setRejected(false);
+      onChange(undefined);
+      return;
+    }
+
+    const parsed = parse(text);
+
+    // Une saisie incomprise ne devient pas une cote : le champ revient au modèle, et le
+    // dit.
+    if (parsed === null) {
+      setRejected(true);
+      return;
+    }
+
+    setRejected(false);
+    onChange(Math.min(max, Math.max(min, parsed)));
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-sm text-ink">{label}</label>
+
+        <span className="flex items-center gap-1">
+          <input
+            className={`w-24 rounded-md border bg-surface px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-accent focus:outline-none ${
+              valueMm === undefined ? 'border-hairline' : 'border-outline-variant'
+            }`}
+            value={draft ?? (valueMm === undefined ? '' : format(valueMm))}
+            placeholder={format(resolvedMm)}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={(event) => commit(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            aria-label={label}
+          />
+
+          <button
+            type="button"
+            // Désactivé quand il n'y a rien à rendre : un bouton qui ne fait rien se
+            // clique quand même, et on cherche ensuite ce qui a changé.
+            disabled={valueMm === undefined}
+            onClick={() => {
+              setDraft(null);
+              setRejected(false);
+              onChange(undefined);
+            }}
+            className="min-h-11 rounded-md px-2 text-xs font-medium text-ink-variant transition-colors hover:text-ink disabled:opacity-30"
+          >
+            {t('designer.freeSize')}
+          </button>
+        </span>
+      </div>
+
+      {rejected && <p className="text-xs text-danger">{t('designer.badLength')}</p>}
+    </div>
+  );
+}
+
+/**
+ * Les hauteurs d'espace d'un compartiment, du bas vers le haut.
+ *
+ * `n` étagères font `n + 1` espaces. Le pliage n'est pas une coquetterie : douze étagères
+ * font treize champs, et un panneau qui les montre tous d'office enterre les compteurs
+ * d'étagères, de tiroirs et de portes qu'on vient de régler.
+ */
+function ShelfSpaces({
+  shelves,
+  imposedMm,
+  resolvedMm,
+  onChange,
+}: {
+  shelves: number;
+  imposedMm: readonly (number | null)[];
+  resolvedMm: readonly number[];
+  onChange: (space: number, heightMm: number | undefined) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const count = shelves + 1;
+  const imposed = imposedMm.filter((height) => height !== null).length;
+
+  return (
+    <div className="rounded-md border border-hairline">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex min-h-11 w-full items-center justify-between gap-2 px-2.5 text-left text-sm text-ink"
+      >
+        <span>{t('designer.shelfSpaces')}</span>
+        <span className="text-xs text-ink-variant">
+          {/* Le compte des cotes posées, visible sans déplier : sans lui, on ne sait pas
+              qu'une hauteur imposée se cache là, et on cherche pourquoi une étagère ne
+              bouge pas. */}
+          {imposed > 0 ? t('designer.shelfSpacesSet', { count: imposed }) : '—'}
+        </span>
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-1 border-t border-hairline p-2.5">
+          {/* Du bas vers le haut : c'est l'ordre du moteur, et celui dans lequel un
+              menuisier décrit son meuble. */}
+          {Array.from({ length: count }, (_, space) => (
+            <OptionalLengthControl
+              key={space}
+              label={t('designer.shelfSpace', { index: space + 1 })}
+              valueMm={imposedMm[space] ?? undefined}
+              resolvedMm={resolvedMm[space] ?? 0}
+              min={LIMITS.shelfSpaceMm.min}
+              max={LIMITS.shelfSpaceMm.max}
+              onChange={(heightMm) => onChange(space, heightMm)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

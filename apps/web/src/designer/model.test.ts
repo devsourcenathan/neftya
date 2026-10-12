@@ -113,3 +113,128 @@ describe("l'affichage n'entre jamais dans le modèle", () => {
     expect(model.dimensions.widthMm).toBe(1800);
   });
 });
+
+describe('une largeur saisie, compartiment par compartiment', () => {
+  const four = () => reduce(defaultModel(), { type: 'compartments', count: 4 });
+
+  it('n’impose que celui qu’on vise', () => {
+    /*
+     * **La différence avec le glissement, et toute sa raison d'être.** Tirer un séparateur
+     * impose les deux largeurs qu'il sépare : un geste ne peut pas en changer une sans
+     * toucher à sa voisine. Saisir un nombre, si — et c'est ce qu'il faut pour un socle de
+     * tiroirs de 400 mm sous une penderie qui prend le reste.
+     *
+     * Si cette action imposait aussi les voisines, la capacité du moteur — une largeur
+     * fixe à côté de largeurs souples — redeviendrait inatteignable, ce qu'elle était.
+     */
+    const model = reduce(four(), { type: 'compartmentWidth', index: 0, widthMm: 400 });
+
+    expect(model.compartments.map((entry) => entry.widthMm)).toEqual([
+      400,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it('rend un compartiment souple sans toucher aux autres', () => {
+    // Le chemin du retour, pour un seul : « Égaliser les largeurs » les libère tous, ce
+    // qui n'aide pas qui veut garder son socle et libérer le reste.
+    const fixed = reduce(
+      reduce(four(), { type: 'compartmentWidth', index: 0, widthMm: 400 }),
+      { type: 'compartmentWidth', index: 1, widthMm: 500 },
+    );
+
+    const freed = reduce(fixed, {
+      type: 'compartmentWidth',
+      index: 1,
+      widthMm: undefined,
+    });
+
+    expect(freed.compartments.map((entry) => entry.widthMm)).toEqual([
+      400,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    // Et la clé disparaît : un `undefined` écrit vaudrait « imposé à rien » au moteur.
+    expect('widthMm' in (freed.compartments[1] as object)).toBe(false);
+  });
+
+  it('refuse une largeur qu’un compartiment ne peut pas recevoir', () => {
+    // En deçà du minimum, un compartiment ne reçoit plus ni étagère, ni tiroir, ni porte.
+    const model = reduce(four(), { type: 'compartmentWidth', index: 0, widthMm: 5 });
+
+    expect(model.compartments[0]?.widthMm).toBe(LIMITS.compartmentWidthMm.min);
+  });
+});
+
+describe('les hauteurs d’espace entre étagères', () => {
+  const shelved = () => reduce(defaultModel(), { type: 'shelves', index: 0, count: 3 });
+
+  it('se posent au bon rang, en complétant de souples', () => {
+    /*
+     * **Le défaut qu'il faut écarter.** Fixer le troisième espace d'un compartiment qui
+     * n'en a aucun ne doit pas écrire la valeur au premier rang venu : le menuisier
+     * verrait sa cote appliquée en bas de meuble alors qu'il visait le haut.
+     */
+    const model = reduce(shelved(), {
+      type: 'shelfSpace',
+      index: 0,
+      space: 2,
+      heightMm: 400,
+    });
+
+    expect(model.compartments[0]?.shelfSpacesMm).toEqual([null, null, 400]);
+  });
+
+  it('retire les souples de queue quand on libère', () => {
+    /*
+     * Un modèle sans aucune contrainte redevient un tableau vide, et non une suite de
+     * `null` que personne ne sait relire — ni l'écran, ni la prochaine lecture du projet.
+     */
+    const fixed = reduce(shelved(), {
+      type: 'shelfSpace',
+      index: 0,
+      space: 1,
+      heightMm: 500,
+    });
+
+    expect(fixed.compartments[0]?.shelfSpacesMm).toEqual([null, 500]);
+
+    const freed = reduce(fixed, {
+      type: 'shelfSpace',
+      index: 0,
+      space: 1,
+      heightMm: undefined,
+    });
+
+    expect(freed.compartments[0]?.shelfSpacesMm).toEqual([]);
+  });
+
+  it('garde les souples intercalés', () => {
+    // Ceux-là portent une information : « le premier est libre, le deuxième fait 400 ».
+    // Les retirer décalerait le second d'un rang.
+    const model = reduce(
+      reduce(shelved(), { type: 'shelfSpace', index: 0, space: 2, heightMm: 400 }),
+      { type: 'shelfSpace', index: 0, space: 3, heightMm: 300 },
+    );
+
+    expect(model.compartments[0]?.shelfSpacesMm).toEqual([null, null, 400, 300]);
+  });
+
+  it('ne touche qu’au compartiment visé', () => {
+    const model = reduce(reduce(defaultModel(), { type: 'compartments', count: 3 }), {
+      type: 'shelfSpace',
+      index: 1,
+      space: 0,
+      heightMm: 400,
+    });
+
+    expect(model.compartments.map((entry) => entry.shelfSpacesMm)).toEqual([
+      [],
+      [400],
+      [],
+    ]);
+  });
+});

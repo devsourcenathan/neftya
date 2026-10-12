@@ -37,6 +37,25 @@ export type DesignerAction =
   | { type: 'applyToAll'; index: number }
   /** Fixe les largeurs intérieures. `undefined` rend un compartiment souple. */
   | { type: 'compartmentWidths'; widths: readonly (number | undefined)[] }
+  /**
+   * Fixe la largeur d'**un seul** compartiment, sans toucher aux autres.
+   *
+   * Le pendant chiffré du glissement, et il ne s'y réduit pas : tirer un séparateur impose
+   * les deux largeurs qu'il sépare, alors que saisir 400 mm pour un socle de tiroirs doit
+   * laisser la penderie d'à côté prendre ce qui reste. C'est exactement la distinction que
+   * porte le moteur entre une largeur imposée et une largeur souple — et elle n'était
+   * atteignable par aucun geste.
+   *
+   * `undefined` rend le compartiment souple.
+   */
+  | { type: 'compartmentWidth'; index: number; widthMm: number | undefined }
+  /**
+   * Fixe la hauteur d'un espace entre étagères, du bas vers le haut.
+   *
+   * `undefined` rend l'espace souple. Le moteur sait le faire depuis toujours ; aucun
+   * écran ne le proposait, et la capacité restait inatteignable.
+   */
+  | { type: 'shelfSpace'; index: number; space: number; heightMm: number | undefined }
   /** Rend tous les compartiments souples : ils se repartagent la largeur également. */
   | { type: 'evenWidths' }
   /** Déplace un compartiment dans l'ordre du meuble. */
@@ -73,6 +92,16 @@ export const LIMITS = {
   doors: { min: 0, max: 2 },
   /** En deçà, un compartiment ne reçoit plus rien : ni étagère, ni tiroir, ni porte. */
   compartmentWidthMm: { min: 60, max: 4000 },
+  /**
+   * La hauteur d'un espace entre étagères.
+   *
+   * **Les bornes sont celles du meuble, pas un confort inventé.** On pourrait refuser un
+   * espace de 30 mm au motif que rien n'y tient ; ce serait décider à la place du
+   * menuisier, qui range peut-être des plateaux. Ce qui ne tombe pas juste est dit par
+   * l'avertissement du moteur, qui compare la somme à la place réelle — et lui ne se
+   * trompe pas de hauteur disponible.
+   */
+  shelfSpaceMm: { min: 1, max: 3000 },
 } as const;
 
 /**
@@ -256,6 +285,64 @@ export function reduce(
           return { ...compartment, widthMm: Math.max(1, Math.round(widthMm)) };
         }),
       };
+
+    /*
+     * Une seule largeur, les autres inchangées.
+     *
+     * C'est ce qui distingue la saisie du glissement : tirer un séparateur impose les deux
+     * largeurs qu'il sépare, parce qu'un geste ne peut pas en changer une sans toucher à
+     * sa voisine. Saisir un nombre, si — et c'est ce qu'il faut pour un socle de 400 mm
+     * sous une penderie qui prend le reste.
+     */
+    case 'compartmentWidth':
+      return {
+        ...model,
+        compartments: model.compartments.map((compartment, index) => {
+          if (index !== action.index) return compartment;
+
+          if (action.widthMm === undefined) {
+            const { widthMm: _dropped, ...rest } = compartment;
+            return rest;
+          }
+
+          return {
+            ...compartment,
+            widthMm: clamp(Math.round(action.widthMm), LIMITS.compartmentWidthMm),
+          };
+        }),
+      };
+
+    /*
+     * Une hauteur d'espace, du bas vers le haut.
+     *
+     * Le tableau est **complété de souples** jusqu'au rang visé : fixer le troisième
+     * espace d'un compartiment qui n'en avait aucun ne doit pas écrire une valeur au
+     * premier rang venu. Et les souples de queue sont retirés, pour qu'un modèle sans
+     * aucune contrainte redevienne un tableau vide plutôt qu'une suite de `null` que
+     * personne ne sait relire.
+     */
+    case 'shelfSpace': {
+      const compartment = model.compartments[action.index];
+      if (!compartment) return model;
+
+      const spaces: (number | null)[] = [...compartment.shelfSpacesMm];
+
+      while (spaces.length <= action.space) spaces.push(null);
+
+      spaces[action.space] =
+        action.heightMm === undefined
+          ? null
+          : clamp(Math.round(action.heightMm), LIMITS.shelfSpaceMm);
+
+      while (spaces.length > 0 && spaces[spaces.length - 1] === null) spaces.pop();
+
+      return {
+        ...model,
+        compartments: model.compartments.map((entry, index) =>
+          index === action.index ? { ...entry, shelfSpacesMm: spaces } : entry,
+        ),
+      };
+    }
 
     /*
      * Le chemin du retour.

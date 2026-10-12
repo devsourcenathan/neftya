@@ -110,7 +110,13 @@
     "reorder": "Déplacer ce compartiment",
     "reorderHint": "Glissez un compartiment pour changer son rang, ou utilisez les flèches.",
     "moveUp": "Vers la gauche",
-    "moveDown": "Vers la droite"
+    "moveDown": "Vers la droite",
+    "compartmentWidth": "Largeur imposée",
+    "freeSize": "Libre",
+    "shelfSpaces": "Hauteurs entre étagères",
+    "shelfSpace": "Espace {{index}}",
+    "shelfSpacesSet_one": "{{count}} imposée",
+    "shelfSpacesSet_other": "{{count}} imposées"
   },
   "units": {
     "legend": "Système d'unités",
@@ -186,7 +192,8 @@
     "CANNOT_TILT_UP": "Il tient debout, mais ne pourra pas être redressé sur place : monté à plat, il lui faut {{tiltMm}} mm pour basculer et le plafond est à {{spaceMm}} mm. Montez-le debout, ou hors de la pièce.",
     "SKIRTING_HOLDS_OFF": "La plinthe écarte le meuble du mur de {{gapMm}} mm : il prendra {{totalDepthMm}} mm au sol. Découpez le fond, ou comptez ce jeu.",
     "DOOR_SWING_CLEARANCE": "Les portes demandent {{clearanceMm}} mm devant le meuble pour s’ouvrir.",
-    "SHELF_DEFLECTION_NO_THICKNESS": "Une étagère de {{spanMm}} mm fléchit de {{deflectionMm}} mm sous {{loadKg}} kg, pour {{limitMm}} mm admis : ça se verra. Aucune épaisseur du catalogue n’y suffit — raccourcissez la portée à {{maxSpanMm}} mm, ou posez un montant au milieu, ce qui divise la flèche par seize."
+    "SHELF_DEFLECTION_NO_THICKNESS": "Une étagère de {{spanMm}} mm fléchit de {{deflectionMm}} mm sous {{loadKg}} kg, pour {{limitMm}} mm admis : ça se verra. Aucune épaisseur du catalogue n’y suffit — raccourcissez la portée à {{maxSpanMm}} mm, ou posez un montant au milieu, ce qui divise la flèche par seize.",
+    "SHELF_SPACE_MISMATCH": "Les hauteurs imposées totalisent {{requestedMm}} mm pour {{availableMm}} mm disponibles."
   },
   "manufacturing": {
     "open": "Dossier de fabrication",

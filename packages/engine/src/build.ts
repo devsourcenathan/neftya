@@ -51,6 +51,19 @@ export interface Furniture {
    * séparateur.
    */
   compartmentWidths: number[];
+  /**
+   * La hauteur de chaque espace entre étagères, par compartiment, du bas vers le haut.
+   *
+   * `n` étagères font `n + 1` espaces ; un compartiment sans étagère en a donc un, de
+   * toute sa hauteur utile. Rendue pour la même raison que `compartmentWidths` : le moteur
+   * vient de la calculer, et la redéduire de la position des étagères serait refaire un
+   * partage dont le résultat est là.
+   *
+   * C'est ce que lit le panneau pour montrer la hauteur **réellement obtenue** sous un
+   * champ laissé souple — sans quoi « libre » n'afficherait aucun nombre, et personne ne
+   * saurait ce qu'il s'apprête à remplacer en saisissant le sien.
+   */
+  compartmentShelfSpaces: number[][];
   warnings: Warning[];
   /** Hauteur au sol, pieds compris. Affichée, jamais utilisée dans une cote. */
   totalHeightWithLegsMm: number;
@@ -133,6 +146,7 @@ export function build(rawInput: FurnitureInput): Furniture {
   // Profondeur utile : les étagères, séparateurs et tiroirs s'arrêtent devant le fond.
   const innerDepth = input.hasBack ? depth - p.backSetbackMm : depth;
 
+  const compartmentShelfSpaces: number[][] = [];
   const compartmentSpans: { startMm: number; widthMm: number }[] = [];
   const dividerCentres: number[] = [];
 
@@ -178,6 +192,7 @@ export function build(rawInput: FurnitureInput): Furniture {
 
     drafts.push(...shelves.drafts);
     warnings.push(...shelves.warnings);
+    compartmentShelfSpaces.push(shelves.spaceHeightsMm);
 
     const face = faces[index] as { startMm: number; widthMm: number };
     const rows = facadeRows(compartment, height, p);
@@ -244,6 +259,7 @@ export function build(rawInput: FurnitureInput): Furniture {
     parameters: p,
     parts,
     compartmentWidths,
+    compartmentShelfSpaces,
     warnings,
     totalHeightWithLegsMm: height + p.legHeightMm,
   };
@@ -340,8 +356,10 @@ function shelvesOf(
   clearanceMm: number,
   /** Hauteur imposée de chaque espace, du bas vers le haut. Vide : tout est souple. */
   spacesMm: readonly (number | null)[],
-): { drafts: DraftPart[]; warnings: Warning[] } {
-  if (count === 0) return { drafts: [], warnings: [] };
+): { drafts: DraftPart[]; warnings: Warning[]; spaceHeightsMm: number[] } {
+  // Sans étagère, un seul espace : tout le compartiment. Rendre un tableau vide aurait
+  // obligé chaque lecteur à traiter ce cas à part, pour une règle qui n'a pas d'exception.
+  if (count === 0) return { drafts: [], warnings: [], spaceHeightsMm: [innerHeight] };
 
   const share = shareSpace(spacesMm, count + 1, innerHeight - count * thickness);
   const spaces = share.sizes;
@@ -353,6 +371,7 @@ function shelvesOf(
   if (widthMm <= 0) {
     return {
       drafts: [],
+      spaceHeightsMm: spaces,
       warnings: [
         {
           code: 'COMPARTMENT_TOO_NARROW',
@@ -394,7 +413,7 @@ function shelvesOf(
     y += thickness;
   }
 
-  return { drafts, warnings };
+  return { drafts, warnings, spaceHeightsMm: spaces };
 }
 
 /**

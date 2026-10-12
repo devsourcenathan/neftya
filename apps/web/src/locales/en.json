@@ -110,7 +110,13 @@
     "reorder": "Move this compartment",
     "reorderHint": "Drag a compartment to reorder it, or use the arrows.",
     "moveUp": "Towards the left",
-    "moveDown": "Towards the right"
+    "moveDown": "Towards the right",
+    "compartmentWidth": "Fixed width",
+    "freeSize": "Auto",
+    "shelfSpaces": "Heights between shelves",
+    "shelfSpace": "Space {{index}}",
+    "shelfSpacesSet_one": "{{count}} fixed",
+    "shelfSpacesSet_other": "{{count}} fixed"
   },
   "units": {
     "legend": "Unit system",
@@ -186,7 +192,8 @@
     "CANNOT_TILT_UP": "It stands, but cannot be raised in place: assembled flat it needs {{tiltMm}} mm to tilt up, and the ceiling is at {{spaceMm}} mm. Assemble it upright, or outside the room.",
     "SKIRTING_HOLDS_OFF": "The skirting board holds the piece {{gapMm}} mm off the wall: it will take {{totalDepthMm}} mm of floor. Notch the back, or allow for the gap.",
     "DOOR_SWING_CLEARANCE": "The doors need {{clearanceMm}} mm in front of the piece to open.",
-    "SHELF_DEFLECTION_NO_THICKNESS": "A {{spanMm}} mm shelf sags {{deflectionMm}} mm under {{loadKg}} kg, against {{limitMm}} mm allowed: it will show. No catalogue thickness is enough — shorten the span to {{maxSpanMm}} mm, or add an upright in the middle, which divides the sag by sixteen."
+    "SHELF_DEFLECTION_NO_THICKNESS": "A {{spanMm}} mm shelf sags {{deflectionMm}} mm under {{loadKg}} kg, against {{limitMm}} mm allowed: it will show. No catalogue thickness is enough — shorten the span to {{maxSpanMm}} mm, or add an upright in the middle, which divides the sag by sixteen.",
+    "SHELF_SPACE_MISMATCH": "The fixed heights add up to {{requestedMm}} mm for {{availableMm}} mm available."
   },
   "manufacturing": {
     "open": "Manufacturing pack",
