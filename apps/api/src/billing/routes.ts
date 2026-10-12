@@ -37,6 +37,45 @@ export interface BillingDependencies {
   appUrl: string;
 }
 
+/**
+ * Le catalogue, sans jeton.
+ *
+ * La page d'accueil en a besoin et n'a personne à authentifier. Sans elle, les tarifs y
+ * seraient écrits en dur — une seconde source de vérité, qui annoncerait 29 € le jour où
+ * l'environnement en dit 39, et c'est le montant de l'environnement qui serait débité.
+ *
+ * **Rien de confidentiel n'y passe** : les offres et leurs prix sont ce qu'on affiche à
+ * qui visite le site. Les quotas y figurent parce qu'ils sont l'argument de vente, pas une
+ * information interne.
+ */
+export function registerPublicBillingRoutes(
+  app: FastifyInstance,
+  dependencies: { billing: BillingRepository; providers: readonly PaymentProvider[] },
+): void {
+  app.get('/v1/billing/plans', async () => {
+    const offers = await dependencies.billing.offers();
+    const sellable = new Set(
+      dependencies.providers.flatMap((provider) => provider.currencies),
+    );
+
+    return success({
+      plans: offers.map((offer) => ({
+        code: offer.code,
+        projects_max: offer.projectsMax,
+        ai_month_max: offer.aiMonthMax,
+        members_max: offer.membersMax,
+        prices: offer.prices
+          .filter((price) => sellable.has(price.currency))
+          .map((price) => ({
+            currency: price.currency,
+            period: price.period,
+            amount_minor: price.amountMinor,
+          })),
+      })),
+    });
+  });
+}
+
 export function registerBillingRoutes(
   app: FastifyInstance,
   dependencies: BillingDependencies,

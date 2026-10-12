@@ -77,6 +77,16 @@ export function createApiClient(token: () => Promise<string>) {
 export type ApiClient = ReturnType<typeof createApiClient>;
 
 /**
+ * Un client sans jeton, pour ce qui s'adresse à des visiteurs.
+ *
+ * La page d'accueil lit le catalogue des offres avant que quiconque ait un compte. Lui
+ * passer le client authentifié aurait voulu dire fabriquer un jeton vide, c'est-à-dire
+ * envoyer `Bearer ` à chaque requête — qui marche tant que la route est publique, et
+ * devient un défaut muet le jour où elle ne l'est plus.
+ */
+export const anonymousApi: ApiClient = createApiClient(() => Promise.resolve(''));
+
+/**
  * Télécharge un fichier de l'API.
  *
  * **Un lien de navigateur ne porte pas d'en-tête.** Un simple `<a href>` vers une route

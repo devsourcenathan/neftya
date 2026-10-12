@@ -613,7 +613,12 @@
       "profPoint3": "Bibliothèque de modèles partagée",
       "profCta": "Créer mon compte gratuit",
       "soon": "Bientôt",
-      "soonNote": "Pas encore ouvert à la souscription. Créez un compte gratuit : vous serez prévenu à l’ouverture."
+      "soonNote": "Pas encore ouvert à la souscription. Créez un compte gratuit : vous serez prévenu à l’ouverture.",
+      "per_monthly": " / mois",
+      "per_yearly": " / an",
+      "titleSelling": "Des tarifs simples, sans engagement.",
+      "proCtaBuy": "Choisir Pro",
+      "profCtaBuy": "Choisir Professional"
     },
     "footer": {
       "copyright": "Neftya. L'outil des menuisiers de demain."
@@ -657,6 +662,7 @@
     "period": {
       "monthly": "{{amount}} par mois",
       "yearly": "{{amount}} par an"
-    }
+    },
+    "chosen": "Votre choix"
   }
 }

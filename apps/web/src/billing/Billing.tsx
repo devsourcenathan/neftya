@@ -11,6 +11,7 @@ import {
   type BillingResource,
 } from '../api/projects.js';
 import { Badge, Button, DataPoint, SectionTitle } from '../ui/index.js';
+import { takeIntendedPlan } from './intent.js';
 
 /**
  * La facturation, vue du client.
@@ -44,6 +45,14 @@ export function Billing() {
    * l'utilisateur l'a écarté — et l'adresse, elle, ne change pas.
    */
   const [outcome, setOutcome] = useState<Outcome>(outcomeFromLocation);
+
+  /*
+   * L'offre choisie avant l'inscription, consommée au montage.
+   *
+   * Elle met la carte en avant, et rien de plus : ouvrir une page de carte bancaire dans
+   * la seconde qui suit une inscription ressemble à un piège. C'est le client qui clique.
+   */
+  const [intended] = useState(takeIntendedPlan);
 
   const billing = useQuery({
     queryKey: ['billing'],
@@ -117,6 +126,7 @@ export function Billing() {
               key={plan.code}
               plan={plan}
               current={data.subscription.paid_plan === plan.code}
+              highlighted={intended === plan.code}
               busy={checkout.isPending}
               onChoose={(period, currency) =>
                 checkout.mutate({ plan: plan.code, period, currency })
@@ -269,11 +279,14 @@ function CurrentPlan({ data, language }: { data: BillingResource; language: stri
 function PlanCard({
   plan,
   current,
+  highlighted,
   busy,
   onChoose,
 }: {
   plan: BillingResource['plans'][number];
   current: boolean;
+  /** Celle que le visiteur avait choisie avant de créer son compte. */
+  highlighted: boolean;
   busy: boolean;
   onChoose: (period: 'monthly' | 'yearly', currency: string) => void;
 }) {
@@ -296,10 +309,15 @@ function PlanCard({
   );
 
   return (
-    <li className="flex flex-col rounded-lg border border-hairline bg-surface p-6">
+    <li
+      className={`flex flex-col rounded-lg border bg-surface p-6 ${
+        highlighted ? 'border-primary shadow-lg' : 'border-hairline'
+      }`}
+    >
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-xl font-bold">{t(`billing.plan.${plan.code}`)}</h3>
         {current && <Badge tone="success">{t('billing.yours')}</Badge>}
+        {!current && highlighted && <Badge tone="accent">{t('billing.chosen')}</Badge>}
       </div>
 
       <ul className="mt-4 flex flex-1 flex-col gap-1 text-sm text-ink-variant">

@@ -1,5 +1,10 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { formatMoney } from '@neftya/units';
+import { anonymousApi } from '../api/client.js';
+import { getPublicPlans, type PublicPlan } from '../api/projects.js';
+import { rememberIntendedPlan } from '../billing/intent.js';
 import { AuthScreens } from '../sekuu/AuthScreens.js';
 import {
   CubeIcon,
@@ -14,6 +19,28 @@ export function Landing() {
   const { t, i18n } = useTranslation();
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
 
+  /*
+   * Le catalogue, demandé au serveur — **avant tout retour anticipé**.
+   *
+   * Les tarifs étaient écrits dans cette page : une seconde source de vérité, qui aurait
+   * annoncé 29 € le jour où l'environnement en dit 39. C'est le montant de
+   * l'environnement qui est débité ; celui qu'on affiche doit venir du même endroit.
+   *
+   * Placé après le `if (authMode)` plus bas, ce crochet ne s'exécutait plus au passage à
+   * l'inscription : React compte les crochets d'un rendu à l'autre, et la page devenait
+   * blanche au clic sur une offre. C'est la deuxième fois que ce défaut se produit dans
+   * ce projet — un crochet ne se met jamais après un `return`.
+   *
+   * `retry: false` : si l'API ne répond pas, la section garde ses libellés et perd ses
+   * prix. Mieux vaut une page incomplète qu'une page qui tourne en rond sur un visiteur.
+   */
+  const catalogue = useQuery({
+    queryKey: ['public-plans'],
+    queryFn: () => getPublicPlans(anonymousApi),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
   if (authMode) {
     return <AuthScreens initialMode={authMode} />;
   }
@@ -21,6 +48,40 @@ export function Landing() {
   const navigateToAuth = (mode: 'login' | 'register') => (e: React.MouseEvent) => {
     e.preventDefault();
     setAuthMode(mode);
+    window.scrollTo(0, 0);
+  };
+
+  const priced = new Map(
+    (catalogue.data?.plans ?? []).map((plan) => [plan.code, plan] as const),
+  );
+
+  /*
+   * Y a-t-il quelque chose à vendre, ici et maintenant ?
+   *
+   * Deux phrases en dépendent, et elles étaient écrites pour l'époque où la réponse était
+   * non : « les offres payantes arrivent » et « créer mon compte gratuit » sur un bouton
+   * qui mène désormais à l'abonnement. Les laisser aurait été le même défaut que les
+   * tarifs en dur — un texte qui ne suit plus ce que le produit fait.
+   */
+  const selling = [...priced.values()].some(
+    (plan) => plan.code !== 'free' && plan.prices.length > 0,
+  );
+
+  /**
+   * Partir vers l'inscription **en retenant l'offre choisie**.
+   *
+   * On ne peut pas payer sans compte : le bouton mène donc à l'inscription. Sans cette
+   * mémoire, le visiteur qui a cliqué « Pro » se retrouverait sur la liste de ses projets,
+   * à chercher où il avait vu ce prix.
+   *
+   * Et on ne l'envoie pas droit au paiement : ouvrir une page de carte bancaire dans la
+   * seconde qui suit une inscription ressemble à un piège. Il arrive sur la facturation,
+   * son offre mise en avant, et c'est lui qui clique.
+   */
+  const choosePlan = (code: string) => (event: React.MouseEvent) => {
+    event.preventDefault();
+    rememberIntendedPlan(code);
+    setAuthMode('register');
     window.scrollTo(0, 0);
   };
 
@@ -470,22 +531,23 @@ export function Landing() {
         <div className="mx-auto max-w-5xl relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold md:text-4xl">
-              {t('landing.pricing.title')}
+              {t(selling ? 'landing.pricing.titleSelling' : 'landing.pricing.title')}
             </h2>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
             {[
               /*
-               * `soon` dit la vérité, et il la dit sur la carte plutôt qu'en note de bas de
-               * page. Aucun code de facturation n'existe : il n'y a ni abonnement, ni
-               * paiement, ni essai de quatorze jours. Annoncer un prix qu'on ne peut pas
-               * payer se découvre au clic, et c'est la seule erreur dont un visiteur se
-               * souvient. Les prix restent affichés — ils situent la valeur et montrent où
-               * va le produit — mais ils ne promettent plus une souscription.
+               * Les libellés sont ici, les prix viennent de l'API.
+               *
+               * Écrits dans cette page, ils auraient annoncé 29 € le jour où
+               * l'environnement en dit 39 — et c'est le montant de l'environnement qui est
+               * débité. Une offre dont l'API ne rend aucun prix porte « bientôt » : c'est
+               * le cas tant qu'aucun encaisseur ne prend sa devise, et un bouton y mènerait
+               * tout droit à un refus.
                */
               {
+                code: 'free',
                 name: t('landing.pricing.freeName'),
-                price: '0€',
                 desc: t('landing.pricing.freeDesc'),
                 feats: [
                   t('landing.pricing.freePoint1'),
@@ -494,81 +556,91 @@ export function Landing() {
                 ],
                 cta: t('landing.pricing.freeCta'),
                 tone: 'primary',
-                soon: false,
               },
               {
+                code: 'pro',
                 name: t('landing.pricing.proName'),
-                price: '29€/mois',
                 desc: t('landing.pricing.proDesc'),
                 feats: [
                   t('landing.pricing.proPoint1'),
                   t('landing.pricing.proPoint2'),
                   t('landing.pricing.proPoint3'),
                 ],
-                cta: t('landing.pricing.proCta'),
+                cta: t(
+                  selling ? 'landing.pricing.proCtaBuy' : 'landing.pricing.proCta',
+                ),
                 tone: 'surface',
-                soon: true,
               },
               {
+                code: 'professional',
                 name: t('landing.pricing.profName'),
-                price: '79€/mois',
                 desc: t('landing.pricing.profDesc'),
                 feats: [
                   t('landing.pricing.profPoint1'),
                   t('landing.pricing.profPoint2'),
                   t('landing.pricing.profPoint3'),
                 ],
-                cta: t('landing.pricing.profCta'),
+                cta: t(
+                  selling ? 'landing.pricing.profCtaBuy' : 'landing.pricing.profCta',
+                ),
                 tone: 'surface',
-                soon: true,
               },
-            ].map((plan, i) => (
-              <div
-                key={i}
-                className={`animate-on-scroll flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.tone === 'primary' ? 'border-primary/50 shadow-antigravity lg:scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="text-xl font-bold">{plan.name}</h3>
-                  {plan.soon && (
-                    <span className="rounded-full bg-surface-high px-3 py-1 text-xs font-bold tracking-wide text-ink-variant uppercase">
-                      {t('landing.pricing.soon')}
-                    </span>
-                  )}
-                </div>
+            ]
+              .map((plan) => ({ ...plan, offer: priced.get(plan.code) }))
+              .map((plan, i) => (
                 <div
-                  className={`mt-4 text-4xl font-extrabold ${plan.soon ? 'text-ink-variant' : ''}`}
+                  key={i}
+                  className={`animate-on-scroll flex flex-col rounded-2xl p-8 border backdrop-blur-md transition-shadow hover:shadow-antigravity ${plan.tone === 'primary' ? 'border-primary/50 shadow-antigravity lg:scale-105 z-10 bg-surface/80' : 'border-white/20 shadow-sm bg-surface/40'}`}
                 >
-                  {plan.price}
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-xl font-bold">{plan.name}</h3>
+                    {soonOf(plan.code, plan.offer) && (
+                      <span className="rounded-full bg-surface-high px-3 py-1 text-xs font-bold tracking-wide text-ink-variant uppercase">
+                        {t('landing.pricing.soon')}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`mt-4 text-4xl font-extrabold ${soonOf(plan.code, plan.offer) ? 'text-ink-variant' : ''}`}
+                  >
+                    {priceLabel(plan.code, plan.offer, t)}
+                  </div>
+                  <p className="mt-4 text-sm text-ink-variant min-h-12">{plan.desc}</p>
+                  {soonOf(plan.code, plan.offer) && (
+                    <p className="mt-2 text-xs text-outline">
+                      {t('landing.pricing.soonNote')}
+                    </p>
+                  )}
+                  <div className="my-8 flex-1">
+                    <ul className="space-y-3">
+                      {plan.feats.map((f, j) => (
+                        <li
+                          key={j}
+                          className="flex items-center gap-2 text-sm text-ink-variant"
+                        >
+                          <span className="text-primary mt-0.5">
+                            <CheckIcon />
+                          </span>{' '}
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {/* Une offre qu'on ne peut pas encore vendre n'a pas de bouton : il
+                    mènerait à une inscription suivie d'une impasse. */}
+                  <button
+                    onClick={
+                      plan.code === 'free'
+                        ? navigateToAuth('register')
+                        : choosePlan(plan.code)
+                    }
+                    disabled={soonOf(plan.code, plan.offer)}
+                    className={`w-full py-3 rounded-full font-bold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${plan.tone === 'primary' ? 'bg-primary text-surface hover:bg-primary/90 hover:-translate-y-1' : 'bg-surface-high/80 text-ink hover:bg-surface-highest'}`}
+                  >
+                    {plan.cta}
+                  </button>
                 </div>
-                <p className="mt-4 text-sm text-ink-variant min-h-12">{plan.desc}</p>
-                {plan.soon && (
-                  <p className="mt-2 text-xs text-outline">
-                    {t('landing.pricing.soonNote')}
-                  </p>
-                )}
-                <div className="my-8 flex-1">
-                  <ul className="space-y-3">
-                    {plan.feats.map((f, j) => (
-                      <li
-                        key={j}
-                        className="flex items-center gap-2 text-sm text-ink-variant"
-                      >
-                        <span className="text-primary mt-0.5">
-                          <CheckIcon />
-                        </span>{' '}
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <button
-                  onClick={navigateToAuth('register')}
-                  className={`w-full py-3 rounded-full font-bold transition-all ${plan.tone === 'primary' ? 'bg-primary text-surface hover:bg-primary/90 hover:-translate-y-1' : 'bg-surface-high/80 text-ink hover:bg-surface-highest'}`}
-                >
-                  {plan.cta}
-                </button>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </section>
@@ -585,4 +657,46 @@ export function Landing() {
       </footer>
     </div>
   );
+}
+
+/**
+ * Le gratuit n'est jamais « bientôt » : il est disponible par définition.
+ *
+ * Pour le reste, une offre sans prix encaissable ne se vend pas — soit son tarif n'est pas
+ * arrêté, soit aucun encaisseur ne prend sa devise. Tant que le catalogue n'est pas
+ * revenu, on ne promet rien non plus.
+ */
+function soonOf(code: string, offer: PublicPlan | undefined): boolean {
+  if (code === 'free') return false;
+
+  return (offer?.prices.length ?? 0) === 0;
+}
+
+/** Le prix le plus bas de l'offre, formaté — ou de quoi tenir la place en attendant. */
+function priceLabel(
+  code: string,
+  offer: PublicPlan | undefined,
+  t: (key: string) => string,
+): string {
+  if (code === 'free') return '0 €';
+
+  const cheapest = [...(offer?.prices ?? [])].sort(
+    (a, b) => a.amount_minor - b.amount_minor,
+  )[0];
+
+  /*
+   * Un tiret, pas « bientôt ».
+   *
+   * La pastille le dit déjà juste au-dessus : l'écrire une seconde fois à la place du
+   * prix donnait « BIENTÔT / Bientôt », deux fois le même mot sur deux lignes. Le tiret
+   * tient la place sans rien répéter.
+   */
+  if (!cheapest) return '—';
+
+  const amount = formatMoney({
+    amount: cheapest.amount_minor,
+    currency: cheapest.currency,
+  });
+
+  return `${amount}${t(`landing.pricing.per_${cheapest.period}`)}`;
 }

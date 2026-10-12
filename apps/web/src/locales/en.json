@@ -613,7 +613,12 @@
       "profPoint3": "Shared template library",
       "profCta": "Create my free account",
       "soon": "Coming soon",
-      "soonNote": "Not open for subscription yet. Create a free account and you will hear from us when it opens."
+      "soonNote": "Not open for subscription yet. Create a free account and you will hear from us when it opens.",
+      "per_monthly": " / month",
+      "per_yearly": " / year",
+      "titleSelling": "Simple pricing, no commitment.",
+      "proCtaBuy": "Choose Pro",
+      "profCtaBuy": "Choose Professional"
     },
     "footer": {
       "copyright": "Neftya. The tool for the woodworkers of tomorrow."
@@ -657,6 +662,7 @@
     "period": {
       "monthly": "{{amount}} per month",
       "yearly": "{{amount}} per year"
-    }
+    },
+    "chosen": "Your choice"
   }
 }

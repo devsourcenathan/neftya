@@ -10,7 +10,11 @@ import { ProjectRepository } from './projects/repository.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { SettingsRepository } from './settings/repository.js';
 import { registerSettingsRoutes } from './settings/routes.js';
-import { registerBillingRoutes, registerBillingWebhook } from './billing/routes.js';
+import {
+  registerBillingRoutes,
+  registerBillingWebhook,
+  registerPublicBillingRoutes,
+} from './billing/routes.js';
 import { BillingRepository } from './billing/repository.js';
 import { BillingService } from './billing/service.js';
 import { loadPrices, type PriceEntry } from './billing/prices.js';
@@ -204,6 +208,15 @@ export function buildApp(dependencies: AppDependencies): FastifyInstance {
       registerBillingWebhook(webhookScope, { service: billingService, providers });
     });
   }
+
+  /*
+   * Le catalogue est public, et il l'est toujours — même sans encaisseur.
+   *
+   * La page d'accueil doit pouvoir dire « bientôt » plutôt que de ne rien afficher : une
+   * section tarifs qui disparaît faute de clés poserait une question au visiteur là où il
+   * n'y en a pas.
+   */
+  registerPublicBillingRoutes(app, { billing, providers });
 
   // Toutes les routes métier passent par l'authentification. Elle est posée une fois, sur
   // un contexte encapsulé, plutôt que répétée route par route : une garde qu'on doit

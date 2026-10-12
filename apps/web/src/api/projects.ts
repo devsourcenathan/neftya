@@ -177,6 +177,18 @@ export interface BillingResource {
 
 export const getBilling = (api: ApiClient) => api<BillingResource>('/v1/billing');
 
+export type PublicPlan = BillingResource['plans'][number];
+
+/**
+ * Le catalogue public, pour la page d'accueil.
+ *
+ * Sans jeton : elle s'adresse à des visiteurs. C'est ce qui permet aux tarifs affichés
+ * d'être ceux que l'API encaissera — écrits en dur dans la page, ils auraient fini par
+ * annoncer un prix que personne ne débite.
+ */
+export const getPublicPlans = (api: ApiClient) =>
+  api<{ plans: PublicPlan[] }>('/v1/billing/plans');
+
 export const startCheckout = (
   api: ApiClient,
   body: { plan: string; period: 'monthly' | 'yearly'; currency: string },

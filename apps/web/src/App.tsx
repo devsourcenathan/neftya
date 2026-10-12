@@ -9,6 +9,7 @@ import { SessionProvider, useSession } from './sekuu/SessionContext.js';
 import { Landing } from './marketing/Landing.js';
 import { Button, Card } from './ui/index.js';
 import { router } from './router.js';
+import { hasIntendedPlan } from './billing/intent.js';
 
 /**
  * La coquille : session, client d'API, préférences, routeur.
@@ -131,6 +132,22 @@ function WithSettings({ language }: { language: string }) {
     queryKey: ['settings'],
     queryFn: () => getSettings(api),
   });
+
+  /*
+   * Le visiteur qui a choisi une offre arrive sur la facturation.
+   *
+   * Il a cliqué « Pro » sur la page d'accueil, puis créé son compte : l'envoyer sur la
+   * liste de ses projets lui ferait chercher où il avait vu ce prix, et la plupart ne
+   * chercheraient pas.
+   *
+   * `history.replaceState` plutôt qu'une navigation : le routeur n'est pas encore monté à
+   * cet instant, et l'adresse qu'il lira au montage est celle-ci. Un `replace` plutôt
+   * qu'un `push` pour que le bouton retour ne ramène pas sur une page d'inscription déjà
+   * passée.
+   */
+  if (hasIntendedPlan() && window.location.pathname !== '/facturation') {
+    window.history.replaceState(null, '', '/facturation');
+  }
 
   return (
     <PreferencesProvider
