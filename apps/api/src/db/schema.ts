@@ -131,6 +131,17 @@ export interface OrganizationsTable {
   name: string;
   slug: string;
   created_by: string;
+  /**
+   * Le client chez Stripe, retenu au premier paiement.
+   *
+   * C'est par lui qu'on ouvre le portail de facturation, où le client change de carte et
+   * résilie lui-même. Sans lui, chaque changement passerait par nous.
+   */
+  stripe_customer_id: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -286,6 +297,41 @@ export interface SubscriptionsTable {
   updated_at: UpdatedAt;
 }
 
+/**
+ * Le registre des encaissements — voir `0017_payments.sql`.
+ *
+ * Une ligne créée **avant** l'appel au fournisseur : écrite après, un appel qui aboutit
+ * chez lui et échoue chez nous laisserait un client débité sans trace.
+ */
+export interface PaymentsTable {
+  id: string;
+  organization_id: string;
+  provider: PaymentProviderKey;
+  provider_ref: string | null;
+  plan_code: string;
+  period: BillingPeriod;
+  currency: string;
+  amount_minor: number;
+  status: 'pending' | 'settled' | 'failed' | 'canceled' | 'expired';
+  idempotency_key: string;
+  created_at: CreatedAt;
+  settled_at: Date | null;
+}
+
+/**
+ * Les webhooks déjà traités — voir `0017_payments.sql`.
+ *
+ * Les deux fournisseurs préviennent qu'un même événement peut arriver plusieurs fois.
+ * C'est l'échec d'insertion sur la clé primaire qui fait sauter le traitement : un
+ * `SELECT` préalable ne tiendrait pas contre deux livraisons simultanées.
+ */
+export interface ProviderEventsTable {
+  provider: PaymentProviderKey;
+  event_id: string;
+  type: string;
+  received_at: CreatedAt;
+}
+
 export interface Database {
   projects: ProjectsTable;
   organization_settings: OrganizationSettingsTable;
@@ -303,4 +349,6 @@ export interface Database {
   notifications_outbox: NotificationsOutboxTable;
   plans: PlansTable;
   subscriptions: SubscriptionsTable;
+  payments: PaymentsTable;
+  provider_events: ProviderEventsTable;
 }
